@@ -378,6 +378,7 @@ class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
+	private pendingDirty = false;
 	private readonly edits: Edit[] = [];
 	private redoEdits: Edit[] = [];
 	private readonly editCreator = new EditCreator();
@@ -467,6 +468,12 @@ class Editor {
 				})
 				.catch(e => console.warn(e));
 		});
+
+		let drawLoop = async () => {
+			await this.drawOnScreen();
+			requestAnimationFrame(drawLoop);
+		};
+		drawLoop();
 	}
 
 	// handle mouse events to create, start, resume edits
@@ -547,7 +554,7 @@ class Editor {
 		// todo copy
 	}
 
-	private async draw(drawMode: DrawMode) {
+	private draw(drawMode: DrawMode) {
 		if (drawMode === DrawMode.FULL) {
 			this.pixels.clear();
 			this.edits
@@ -560,9 +567,16 @@ class Editor {
 				edit.draw(this.pixels);
 		}
 
-		this.pendingPixels.clear();
-		if (this.pendingEdit)
-			this.pendingEdit.draw(this.pendingPixels);
+		this.pendingDirty = true;
+	}
+
+	private async drawOnScreen() {
+		if (this.pendingDirty) {
+			this.pendingDirty = false;
+			this.pendingPixels.clear();
+			if (this.pendingEdit)
+				this.pendingEdit.draw(this.pendingPixels);
+		}
 
 		this.ctx.putImageData(this.pixels.imageData, 0, 0);
 		let pending = await createImageBitmap(this.pendingPixels.imageData);
