@@ -39,6 +39,7 @@ class Point {
 class Color {
 	static WHITE = new Color(255, 255, 255, 255);
 	static BLACK = new Color(0, 0, 0, 255);
+	static GREEN = new Color(0, 255, 0, 255);
 	static CLEAR = new Color(0, 0, 0, 0);
 
 	readonly r: number;
@@ -51,10 +52,6 @@ class Color {
 		this.g = g;
 		this.b = b;
 		this.a = a;
-	}
-
-	get invert() {
-		return new Color(255 - this.r, 255 - this.g, 255 - this.b);
 	}
 }
 
@@ -131,10 +128,9 @@ class Select extends Edit {
 	}
 
 	draw(pixels: Pixels) {
-		Rect.points(this.start, this.end, (point, i) => {
-			if (i % 2)
-				pixels.set(point, pixels.get(point).invert);
-		});
+		let colors = [Color.CLEAR, Color.GREEN, Color.CLEAR, Color.BLACK];
+		Rect.points(this.start, this.end, (point, i) =>
+			pixels.set(point, colors[i % colors.length]));
 		// todo invert won't work since select is on different layer
 	}
 }
