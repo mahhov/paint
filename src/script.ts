@@ -65,6 +65,7 @@ enum Tool {
 	TEXT,
 	COLOR_PICKER,
 	BUCKET_FILL,
+	CLEAR,
 }
 
 class Pixels {
@@ -319,17 +320,7 @@ class EditCreator {
 	// }
 
 	static toolIsInstant(tool: Tool) {
-		switch (tool) {
-			case Tool.SELECT:
-			case Tool.LINE:
-			case Tool.RECT:
-			case Tool.FILL_RECT:
-			case Tool.TEXT:
-			case Tool.BUCKET_FILL:
-				return false;
-			case Tool.COLOR_PICKER:
-				return true;
-		}
+		return tool === Tool.COLOR_PICKER;
 	}
 
 	getNearPoint(points: Point[], point: Point) {
@@ -409,11 +400,13 @@ class Editor {
 				return;
 			}
 
-			// todo
-			// if (e.key === 'Delete') {
-			// 	this.addEdit(new Clear(this.mouseStart, this.mouseEnd));
-			// 	return;
-			// }
+			if (e.key === 'Delete') {
+				if (this.pendingEdit instanceof Select)
+					this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
+				this.pendingEdit = null;
+				this.draw(DrawMode.PENDING_EDIT);
+				return;
+			}
 
 			let tool = {
 				s: Tool.SELECT,
@@ -423,6 +416,7 @@ class Editor {
 				t: Tool.TEXT,
 				c: Tool.COLOR_PICKER,
 				b: Tool.BUCKET_FILL,
+				e: Tool.CLEAR,
 			}[e.key];
 			if (tool === this.tool)
 				this.tool = Tool.SELECT;
@@ -486,6 +480,8 @@ class Editor {
 				return null;
 			case Tool.BUCKET_FILL:
 				return new BucketFill(point, this.color);
+			case Tool.CLEAR:
+				return new Clear(point, point);
 		}
 	}
 
