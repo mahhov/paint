@@ -240,7 +240,6 @@ class TextEdit extends Edit {
 	}
 
 	draw(pixels: Pixels) {
-		// todo draw text edit
 	}
 }
 
@@ -252,8 +251,11 @@ class BucketFill extends Edit {
 		this.color = color;
 	}
 
+	validCommit() {
+		return true;
+	}
+
 	draw(pixels: Pixels) {
-		// todo draw bucket fill
 	}
 }
 
@@ -261,7 +263,7 @@ class Paste extends Edit {
 	private readonly pixelArray: Color[][];
 
 	constructor(pos: Point, pixelArray: Color[][]) {
-		super([pos]);
+		super([pos, pos.add(new Point(pixelArray.length, pixelArray[0].length))]);
 		this.pixelArray = pixelArray;
 	}
 
@@ -297,6 +299,10 @@ class Paste extends Edit {
 			};
 			reader.readAsDataURL(blob);
 		});
+	}
+
+	validCommit() {
+		return true;
 	}
 
 	draw(pixels: Pixels) {
@@ -400,9 +406,10 @@ class Editor {
 				return;
 			}
 
-			if (e.key === 'Delete') {
-				if (this.pendingEdit instanceof Select)
-					this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
+			if (e.key === 'Delete' && this.pendingEdit instanceof Select)
+				this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
+
+			if (e.key === 'Escape' || e.key === 'Delete') {
 				this.pendingEdit = null;
 				this.draw(DrawMode.PENDING_EDIT);
 				return;
@@ -424,16 +431,14 @@ class Editor {
 				this.tool = tool;
 		});
 
-		document.addEventListener('paste', async e => {
-			// todo
-			// let pos = this.tool === Tool.SELECT ? this.mouseStart : new Point();
-			let pos = new Point();
+		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
 				.then(pixelArray => {
-					this.addEdit(new Paste(pos, pixelArray));
+					let paste = new Paste(this.editCreator.mouseUp, pixelArray);
+					this.startNewEdit(paste);
+					this.startNewEdit(new Select(paste.points[0], paste.points[1]));
 				})
-				.catch(e => console.warn(e));
-		});
+				.catch(e => console.warn(e)));
 
 		let drawLoop = async () => {
 			await this.drawOnScreen();
@@ -448,12 +453,12 @@ class Editor {
 		this.color = this.pixels.get(this.editCreator.mouseUp);
 	}
 
-	private startNewEdit() {
+	private startNewEdit(edit: Edit = this.createPendingEdit(this.editCreator.mouseUp)) {
 		let commit = this.pendingEdit?.validCommit();
 		if (commit)
 			this.addEdit(this.pendingEdit!);
-		this.editCreator.selectedPoint = 1;
-		this.pendingEdit = this.createPendingEdit(this.editCreator.mouseUp);
+		this.pendingEdit = edit;
+		this.editCreator.selectedPoint = this.pendingEdit!.points.length - 1;
 		this.draw(commit ? DrawMode.LAST_EDIT : DrawMode.PENDING_EDIT);
 	}
 
@@ -476,8 +481,7 @@ class Editor {
 			case Tool.TEXT:
 				return new TextEdit(point, 12, this.color);
 			case Tool.COLOR_PICKER:
-				this.color = this.pixels.get(point);
-				return null;
+				let never: never;
 			case Tool.BUCKET_FILL:
 				return new BucketFill(point, this.color);
 			case Tool.CLEAR:
@@ -558,8 +562,13 @@ new Editor(document.querySelector('canvas')!);
 //   move current editing item
 //   preview ongoing edit
 //   preview ongoing selection region
-//   tool selector
-//   color selector
+//   tool selector UI
+//   color selector UI
 //   zoom & pan
 //   save/load
 //   layers
+//   middle mouse to pan
+//   scroll to zoom
+//   right click to clear
+//   text, bucket fill, & pencil tool
+//   shift to draw horizontal or vertical lines
