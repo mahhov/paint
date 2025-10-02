@@ -2,7 +2,7 @@ class Point {
 	readonly x: number;
 	readonly y: number;
 
-	constructor(x: number = 0, y: number = 0) {
+	constructor(x: number = 0, y: number = x) {
 		this.x = x;
 		this.y = y;
 	}
@@ -328,6 +328,8 @@ class Paste extends Edit {
 }
 
 class EditCreator {
+	static nearRange = 15;
+
 	mouseDown = new Point();
 	mouseUp = new Point();
 	mouseIsDown = false;
@@ -356,11 +358,12 @@ class EditCreator {
 	getNearPoint(point: Point) {
 		let magnitudes = this.points.map(p => p.subtract(point).magnitude2);
 		let minI = magnitudes[0] < magnitudes[1] ? 0 : 1;
-		return magnitudes[minI] < 200 ? minI : -1;
+		return magnitudes[minI] < EditCreator.nearRange ** 2 ? minI : -1;
+		// todo use rectangle region similar to that drawn
 	}
 
 	pointsMoved() {
-		return this.points[1].subtract(this.points[0]).magnitude2 >= 200;
+		return this.points[1].subtract(this.points[0]).magnitude2 >= EditCreator.nearRange ** 2;
 	}
 }
 
@@ -526,6 +529,7 @@ class Editor {
 	}
 
 	private undoEdit() {
+		// todo need to reset creator
 		if (this.pendingEdit) {
 			this.redoEdits.push(this.pendingEdit);
 			this.pendingEdit = null;
@@ -570,8 +574,12 @@ class Editor {
 		if (this.pendingDirty) {
 			this.pendingDirty = false;
 			this.pendingPixels.clear();
-			if (this.pendingEdit)
+			if (this.pendingEdit) {
 				this.pendingEdit.draw(this.pendingPixels);
+				let r = new Point(EditCreator.nearRange / 2).round;
+				this.editCreator.points.forEach(p =>
+					new Select(p.subtract(r), p.add(r)).draw(this.pendingPixels));
+			}
 		}
 
 		this.ctx.putImageData(this.pixels.imageData, 0, 0);
