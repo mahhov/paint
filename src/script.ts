@@ -71,22 +71,16 @@ enum Tool {
 }
 
 class Pixels {
+	private readonly width: number;
+	private readonly height: number;
 	private readonly defaultColor: Color;
-	private readonly data: Color[][];
 	readonly imageData: ImageData;
 
 	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
+		this.width = width;
+		this.height = height;
 		this.defaultColor = defaultColor;
-		this.data = A(width).map(() => A(height).map(() => this.defaultColor));
 		this.imageData = ctx.createImageData(width, height);
-	}
-
-	get width() {
-		return this.data.length;
-	}
-
-	get height() {
-		return this.data[0].length;
 	}
 
 	get size() {
@@ -94,14 +88,16 @@ class Pixels {
 	}
 
 	get(p: Point) {
-		return this.isInBounds(p) ?
-			this.data[p.x][p.y] :
-			Color.BLACK;
+		if (!this.isInBounds(p))
+			return this.defaultColor;
+
+		let index = (p.x + p.y * this.width) * 4;
+		let rgba = [...this.imageData.data.subarray(index, index + 4)] as [number, number, number, number];
+		return new Color(...rgba);
 	}
 
 	set(p: Point, c: Color) {
 		if (this.isInBounds(p)) {
-			this.data[p.x][p.y] = c;
 			let index = (p.x + p.y * this.width) * 4;
 			this.imageData.data[index] = c.r;
 			this.imageData.data[index + 1] = c.g;
