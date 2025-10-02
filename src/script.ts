@@ -78,85 +78,14 @@ class Editor {
     document.addEventListener('paste', async e => {
       let pos = this.tool === Tool.SELECT ? this.mouseStart : new Point();
       Editor.clipboardPixels(e)
-        .then(pixels => {
-          this.paste(pos, pixels);
-          this.draw();
-        })
-        .catch(e => console.warn(e));
+          .then(pixels => {
+            this.paste(pos, pixels);
+            this.draw();
+          })
+          .catch(e => console.warn(e));
     });
 
     this.draw();
-  }
-
-  private draw() {
-    const imageData = this.ctx.createImageData(this.pixels.length, this.pixels[0].length);
-    this.pixels.forEach((column, x) =>
-      column.forEach((color, y) => {
-        let index = (x + y * this.pixels.length) * 4;
-        imageData.data[index] = color.r;
-        imageData.data[index + 1] = color.g;
-        imageData.data[index + 2] = color.b;
-        imageData.data[index + 3] = 255;
-      }));
-    this.ctx.putImageData(imageData, 0, 0);
-  }
-
-  private copy(p1: Point, p2: Point) {
-
-  }
-
-  private paste(pos: Point, pixels: Color[][]) {
-    pixels.forEach((column, x) =>
-      column.forEach((color, y) => {
-        let p = pos.add(new Point(x, y));
-        this.pixels[p.x][p.y] = color;
-      }));
-  }
-
-  private undo() {
-  }
-
-  private redo() {
-  }
-
-  private line(p1: Point, p2: Point, color: Color) {
-    let delta = p2.subtract(p1);
-    let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y));
-    for (let i = 0; i <= steps; i++) {
-      let pos = p1.add(delta.scale(i / steps));
-      this.pixels[pos.x][pos.y] = color;
-    }
-  }
-
-  private rectOutline(p1: Point, p2: Point, color: Color) {
-    for (let x = p1.x; x <= p2.x; x++) {
-      this.pixels[x][p1.y] = color;
-      this.pixels[x][p2.y] = color;
-    }
-    for (let y = p1.y; y <= p2.y; y++) {
-      this.pixels[p1.x][y] = color;
-      this.pixels[p2.x][y] = color;
-    }
-  }
-
-  private rectFill(p1: Point, p2: Point, color: Color) {
-    for (let x = p1.x; x <= p2.x; x++)
-      for (let y = p1.y; y <= p2.y; y++)
-        this.pixels[x][y] = color;
-  }
-
-  private text(p1: Point, text: string, color: Color) {
-  }
-
-  private move(p1: Point, p2: Point, destination: Point) {
-    let delta = p2.subtract(p1);
-    for (let x = 0; x < delta.x; x++)
-      for (let y = 0; y < delta.y; y++) {
-        let p = new Point(x, y);
-        let destinationI = destination.add(p);
-        let sourceI = p1.add(p);
-        this.pixels[destinationI.x][destinationI.y] = this.pixels[sourceI.x][sourceI.y];
-      }
   }
 
   private static clipboardPixels(e: ClipboardEvent): Promise<Color[][]> {
@@ -167,7 +96,7 @@ class Editor {
 
       if (!e.clipboardData) return reject('no clipboard data');
       let clipboardItem = [...e.clipboardData.items]
-        .find(item => item.type.startsWith('image/'));
+          .find(item => item.type.startsWith('image/'));
       if (!clipboardItem) return reject('no clipboard image data');
       let blob = clipboardItem.getAsFile();
       if (!blob) return reject(('no clipboard image blob data'));
@@ -191,6 +120,86 @@ class Editor {
       };
       reader.readAsDataURL(blob);
     });
+  }
+
+  private draw() {
+    const imageData = this.ctx.createImageData(this.pixels.length, this.pixels[0].length);
+    this.pixels.forEach((column, x) =>
+        column.forEach((color, y) => {
+          let index = (x + y * this.pixels.length) * 4;
+          imageData.data[index] = color.r;
+          imageData.data[index + 1] = color.g;
+          imageData.data[index + 2] = color.b;
+          imageData.data[index + 3] = 255;
+        }));
+    this.ctx.putImageData(imageData, 0, 0);
+  }
+
+  private isInBounds(p: Point) {
+    return p.x > 0 && p.x < this.pixels.length && p.y > 0 && p.y < this.pixels[0].length;
+  }
+
+  private get(p: Point) {
+    return this.isInBounds(p) ?
+        this.pixels[p.x][p.y] :
+        new Color(0, 0, 0);
+  }
+
+  private set(p: Point, c: Color) {
+    if (this.isInBounds(p))
+      this.pixels[p.x][p.y] = c;
+  }
+
+  private copy(p1: Point, p2: Point) {
+
+  }
+
+  private paste(pos: Point, pixels: Color[][]) {
+    pixels.forEach((column, x) =>
+        column.forEach((color, y) =>
+            this.set(pos.add(new Point(x, y)), color)));
+  }
+
+  private undo() {
+  }
+
+  private redo() {
+  }
+
+  private line(p1: Point, p2: Point, color: Color) {
+    let delta = p2.subtract(p1);
+    let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y));
+    for (let i = 0; i <= steps; i++)
+      this.set(p1.add(delta.scale(i / steps)), color)
+  }
+
+  private rectOutline(p1: Point, p2: Point, color: Color) {
+    for (let x = p1.x; x <= p2.x; x++) {
+      this.set(new Point(x, p1.y), color)
+      this.set(new Point(x, p2.y), color)
+    }
+    for (let y = p1.y; y <= p2.y; y++) {
+      this.set(new Point(p1.x, y), color)
+      this.set(new Point(p2.x, y), color)
+    }
+  }
+
+  private rectFill(p1: Point, p2: Point, color: Color) {
+    for (let x = p1.x; x <= p2.x; x++)
+      for (let y = p1.y; y <= p2.y; y++)
+        this.set(new Point(x, y), color)
+  }
+
+  private text(p1: Point, text: string, color: Color) {
+  }
+
+  private move(p1: Point, p2: Point, destination: Point) {
+    let delta = p2.subtract(p1);
+    for (let x = 0; x < delta.x; x++)
+      for (let y = 0; y < delta.y; y++) {
+        let p = new Point(x, y);
+        this.set(destination.add(p), this.get(p1.add(p)));
+      }
   }
 }
 
