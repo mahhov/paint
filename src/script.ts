@@ -113,74 +113,67 @@ class Pixels {
 }
 
 class Edit {
+	readonly points: Point[];
+
+	constructor(points: Point[]) {
+		this.points = points;
+	}
+
+	validCommit() {
+		return this.points.length >= 2 && this.points[1].subtract(this.points[0]).magnitude2 >= EditCreator.nearRange ** 2;
+	}
+
 	draw(pixels: Pixels) {
 	}
 }
 
 class Select extends Edit {
-	private readonly start: Point;
-	private readonly end: Point;
 
 	constructor(start: Point, end: Point) {
-		super();
-		this.start = start;
-		this.end = end;
+		super([start, end]);
 	}
 
 	draw(pixels: Pixels) {
 		let colors = [Color.CLEAR, Color.GREEN, Color.CLEAR, Color.BLACK];
-		Rect.points(this.start, this.end, (point, i) =>
+		Rect.points(this.points[0], this.points[1], (point, i) =>
 			pixels.set(point, colors[i % colors.length]));
-		// todo invert won't work since select is on different layer
 	}
 }
 
 class Move extends Edit {
-	private readonly start: Point;
-	private readonly end: Point;
 	private readonly delta: Point;
 
 	constructor(start: Point, end: Point, delta: Point) {
-		super();
-		this.start = start;
-		this.end = end;
+		super([start, end]);
 		this.delta = delta;
 	}
 
 	draw(pixels: Pixels) {
-		FillRect.points(this.start, this.end, point => pixels.set(point.add(this.delta), pixels.get(point)));
+		FillRect.points(this.points[0], this.points[1], point => pixels.set(point.add(this.delta), pixels.get(point)));
 	}
 }
 
 class Line extends Edit {
-	private readonly start: Point;
-	private readonly end: Point;
 	private readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
-		super();
-		this.start = start;
-		this.end = end;
+		super([start, end]);
 		this.color = color;
 	}
 
 	draw(pixels: Pixels) {
-		let delta = this.end.subtract(this.start);
+		let delta = this.points[1].subtract(this.points[0]);
 		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y));
 		for (let i = 0; i <= steps; i++)
-			pixels.set(this.start.add(delta.scale(i / steps).round), this.color);
+			pixels.set(this.points[0].add(delta.scale(i / steps).round), this.color);
 	}
 }
 
 class Rect extends Edit {
-	private readonly start: Point;
-	private readonly end: Point;
 	private readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
-		super();
-		this.start = start;
-		this.end = end;
+		super([start, end]);
 		this.color = color;
 	}
 
@@ -199,19 +192,15 @@ class Rect extends Edit {
 	}
 
 	draw(pixels: Pixels) {
-		Rect.points(this.start, this.end, point => pixels.set(point, this.color));
+		Rect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
 	}
 }
 
 class FillRect extends Edit {
-	private readonly start: Point;
-	private readonly end: Point;
 	private readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
-		super();
-		this.start = start;
-		this.end = end;
+		super([start, end]);
 		this.color = color;
 	}
 
@@ -225,33 +214,26 @@ class FillRect extends Edit {
 	}
 
 	draw(pixels: Pixels) {
-		FillRect.points(this.start, this.end, point => pixels.set(point, this.color));
+		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
 	}
 }
 
 class Clear extends Edit {
-	private readonly start: Point;
-	private readonly end: Point;
-
 	constructor(start: Point, end: Point) {
-		super();
-		this.start = start;
-		this.end = end;
+		super([start, end]);
 	}
 
 	draw(pixels: Pixels) {
-		FillRect.points(this.start, this.end, point => pixels.set(point, Color.WHITE));
+		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, Color.WHITE));
 	}
 }
 
 class TextEdit extends Edit {
-	private readonly pos: Point;
 	private readonly size: number;
 	private readonly color: Color;
 
 	constructor(pos: Point, size: number, color: Color) {
-		super();
-		this.pos = pos;
+		super([pos]);
 		this.size = size;
 		this.color = color;
 	}
@@ -262,12 +244,10 @@ class TextEdit extends Edit {
 }
 
 class BucketFill extends Edit {
-	private readonly pos: Point;
 	private readonly color: Color;
 
 	constructor(pos: Point, color: Color) {
-		super();
-		this.pos = pos;
+		super([pos]);
 		this.color = color;
 	}
 
@@ -277,12 +257,10 @@ class BucketFill extends Edit {
 }
 
 class Paste extends Edit {
-	private readonly pos: Point;
 	private readonly pixelArray: Color[][];
 
 	constructor(pos: Point, pixelArray: Color[][]) {
-		super();
-		this.pos = pos;
+		super([pos]);
 		this.pixelArray = pixelArray;
 	}
 
@@ -323,7 +301,7 @@ class Paste extends Edit {
 	draw(pixels: Pixels) {
 		this.pixelArray.forEach((column, x) =>
 			column.forEach((color, y) =>
-				pixels.set(this.pos.add(new Point(x, y)), color)));
+				pixels.set(this.points[0].add(new Point(x, y)), color)));
 	}
 }
 
@@ -334,7 +312,6 @@ class EditCreator {
 	mouseUp = new Point();
 	mouseIsDown = false;
 
-	points: [Point, Point] = [new Point(), new Point()];
 	selectedPoint = -1;
 
 	// constructor(canvas: HTMLCanvasElement) {
@@ -348,22 +325,18 @@ class EditCreator {
 			case Tool.RECT:
 			case Tool.FILL_RECT:
 			case Tool.TEXT:
+			case Tool.BUCKET_FILL:
 				return false;
 			case Tool.COLOR_PICKER:
-			case Tool.BUCKET_FILL:
 				return true;
 		}
 	}
 
-	getNearPoint(point: Point) {
-		let magnitudes = this.points.map(p => p.subtract(point).magnitude2);
-		let minI = magnitudes[0] < magnitudes[1] ? 0 : 1;
-		return magnitudes[minI] < EditCreator.nearRange ** 2 ? minI : -1;
+	getNearPoint(points: Point[], point: Point) {
+		let magnitudes = points.map(p => p.subtract(point).magnitude2);
+		let minIndex = magnitudes.indexOf(Math.min(...magnitudes));
+		return magnitudes[minIndex] < EditCreator.nearRange ** 2 ? minIndex : -1;
 		// todo use rectangle region similar to that drawn
-	}
-
-	pointsMoved() {
-		return this.points[1].subtract(this.points[0]).magnitude2 >= EditCreator.nearRange ** 2;
 	}
 }
 
@@ -395,7 +368,7 @@ class Editor {
 			this.editCreator.mouseUp = this.editCreator.mouseDown;
 			this.editCreator.mouseIsDown = true;
 
-			let nearPendingPoint = this.editCreator.getNearPoint(this.editCreator.mouseDown);
+			let nearPendingPoint = this.pendingEdit ? this.editCreator.getNearPoint(this.pendingEdit.points, this.editCreator.mouseDown) : -1;
 			if (EditCreator.toolIsInstant(this.tool))
 				this.handleInstantEdit();
 			else if (nearPendingPoint === -1)
@@ -478,45 +451,41 @@ class Editor {
 	// handle mouse events to create, start, resume edits
 
 	private handleInstantEdit() {
-		let edit = this.createPendingEdit();
-		if (edit) this.addEdit(edit);
-		this.pendingEdit = null;
-		this.draw(DrawMode.LAST_EDIT);
+		this.color = this.pixels.get(this.editCreator.mouseUp);
 	}
 
 	private startNewEdit() {
-		let commit = this.editCreator.pointsMoved();
+		let commit = this.pendingEdit?.validCommit();
 		if (commit)
 			this.addEdit(this.pendingEdit!);
-		this.editCreator.points = [this.editCreator.mouseUp, this.editCreator.mouseUp];
 		this.editCreator.selectedPoint = 1;
-		this.pendingEdit = this.createPendingEdit();
+		this.pendingEdit = this.createPendingEdit(this.editCreator.mouseUp);
 		this.draw(commit ? DrawMode.LAST_EDIT : DrawMode.PENDING_EDIT);
 	}
 
 	private resumeEdit() {
-		this.editCreator.points[this.editCreator.selectedPoint] = this.editCreator.mouseUp;
-		this.pendingEdit = this.createPendingEdit();
+		if (!this.pendingEdit) return; // should this be moved to callsites?
+		this.pendingEdit.points[this.editCreator.selectedPoint] = this.editCreator.mouseUp;
 		this.draw(DrawMode.PENDING_EDIT);
 	}
 
-	private createPendingEdit() {
+	private createPendingEdit(point: Point) {
 		switch (this.tool) {
 			case Tool.SELECT:
-				return new Select(this.editCreator.points[0], this.editCreator.points[1]);
+				return new Select(point, point);
 			case Tool.LINE:
-				return new Line(this.editCreator.points[0], this.editCreator.points[1], this.color);
+				return new Line(point, point, this.color);
 			case Tool.RECT:
-				return new Rect(this.editCreator.points[0], this.editCreator.points[1], this.color);
+				return new Rect(point, point, this.color);
 			case Tool.FILL_RECT:
-				return new FillRect(this.editCreator.points[0], this.editCreator.points[1], this.color);
+				return new FillRect(point, point, this.color);
 			case Tool.TEXT:
-				return new TextEdit(this.editCreator.points[this.editCreator.selectedPoint], 12, this.color);
+				return new TextEdit(point, 12, this.color);
 			case Tool.COLOR_PICKER:
-				this.color = this.pixels.get(this.editCreator.points[this.editCreator.selectedPoint]);
+				this.color = this.pixels.get(point);
 				return null;
 			case Tool.BUCKET_FILL:
-				return new BucketFill(this.editCreator.points[this.editCreator.selectedPoint], this.color);
+				return new BucketFill(point, this.color);
 		}
 	}
 
@@ -524,12 +493,10 @@ class Editor {
 
 	private addEdit(edit: Edit) {
 		this.edits.push(edit);
-		this.redoEdits = [];
 		this.draw(DrawMode.LAST_EDIT);
 	}
 
 	private undoEdit() {
-		// todo need to reset creator
 		if (this.pendingEdit) {
 			this.redoEdits.push(this.pendingEdit);
 			this.pendingEdit = null;
@@ -577,7 +544,7 @@ class Editor {
 			if (this.pendingEdit) {
 				this.pendingEdit.draw(this.pendingPixels);
 				let r = new Point(EditCreator.nearRange / 2).round;
-				this.editCreator.points.forEach(p =>
+				this.pendingEdit.points.forEach(p =>
 					new Select(p.subtract(r), p.add(r)).draw(this.pendingPixels));
 			}
 		}
