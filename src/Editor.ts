@@ -5,6 +5,9 @@ import EditCreator from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
 
+const CANVAS_SIZE = 1000;
+const PANEL_SIZE = 300;
+
 enum DrawMode {
 	FULL,
 	LAST_EDIT,
@@ -26,14 +29,17 @@ export default class Editor {
 	private camera: Camera = new Camera();
 
 	constructor(canvas: HTMLCanvasElement) {
+		canvas.width = CANVAS_SIZE + PANEL_SIZE;
+		canvas.height = CANVAS_SIZE;
+
 		this.ctx = canvas.getContext('2d')!;
-		this.pixels = new Pixels(canvas.width, canvas.height, this.ctx, Color.WHITE);
-		this.pendingPixels = new Pixels(canvas.width, canvas.height, this.ctx, Color.CLEAR);
+		this.pixels = new Pixels(CANVAS_SIZE, CANVAS_SIZE, this.ctx, Color.WHITE);
+		this.pendingPixels = new Pixels(CANVAS_SIZE, CANVAS_SIZE, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
-			this.camera.move(delta.scale(1 / canvas.width));
+			this.camera.move(delta.scale(1 / CANVAS_SIZE));
 		}));
 		this.input.addBinding(new MouseWheelBinding(false, () => this.camera.zoom(-.2)));
 		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(.2)));
@@ -127,7 +133,7 @@ export default class Editor {
 	// handle mouse & keyboard events to create, start, resume edits
 
 	private get canvasMousePosition() {
-		return this.camera.canvasToWorld(this.input.mousePosition.scale(1 / this.ctx.canvas.width)).scale(this.ctx.canvas.width).round;
+		return this.camera.canvasToWorld(this.input.mousePosition.subtract(new Point(PANEL_SIZE, 0)).scale(1 / CANVAS_SIZE)).scale(CANVAS_SIZE).round;
 	}
 
 	selectTool(tool: Tool) {
@@ -235,13 +241,13 @@ export default class Editor {
 			}
 		}
 
-		let srcStart = this.camera.canvasToWorld(new Point()).scale(1000).round;
-		let srcEnd = this.camera.canvasToWorld(new Point(1)).scale(1000).round;
+		let srcStart = this.camera.canvasToWorld(new Point()).scale(CANVAS_SIZE).round;
+		let srcEnd = this.camera.canvasToWorld(new Point(1)).scale(CANVAS_SIZE).round;
 		let srcSize = srcEnd.subtract(srcStart);
-		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, 0, 0, 1000, 1000] as [number, number, number, number, number, number, number, number];
+		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, CANVAS_SIZE, CANVAS_SIZE] as [number, number, number, number, number, number, number, number];
 
-		this.ctx.imageSmoothingEnabled = srcSize.x > 1000;
-		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+		this.ctx.imageSmoothingEnabled = srcSize.x > CANVAS_SIZE;
+		this.ctx.clearRect(PANEL_SIZE, 0, CANVAS_SIZE, CANVAS_SIZE);
 		let committed = await createImageBitmap(this.pixels.imageData);
 		this.ctx.drawImage(committed, ...srcDestCoordinates);
 		let pending = await createImageBitmap(this.pendingPixels.imageData);
