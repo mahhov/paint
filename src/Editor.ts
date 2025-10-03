@@ -1,7 +1,8 @@
 import {Color, NEAR_RANGE, Point, Tool} from './base.js';
+import Camera from './Camera.js';
 import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, TextEdit} from './Edit.js';
-import {EditCreator} from './EditCreator.js';
-import {Pixels} from './Pixels.js';
+import EditCreator from './EditCreator.js';
+import Pixels from './Pixels.js';
 
 enum DrawMode {
 	FULL,
@@ -9,7 +10,7 @@ enum DrawMode {
 	PENDING_EDIT
 }
 
-export class Editor {
+export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
@@ -20,6 +21,7 @@ export class Editor {
 	private pendingEdit: Edit | null = null;
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
+	private camera = new Camera();
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.ctx = canvas.getContext('2d')!;
@@ -214,8 +216,10 @@ export class Editor {
 			}
 		}
 
-		this.ctx.putImageData(this.pixels.imageData, 0, 0);
+		let cameraDestination = this.camera.destination(1000);
+		let committed = await createImageBitmap(this.pixels.imageData);
+		this.ctx.drawImage(committed, ...cameraDestination);
 		let pending = await createImageBitmap(this.pendingPixels.imageData);
-		this.ctx.drawImage(pending, 0, 0);
+		this.ctx.drawImage(pending, ...cameraDestination);
 	}
 }

@@ -1,6 +1,6 @@
 import {NEAR_RANGE, Point, Tool} from './base.js';
 
-export class EditCreator {
+export default class EditCreator {
 	mouseDown = new Point();
 	mouseUp = new Point();
 	mouseIsDown = false;

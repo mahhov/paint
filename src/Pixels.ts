@@ -1,6 +1,6 @@
 import {Color, Point} from './base.js';
 
-export class Pixels {
+export default class Pixels {
 	readonly width: number;
 	readonly height: number;
 	private readonly defaultColor: Color;

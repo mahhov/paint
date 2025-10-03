@@ -42,6 +42,10 @@ export class Point {
 	get magnitude2() {
 		return this.x ** 2 + this.y ** 2;
 	}
+
+	clamp(min: Point, max: Point) {
+		return new Point(clamp(this.x, min.x, max.x), clamp(this.y, min.y, max.y));
+	}
 }
 
 export class Color {
@@ -78,3 +82,5 @@ export enum Tool {
 }
 
 export let NEAR_RANGE = 15;
+
+export let clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
