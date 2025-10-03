@@ -69,11 +69,21 @@ export default class Editor {
 
 		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.undoEdit()));
 		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.redoEdit()));
-		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.undoEdit()));
-		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => this.redoEdit()));
-		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.redoEdit()));
+		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
+			if ((this.pendingEdit instanceof TextEdit)) return;
+			this.undoEdit();
+		}));
+		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
+			if ((this.pendingEdit instanceof TextEdit)) return;
+			this.redoEdit();
+		}));
+		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
+			if ((this.pendingEdit instanceof TextEdit)) return;
+			this.redoEdit();
+		}));
 
 		this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => {
+			if ((this.pendingEdit instanceof TextEdit)) return;
 			if (this.pendingEdit instanceof Select || this.pendingEdit instanceof Move)
 				this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
 			this.pendingEdit = null;
@@ -83,18 +93,20 @@ export default class Editor {
 			this.pendingEdit = null;
 			this.draw(DrawMode.PENDING_EDIT);
 		}));
-		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
-		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
-		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
-		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
-		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
-		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
-		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
-		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
-		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
+		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.startNewEdit(null)));
+		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => {this.selectTool(Tool.SELECT);}));
+		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => {this.selectTool(Tool.MOVE);}));
+		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => {this.selectTool(Tool.LINE);}));
+		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => {this.selectTool(Tool.RECT);}));
+		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => {this.selectTool(Tool.FILL_RECT);}));
+		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => {this.selectTool(Tool.CLEAR);}));
+		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => {this.selectTool(Tool.TEXT);}));
+		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => {this.selectTool(Tool.COLOR_PICKER);}));
+		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => {this.selectTool(Tool.BUCKET_FILL);}));
 
 		document.addEventListener('keydown', e => {
 			if (!(this.pendingEdit instanceof TextEdit)) return;
+			if (e.key.length > 1) return;
 			this.pendingEdit.text += e.key;
 			this.draw(DrawMode.PENDING_EDIT);
 		});
@@ -119,6 +131,7 @@ export default class Editor {
 	}
 
 	selectTool(tool: Tool) {
+		if ((this.pendingEdit instanceof TextEdit)) return;
 		this.tool = tool;
 		let edit = null;
 		if (tool === Tool.MOVE && this.pendingEdit && this.pendingEdit.points.length >= 2)
