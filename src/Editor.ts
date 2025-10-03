@@ -31,7 +31,7 @@ export default class Editor {
 		this.pendingPixels = new Pixels(canvas.width, canvas.height, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 
-		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => {
+		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
 			this.camera.move(delta.scale(1 / canvas.width));
 		}));
@@ -49,6 +49,8 @@ export default class Editor {
 				this.resumeEdit();
 			}
 		}));
+
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => this.startNewEdit(null)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
 			if (this.canvasMousePosition.equals(this.input.mouseLastPosition)) return;
