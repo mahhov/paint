@@ -30,11 +30,11 @@ export class Select extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		if (pending)
-			Rect.points(this.points[0], this.points[1], (point, i) => {
-				if (i % 2)
-					pixels.set(point, sourcePixels.get(point).invert);
-			});
+		if (pending) {
+			let colors = [Color.WHITE, Color.BLACK];
+			Rect.points(this.points[0], this.points[1], (point, i) =>
+				pixels.set(point, colors[i % colors.length]));
+		}
 	}
 }
 
