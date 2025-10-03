@@ -69,6 +69,10 @@ export class Color {
 		this.b = b;
 		this.a = a;
 	}
+
+	equals(color: Color) {
+		return this.r === color.r && this.g === color.g && this.b === color.b && this.a === color.a;
+	}
 }
 
 export let A = (n: number) => [...Array(n)];

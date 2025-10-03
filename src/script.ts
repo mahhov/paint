@@ -3,7 +3,7 @@ import Editor from './Editor.js';
 window.editor = new Editor(document.querySelector('canvas')!);
 
 // todo
-//   text, bucket fill, & pencil tool
+//   text & pencil tool
 //   tool selector UI
 //   color selector UI
 //   shift to draw horizontal or vertical lines

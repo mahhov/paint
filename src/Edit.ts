@@ -205,6 +205,21 @@ export class BucketFill extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		let targetColor = sourcePixels.get(this.points[0]);
+		if (targetColor.equals(this.color)) return;
+		let queue = [this.points[0]];
+		while (queue.length) {
+			let point = queue.pop()!;
+			if (!pixels.isInBounds(point)) continue;
+			if (pixels.get(point).equals(this.color)) continue;
+			if (!sourcePixels.get(point).equals(targetColor)) continue;
+			pixels.set(point, this.color);
+			queue.push(point.add(new Point(1, 0)));
+			queue.push(point.add(new Point(0, 1)));
+			queue.push(point.add(new Point(-1, 0)));
+			queue.push(point.add(new Point(0, -1)));
+		}
+		// this could be optimized by batching horizontal lines
 	}
 }
 
