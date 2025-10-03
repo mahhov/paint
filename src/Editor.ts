@@ -6,7 +6,8 @@ import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, M
 import Pixels from './Pixels.js';
 
 const PIXELS_SIZE = 3000;
-const EDITOR_SIZE = 1000;
+const EDITOR_SIZE = 1500;
+// todo responsive
 const PANEL_SIZE = 300;
 
 enum DrawMode {
@@ -101,16 +102,29 @@ export default class Editor {
 			this.draw(DrawMode.PENDING_EDIT);
 		}));
 		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.startNewEdit(null)));
-		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => {this.selectTool(Tool.SELECT);}));
-		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => {this.selectTool(Tool.MOVE);}));
-		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => {this.selectTool(Tool.LINE);}));
-		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => {this.selectTool(Tool.STRAIGHT_LINE);}));
-		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => {this.selectTool(Tool.RECT);}));
-		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => {this.selectTool(Tool.FILL_RECT);}));
-		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => {this.selectTool(Tool.CLEAR);}));
-		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => {this.selectTool(Tool.TEXT);}));
-		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => {this.selectTool(Tool.COLOR_PICKER);}));
-		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => {this.selectTool(Tool.BUCKET_FILL);}));
+		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
+		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
+		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
+		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => this.selectTool(Tool.STRAIGHT_LINE)));
+		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
+		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
+		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
+		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
+		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
+		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
+
+		([
+			['ArrowUp', new Point(0, -1)],
+			['ArrowRight', new Point(1, 0)],
+			['ArrowDown', new Point(0, 1)],
+			['ArrowLeft', new Point(-1, 0)],
+		] as [string, Point][]).forEach(([key, delta]) => ([
+			[[], 1],
+			[[KeyModifier.CONTROL], 10],
+			[[KeyModifier.SHIFT], 50],
+		] as [KeyModifier[], number][]).forEach(([modifiers, scale]) => {
+			this.input.addBinding(new KeyBinding(key, modifiers, [InputState.PRESSED, InputState.DOWN], () => this.movePendingEdit(delta.scale(scale))));
+		}));
 
 		document.addEventListener('keydown', e => {
 			if (!(this.pendingEdit instanceof TextEdit)) return;
@@ -156,6 +170,12 @@ export default class Editor {
 		this.startNewEdit(edit);
 	}
 
+	movePendingEdit(delta: Point) {
+		if (!this.pendingEdit) return;
+		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.pendingEdit.points[this.editCreator.selectedPoint].add(delta));
+		this.draw(DrawMode.PENDING_EDIT);
+	}
+
 	private handleInstantEdit() {
 		this.color = this.pixels.get(this.canvasMousePosition());
 	}
@@ -170,7 +190,7 @@ export default class Editor {
 	}
 
 	private resumeEdit() {
-		if (!this.pendingEdit) return; // should this be moved to callsites?
+		if (!this.pendingEdit) return;
 		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.canvasMousePosition());
 		this.draw(DrawMode.PENDING_EDIT);
 	}
