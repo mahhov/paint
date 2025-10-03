@@ -2,7 +2,7 @@ import {Color, NEAR_RANGE, Point, Tool} from './base.js';
 import Camera from './Camera.js';
 import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, TextEdit} from './Edit.js';
 import EditCreator from './EditCreator.js';
-import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton} from './Input.js';
+import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
 
 enum DrawMode {
@@ -23,7 +23,7 @@ export default class Editor {
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
-	private camera = new Camera();
+	private camera: Camera = new Camera();
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.ctx = canvas.getContext('2d')!;
@@ -31,8 +31,15 @@ export default class Editor {
 		this.pendingPixels = new Pixels(canvas.width, canvas.height, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => {
+			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
+			this.camera.move(delta.scale(1 / canvas.width));
+		}));
+		this.input.addBinding(new MouseWheelBinding(false, [InputState.PRESSED], () => this.camera.zoom(-.2)));
+		this.input.addBinding(new MouseWheelBinding(true, [InputState.PRESSED], () => this.camera.zoom(.2)));
+
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
-			let nearPendingPoint = this.pendingEdit ? EditCreator.getNearPoint(this.pendingEdit.points, this.input.mouseDownPosition) : -1;
+			let nearPendingPoint = this.pendingEdit ? EditCreator.getNearPoint(this.pendingEdit.points, this.canvasMousePosition) : -1;
 			if (EditCreator.toolIsInstant(this.tool))
 				this.handleInstantEdit();
 			else if (nearPendingPoint === -1)
@@ -44,6 +51,7 @@ export default class Editor {
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
+			if (this.canvasMousePosition.equals(this.input.mouseLastPosition)) return;
 			if (EditCreator.toolIsInstant(this.tool))
 				this.handleInstantEdit();
 			else if (this.editCreator.selectedPoint !== -1)
@@ -83,7 +91,7 @@ export default class Editor {
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
 				.then(pixelArray => {
-					let paste = new Paste(this.input.mousePosition, pixelArray);
+					let paste = new Paste(this.canvasMousePosition, pixelArray);
 					this.startNewEdit(paste);
 					this.startNewEdit(new Select(paste.points[0], paste.points[1]));
 				})
@@ -97,6 +105,10 @@ export default class Editor {
 		loop();
 	}
 
+	private get canvasMousePosition() {
+		return this.camera.canvasToWorld(this.input.mousePosition.scale(1 / this.ctx.canvas.width)).scale(this.ctx.canvas.width).round;
+	}
+
 	selectTool(tool: Tool) {
 		this.tool = tool;
 		let edit = null;
@@ -108,10 +120,10 @@ export default class Editor {
 	// handle mouse events to create, start, resume edits
 
 	private handleInstantEdit() {
-		this.color = this.pixels.get(this.input.mousePosition);
+		this.color = this.pixels.get(this.canvasMousePosition);
 	}
 
-	private startNewEdit(edit: Edit | null = this.createPendingEdit(this.input.mousePosition)) {
+	private startNewEdit(edit: Edit | null = this.createPendingEdit(this.canvasMousePosition)) {
 		let commit = this.pendingEdit?.validCommit();
 		if (commit)
 			this.addEdit(this.pendingEdit!);
@@ -122,7 +134,7 @@ export default class Editor {
 
 	private resumeEdit() {
 		if (!this.pendingEdit) return; // should this be moved to callsites?
-		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.input.mousePosition);
+		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.canvasMousePosition);
 		this.draw(DrawMode.PENDING_EDIT);
 	}
 
@@ -184,10 +196,8 @@ export default class Editor {
 		if (drawMode === DrawMode.FULL) {
 			this.pixels.clear();
 			this.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
-
 		} else if (drawMode === DrawMode.LAST_EDIT)
 			this.edits.at(-1)!.draw(this.pixels, this.pixels, false);
-
 		this.pendingDirty = true;
 	}
 
@@ -203,10 +213,15 @@ export default class Editor {
 			}
 		}
 
-		let cameraDestination = this.camera.destination(1000);
+		let srcStart = this.camera.canvasToWorld(new Point()).scale(1000).round;
+		let srcEnd = this.camera.canvasToWorld(new Point(1)).scale(1000).round;
+		let srcSize = srcEnd.subtract(srcStart);
+		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, 0, 0, 1000, 1000] as [number, number, number, number, number, number, number, number];
+
+		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		let committed = await createImageBitmap(this.pixels.imageData);
-		this.ctx.drawImage(committed, ...cameraDestination);
+		this.ctx.drawImage(committed, ...srcDestCoordinates);
 		let pending = await createImageBitmap(this.pendingPixels.imageData);
-		this.ctx.drawImage(pending, ...cameraDestination);
+		this.ctx.drawImage(pending, ...srcDestCoordinates);
 	}
 }

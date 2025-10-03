@@ -35,6 +35,10 @@ export class Point {
 		return this.x >= point.x && this.y >= point.y;
 	}
 
+	equals(point: Point) {
+		return this.x === point.x && this.y === point.y;
+	}
+
 	get round() {
 		return new Point(Math.round(this.x), Math.round(this.y));
 	}

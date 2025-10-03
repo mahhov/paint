@@ -33,10 +33,4 @@ export default class Camera {
 			.scale(this.width)
 			.add(this.leftTop);
 	}
-
-	destination(scale: number): [number, number, number, number] {
-		let leftTopScaled = this.leftTop.scale(scale);
-		let widthScaled = this.width * scale;
-		return [leftTopScaled.x, leftTopScaled.y, widthScaled, widthScaled];
-	}
 }

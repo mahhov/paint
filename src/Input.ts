@@ -132,6 +132,7 @@ export class MouseWheelBinding extends Binding {
 export class Input {
 	private bindings: Binding[] = [];
 	mouseDownPosition = new Point();
+	mouseLastPosition = new Point();
 	mousePosition = new Point();
 
 	constructor(mouseTarget: HTMLCanvasElement) {
@@ -149,6 +150,7 @@ export class Input {
 
 		mouseTarget.addEventListener('mousedown', e => {
 			Object.values(this.bindings).forEach(binding => binding.mouseDown(e.button));
+			this.mouseLastPosition = this.mousePosition;
 			this.mouseDownPosition = this.mousePosition;
 		});
 		window.addEventListener('mouseup', e =>
@@ -171,5 +173,6 @@ export class Input {
 
 	tick() {
 		Object.values(this.bindings).forEach(binding => binding.tick());
+		this.mouseLastPosition = this.mousePosition;
 	}
 }
