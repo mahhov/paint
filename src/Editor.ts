@@ -35,8 +35,8 @@ export default class Editor {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
 			this.camera.move(delta.scale(1 / canvas.width));
 		}));
-		this.input.addBinding(new MouseWheelBinding(false, [InputState.PRESSED], () => this.camera.zoom(-.2)));
-		this.input.addBinding(new MouseWheelBinding(true, [InputState.PRESSED], () => this.camera.zoom(.2)));
+		this.input.addBinding(new MouseWheelBinding(false, () => this.camera.zoom(-.2)));
+		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(.2)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
 			let nearPendingPoint = this.pendingEdit ? EditCreator.getNearPoint(this.pendingEdit.points, this.canvasMousePosition) : -1;
@@ -67,9 +67,12 @@ export default class Editor {
 				this.resumeEdit();
 		}));
 
+		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.undoEdit()));
+		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.redoEdit()));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.undoEdit()));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => this.redoEdit()));
 		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.redoEdit()));
+
 		this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => {
 			if (this.pendingEdit instanceof Select || this.pendingEdit instanceof Move)
 				this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
@@ -89,6 +92,12 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
+
+		document.addEventListener('keydown', e => {
+			if (!(this.pendingEdit instanceof TextEdit)) return;
+			this.pendingEdit.text += e.key;
+			this.draw(DrawMode.PENDING_EDIT);
+		});
 
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)

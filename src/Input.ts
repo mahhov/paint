@@ -7,6 +7,7 @@ export enum InputState {
 abstract class Binding {
 	private readonly listenerStates: InputState[] = [];
 	private state: InputState = InputState.UP;
+	private readonly listener = () => { };
 
 	protected constructor(listenerStates: InputState[], listener: () => void) {
 		this.listenerStates = listenerStates;
@@ -23,8 +24,6 @@ abstract class Binding {
 				return InputState.UP;
 		}
 	}
-
-	private readonly listener = () => { };
 
 	press() {
 		if (this.state === InputState.UP)
@@ -87,6 +86,19 @@ export class KeyBinding extends Binding {
 	}
 }
 
+export class TypeBinding extends Binding {
+	private key = '';
+
+	constructor(listener: () => void) {
+		super([InputState.PRESSED], listener);
+	}
+
+	keyDown(e: KeyboardEvent) {
+		this.key = e.key;
+		this.press();
+	}
+}
+
 export enum MouseButton {
 	LEFT, MIDDLE, RIGHT, BACK, FORWARD
 }
@@ -113,8 +125,8 @@ export class MouseBinding extends Binding {
 export class MouseWheelBinding extends Binding {
 	private readonly down: boolean;
 
-	constructor(down: boolean, listenerStates: InputState[], listener: () => void) {
-		super(listenerStates, listener);
+	constructor(down: boolean, listener: () => void) {
+		super([InputState.PRESSED], listener);
 		this.down = down;
 	}
 

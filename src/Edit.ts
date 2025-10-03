@@ -181,14 +181,45 @@ export class Clear extends Edit {
 export class TextEdit extends Edit {
 	private readonly size: number;
 	private readonly color: Color;
+	text = '';
 
 	constructor(point: Point, size: number, color: Color) {
 		super([point]);
-		this.size = size;
+		this.size = 50;
 		this.color = color;
 	}
 
+	validCommit() {
+		return !!this.text && !!this.size;
+	}
+
+	private setContext(canvas: HTMLCanvasElement) {
+		let ctx = canvas.getContext('2d')!;
+		ctx.font = `${this.size}px Arial`;
+		ctx.imageSmoothingEnabled = false;
+		ctx.textBaseline = 'top';
+		ctx.globalAlpha = 1;
+		return ctx;
+	}
+
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		let canvas = document.createElement('canvas');
+		let ctx = this.setContext(canvas);
+		let metrics = ctx.measureText(this.text);
+		canvas.width = Math.ceil(metrics.width);
+		if (!canvas.width) return;
+		canvas.height = Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
+		ctx = this.setContext(canvas);
+		ctx.fillText(this.text, 0, 0);
+		let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		for (let x = 0; x < imageData.width; x++) {
+			for (let y = 0; y < imageData.height; y++) {
+				let index = (x + y * imageData.width) * 4;
+				let a = imageData.data[index + 3];
+				if (a > 150)
+					pixels.set(this.points[0].add(new Point(x, y)), this.color);
+			}
+		}
 	}
 }
 
