@@ -28,7 +28,7 @@ export default class Editor {
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
-	private camera: Camera = new Camera(EDITOR_SIZE / PIXELS_SIZE, 64 / PIXELS_SIZE, 1);
+	private camera: Camera = new Camera(EDITOR_SIZE / PIXELS_SIZE);
 
 	constructor(canvas: HTMLCanvasElement) {
 		canvas.width = EDITOR_SIZE + PANEL_SIZE;
@@ -43,8 +43,8 @@ export default class Editor {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
 			this.camera.move(delta.scale(1 / EDITOR_SIZE));
 		}));
-		this.input.addBinding(new MouseWheelBinding(false, () => this.camera.zoom(-.2)));
-		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(.2)));
+		this.input.addBinding(new MouseWheelBinding(false, () => this.camera.zoom(-1)));
+		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(1)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
 			let nearPendingPoint = this.pendingEdit ? EditCreator.getNearPoint(this.pendingEdit.points, this.canvasMousePosition()) : -1;

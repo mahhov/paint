@@ -1,17 +1,16 @@
-import {clamp, Point} from './base.js';
+import {clamp, Point, round} from './base.js';
 
-let padding = .25;
+let zoomDelta = .2;
+let minWidth = .1;
+let maxWidth = 1.5; // maxWidth-minWidth should be divisible by zoomDelta
+let padding = (maxWidth - 1) / 2;
 
 export default class Camera {
 	private leftTop: Point = new Point();
 	private width: number;
-	private minWidth: number;
-	private maxWidth: number;
 
-	constructor(initialWidth: number, minWidth: number, maxWidth: number) {
+	constructor(initialWidth: number) {
 		this.width = initialWidth;
-		this.minWidth = minWidth;
-		this.maxWidth = maxWidth;
 	}
 
 	move(delta: Point) {
@@ -21,7 +20,7 @@ export default class Camera {
 
 	zoom(delta: number) {
 		let centerWorld = this.canvasToWorld(new Point(.5));
-		this.width = clamp(this.width + delta, this.minWidth, this.maxWidth + padding * 2);
+		this.width = round(clamp(this.width + delta * zoomDelta, minWidth, maxWidth), .1);
 		this.leftTop = centerWorld.subtract(new Point(this.width / 2));
 		this.clamp();
 		// todo zoom towards cursor
