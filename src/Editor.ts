@@ -50,7 +50,7 @@ export default class Editor {
 			}
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => this.startNewEdit(null)));
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => this.startNewEdit(null)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
 			if (this.canvasMousePosition.equals(this.input.mouseLastPosition)) return;
