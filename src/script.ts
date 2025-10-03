@@ -161,17 +161,23 @@ class Pixels {
 }
 
 class Edit {
-	readonly points: Point[];
+	protected readonly points_: Point[];
 
 	constructor(points: Point[]) {
-		this.points = points;
+		this.points_ = points;
+	}
+
+	get points(): readonly Point[] {
+		return this.points_;
+	}
+
+	setPoint(index: number, point: Point) {
+		this.points_[index] = point;
 	}
 
 	validCommit() {
-		return this.points.length >= 2 && this.points[1].subtract(this.points[0]).magnitude2 >= EditCreator.nearRange ** 2;
+		return this.points_.length >= 2 && this.points[1].subtract(this.points[0]).magnitude2 >= EditCreator.nearRange ** 2;
 	}
-
-	synchronizePoints(index: number) {}
 
 	draw(pixels: Pixels, sourcePixels: Pixels) {
 	}
@@ -200,12 +206,13 @@ class Move extends Edit {
 		return p1.add(p2).scale(.5).round;
 	}
 
-	synchronizePoints(index: number) {
+	setPoint(index: number, point: Point) {
+		this.points_[index] = point;
 		let center = Move.center(this.points[0], this.points[1]);
 		if (index === 2)
 			this.delta = this.points[2].subtract(center);
 		else
-			this.points[2] = center.add(this.delta);
+			this.points_[2] = center.add(this.delta);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels) {
@@ -408,7 +415,7 @@ class EditCreator {
 		return tool === Tool.COLOR_PICKER;
 	}
 
-	getNearPoint(points: Point[], point: Point) {
+	getNearPoint(points: readonly Point[], point: Point) {
 		let magnitudes = points.map(p => p.subtract(point).magnitude2);
 		let minIndex = magnitudes.indexOf(Math.min(...magnitudes));
 		return magnitudes[minIndex] < EditCreator.nearRange ** 2 ? minIndex : -1;
@@ -546,8 +553,7 @@ class Editor {
 
 	private resumeEdit() {
 		if (!this.pendingEdit) return; // should this be moved to callsites?
-		this.pendingEdit.points[this.editCreator.selectedPoint] = this.editCreator.mouseUp;
-		this.pendingEdit.synchronizePoints(this.editCreator.selectedPoint);
+		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.editCreator.mouseUp);
 		this.draw(DrawMode.PENDING_EDIT);
 	}
 
