@@ -265,9 +265,13 @@ export default class Editor {
 			this.pendingPixels.clear();
 			if (this.pendingEdit) {
 				this.pendingEdit.draw(this.pendingPixels, this.pixels, true);
-				let r = new Point(NEAR_RANGE / 2).round;
-				this.pendingEdit.points.forEach(p =>
-					new Select(p.subtract(r), p.add(r)).draw(this.pendingPixels, this.pixels, true));
+				([
+					...this.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
+					[this.pendingEdit.points[this.editCreator.selectedPoint], NEAR_RANGE / 4],
+				] as [Point, number][]).forEach(([p, r]) => {
+					let rp = new Point(r).round;
+					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
+				});
 			}
 		}
 

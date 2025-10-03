@@ -40,7 +40,7 @@ export class Point {
 	}
 
 	get round() {
-		return new Point(Math.round(this.x), Math.round(this.y));
+		return new Point(round(this.x), round(this.y));
 	}
 
 	get magnitude2() {
@@ -98,3 +98,5 @@ export enum Tool {
 export let NEAR_RANGE = 15;
 
 export let clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
+export let round = (v: number, precision: number = 1) => Math.round(v / precision) * precision;

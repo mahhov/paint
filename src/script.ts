@@ -7,7 +7,6 @@ window.editor = new Editor(document.querySelector('canvas')!);
 //   tool selector UI
 //   color selector UI
 //   paste text
-//   arrow keys to move
 //   save/load
 //   control points shouldn't scale with camera zoom
 //   allow scaling move
