@@ -90,11 +90,7 @@ export default class Editor {
 
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
-				.then(pixelArray => {
-					let paste = new Paste(this.canvasMousePosition, pixelArray);
-					this.startNewEdit(paste);
-					this.startNewEdit(new Select(paste.points[0], paste.points[1]));
-				})
+				.then(pixelArray => this.startNewEdit(new Paste(this.canvasMousePosition, pixelArray)))
 				.catch(e => console.warn(e)));
 
 		let loop = async () => {
@@ -104,6 +100,8 @@ export default class Editor {
 		};
 		loop();
 	}
+
+	// handle mouse & keyboard events to create, start, resume edits
 
 	private get canvasMousePosition() {
 		return this.camera.canvasToWorld(this.input.mousePosition.scale(1 / this.ctx.canvas.width)).scale(this.ctx.canvas.width).round;
@@ -116,8 +114,6 @@ export default class Editor {
 			edit = new Move(this.pendingEdit.points[0], this.pendingEdit.points[1]);
 		this.startNewEdit(edit);
 	}
-
-	// handle mouse events to create, start, resume edits
 
 	private handleInstantEdit() {
 		this.color = this.pixels.get(this.canvasMousePosition);

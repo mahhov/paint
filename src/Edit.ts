@@ -212,7 +212,7 @@ export class Paste extends Edit {
 	private readonly pixelArray: Color[][];
 
 	constructor(pos: Point, pixelArray: Color[][]) {
-		super([pos, pos.add(new Point(pixelArray.length, pixelArray[0].length))]);
+		super([pos]);
 		this.pixelArray = pixelArray;
 	}
 
