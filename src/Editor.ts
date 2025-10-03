@@ -236,6 +236,7 @@ export default class Editor {
 		}
 		if (this.edits.length)
 			this.pendingEdit = this.edits.pop()!;
+		this.editCreator.selectedPoint = 0;
 		this.draw(DrawMode.FULL);
 	}
 
@@ -245,6 +246,7 @@ export default class Editor {
 		if (commit)
 			this.edits.push(this.pendingEdit!);
 		this.pendingEdit = this.redoEdits.pop()!;
+		this.editCreator.selectedPoint = 0;
 		this.draw(commit ? DrawMode.LAST_EDIT : DrawMode.PENDING_EDIT);
 	}
 

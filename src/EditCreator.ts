@@ -14,3 +14,5 @@ export default class EditCreator {
 		// todo use rectangle region similar to that drawn
 	}
 }
+
+// todo either move more logic here, ore get rid of
