@@ -18,12 +18,11 @@ export default class Camera {
 		this.clamp();
 	}
 
-	zoom(delta: number) {
-		let centerWorld = this.canvasToWorld(new Point(.5));
+	zoom(delta: number, canvasPoint: Point) {
+		let worldPoint = this.canvasToWorld(canvasPoint);
 		this.width = round(clamp(this.width + delta * zoomDelta, minWidth, maxWidth), .1);
-		this.leftTop = centerWorld.subtract(new Point(this.width / 2));
+		this.leftTop = worldPoint.subtract(canvasPoint.scale(this.width));
 		this.clamp();
-		// todo zoom towards cursor
 	}
 
 	clamp() {
