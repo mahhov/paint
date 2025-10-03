@@ -78,16 +78,23 @@ enum Tool {
 }
 
 class Pixels {
-	private readonly width: number;
-	private readonly height: number;
+	readonly width: number;
+	readonly height: number;
 	private readonly defaultColor: Color;
 	readonly imageData: ImageData;
+	private readonly cachedClearedImageDataData: Uint8ClampedArray;
 
 	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
 		this.width = width;
 		this.height = height;
 		this.defaultColor = defaultColor;
 		this.imageData = ctx.createImageData(width, height);
+
+		let rawDefaultColor = new Uint8ClampedArray([this.defaultColor.r, this.defaultColor.g, this.defaultColor.b, this.defaultColor.a]);
+		this.cachedClearedImageDataData = new Uint8ClampedArray(width * height * rawDefaultColor.length);
+		for (let i = 0; i < this.cachedClearedImageDataData.length; i += rawDefaultColor.length)
+			this.cachedClearedImageDataData.set(rawDefaultColor, i);
+		this.clear();
 	}
 
 	get size() {
@@ -125,13 +132,31 @@ class Pixels {
 	}
 
 	clear() {
-		console.time('clear');
-		FillRect.points(new Point(), this.size, point => this.set(point, this.defaultColor));
-		console.timeEnd('clear');
+		this.imageData.data.set(this.cachedClearedImageDataData);
 	}
 
 	isInBounds(p: Point) {
-		return p.x > 0 && p.x < this.width && p.y > 0 && p.y < this.height;
+		return p.x >= 0 && p.x < this.width && p.y >= 0 && p.y < this.height;
+	}
+
+	debug() {
+		let seen1: Record<string, number> = {};
+		for (let i = 0; i < this.width; i++)
+			for (let j = 0; j < this.width; j++) {
+				let x = this.get(new Point(i, j));
+				let y = [x.r, x.g, x.b, x.a].toString();
+				seen1[y] ||= 0;
+				seen1[y]++;
+			}
+
+		let seen2: Record<string, number> = {};
+		for (let i = 0; i < this.imageData.data.length; i += 4) {
+			let x = this.imageData.data.subarray(i, i + 4).toString();
+			seen2[x] ||= 0;
+			seen2[x]++;
+		}
+
+		console.log(seen1, seen2);
 	}
 }
 
@@ -158,7 +183,7 @@ class Select extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels) {
-		let colors = [Color.CLEAR, Color.GREEN, Color.CLEAR, Color.BLACK];
+		let colors = [Color.WHITE, Color.BLACK];
 		Rect.points(this.points[0], this.points[1], (point, i) =>
 			pixels.set(point, colors[i % colors.length]));
 	}
@@ -184,20 +209,24 @@ class Move extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels) {
-		console.time('move draw');
-		if (pixels !== sourcePixels) {
-			let destinationPoints = [this.points[0].add(this.delta), this.points[1].add(this.delta)];
-			let min = destinationPoints[0].min(destinationPoints[1]);
-			let max = destinationPoints[0].max(destinationPoints[1]);
-			FillRect.points(this.points[0], this.points[1], point => {
-				if (!point.atLeast(min) || !point.atMost(max))
-					pixels.set(point, Color.WHITE);
-				let newPoint = point.add(this.delta);
-				if (pixels.isInBounds(newPoint))
-					pixels.setRaw(newPoint, sourcePixels.getRaw(point));
-			});
-		}
-		console.timeEnd('move draw');
+		let min = this.points[0].min(this.points[1]);
+		let max = this.points[0].max(this.points[1]).add(new Point(1));
+		let iterateClear = max.subtract(min);
+		let clearLine = new Uint8ClampedArray(iterateClear.x * 4).fill(255);
+
+		let destMin = min.add(this.delta).max(new Point());
+		let destMax = max.add(this.delta).min(pixels.size);
+		let sourceMin = destMin.subtract(this.delta);
+		let sourceMax = destMax.subtract(this.delta);
+		let iterateCopy = sourceMax.subtract(sourceMin);
+		let copyLines = [];
+
+		for (let y = 0; y < iterateCopy.y; y++)
+			copyLines[y] = sourcePixels.imageData.data.slice((sourceMin.x + (sourceMin.y + y) * pixels.width) * 4, (sourceMin.x + iterateCopy.x + (sourceMin.y + y) * pixels.width) * 4);
+		for (let y = 0; y < iterateClear.y; y++)
+			pixels.imageData.data.set(clearLine, (min.x + (min.y + y) * pixels.width) * 4);
+		for (let y = 0; y < iterateCopy.y; y++)
+			pixels.imageData.data.set(copyLines[y], (destMin.x + (destMin.y + y) * pixels.width) * 4);
 	}
 }
 
@@ -508,12 +537,8 @@ class Editor {
 		if (commit)
 			this.addEdit(this.pendingEdit!);
 		this.pendingEdit = edit;
-		if (this.pendingEdit)
-			this.editCreator.selectedPoint = 0;
-		if (commit)
-			this.draw(DrawMode.LAST_EDIT);
-		else if (this.pendingEdit)
-			this.draw(DrawMode.PENDING_EDIT);
+		this.editCreator.selectedPoint = 0;
+		this.draw(DrawMode.PENDING_EDIT);
 	}
 
 	private resumeEdit() {
@@ -611,7 +636,7 @@ class Editor {
 	}
 }
 
-new Editor(document.querySelector('canvas')!);
+window.editor = new Editor(document.querySelector('canvas')!);
 
 // todo
 //   select & move
