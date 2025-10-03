@@ -30,11 +30,11 @@ export class Select extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		if (pending) {
-			let colors = [Color.WHITE, Color.BLACK];
-			Rect.points(this.points[0], this.points[1], (point, i) =>
-				pixels.set(point, colors[i % colors.length]));
-		}
+		if (pending)
+			Rect.points(this.points[0], this.points[1], (point, i) => {
+				if (i % 2)
+					pixels.set(point, sourcePixels.get(point).invert);
+			});
 	}
 }
 
@@ -91,15 +91,8 @@ export class Move extends Edit {
 		for (let y = 0; y < iterateCopy.y; y++)
 			pixels.imageData.data.set(copyLines[y], (destMin.x + (destMin.y + y) * pixels.width) * 4);
 
-		// if (pending) {
 		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
 		new Select(this.points[2], this.points[3]).draw(pixels, sourcePixels, pending);
-		// let colors = [Color.WHITE, Color.BLACK];
-		// Rect.points(this.points[0], this.points[1], (point, i) =>
-		// 	pixels.set(point, colors[i % colors.length]));
-		// Rect.points(this.points[2], this.points[3], (point, i) =>
-		// 	pixels.set(point, colors[i % colors.length]));
-		// }
 	}
 }
 

@@ -73,6 +73,10 @@ export class Color {
 	equals(color: Color) {
 		return this.r === color.r && this.g === color.g && this.b === color.b && this.a === color.a;
 	}
+
+	get invert() {
+		return new Color(255 - this.r, 255 - this.g, 255 - this.b, 255);
+	}
 }
 
 export let A = (n: number) => [...Array(n)];

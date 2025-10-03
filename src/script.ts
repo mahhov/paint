@@ -3,7 +3,6 @@ import Editor from './Editor.js';
 window.editor = new Editor(document.querySelector('canvas')!);
 
 // todo
-//   text & pencil tool
 //   tool selector UI
 //   color selector UI
 //   shift to draw horizontal or vertical lines
@@ -13,3 +12,4 @@ window.editor = new Editor(document.querySelector('canvas')!);
 //   save/load
 //   control points shouldn't scale with camera zoom
 //   allow scaling move
+//   pencil tool
