@@ -158,6 +158,7 @@ export class FillRect extends Edit {
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
+		// todo optimize by batching horizontal lines
 	}
 }
 
@@ -251,7 +252,7 @@ export class BucketFill extends Edit {
 			queue.push(point.add(new Point(-1, 0)));
 			queue.push(point.add(new Point(0, -1)));
 		}
-		// this could be optimized by batching horizontal lines
+		// todo optimize by batching horizontal lines
 	}
 }
 

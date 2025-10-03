@@ -4,7 +4,15 @@ let padding = .25;
 
 export default class Camera {
 	private leftTop: Point = new Point();
-	private width: number = 1;
+	private width: number;
+	private minWidth: number;
+	private maxWidth: number;
+
+	constructor(initialWidth: number, minWidth: number, maxWidth: number) {
+		this.width = initialWidth;
+		this.minWidth = minWidth;
+		this.maxWidth = maxWidth;
+	}
 
 	move(delta: Point) {
 		this.leftTop = this.leftTop.add(delta.scale(this.width));
@@ -13,7 +21,7 @@ export default class Camera {
 
 	zoom(delta: number) {
 		let centerWorld = this.canvasToWorld(new Point(.5));
-		this.width = clamp(this.width + delta, .1, 1 + padding * 2);
+		this.width = clamp(this.width + delta, this.minWidth, this.maxWidth + padding * 2);
 		this.leftTop = centerWorld.subtract(new Point(this.width / 2));
 		this.clamp();
 		// todo zoom towards cursor
