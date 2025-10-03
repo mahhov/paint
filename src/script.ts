@@ -179,7 +179,7 @@ class Edit {
 		return this.points_.length >= 2 && this.points[1].subtract(this.points[0]).magnitude2 >= EditCreator.nearRange ** 2;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 	}
 }
 
@@ -188,10 +188,12 @@ class Select extends Edit {
 		super([start, end]);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
-		let colors = [Color.WHITE, Color.BLACK];
-		Rect.points(this.points[0], this.points[1], (point, i) =>
-			pixels.set(point, colors[i % colors.length]));
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		if (pending) {
+			let colors = [Color.WHITE, Color.BLACK];
+			Rect.points(this.points[0], this.points[1], (point, i) =>
+				pixels.set(point, colors[i % colors.length]));
+		}
 	}
 }
 
@@ -199,7 +201,7 @@ class Move extends Edit {
 	private delta = new Point();
 
 	constructor(start: Point, end: Point) {
-		super([start, end, Move.center(start, end)]);
+		super([start, end, start, end, Move.center(start, end)]);
 	}
 
 	static center(p1: Point, p2: Point) {
@@ -209,13 +211,26 @@ class Move extends Edit {
 	setPoint(index: number, point: Point) {
 		this.points_[index] = point;
 		let center = Move.center(this.points[0], this.points[1]);
-		if (index === 2)
-			this.delta = this.points[2].subtract(center);
-		else
-			this.points_[2] = center.add(this.delta);
+		switch (index) {
+			case 0:
+			case 1:
+				this.points_[index + 2] = this.points[index].add(this.delta);
+				this.points_[4] = center.add(this.delta);
+				break;
+			case 2:
+			case 3:
+				this.points_[index - 2] = this.points[index].subtract(this.delta);
+				this.points_[4] = center.add(this.delta);
+				break;
+			case 4:
+				this.delta = this.points[4].subtract(center);
+				this.points_[2] = this.points[0].add(this.delta);
+				this.points_[3] = this.points[1].add(this.delta);
+				break;
+		}
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let min = this.points[0].min(this.points[1]);
 		let max = this.points[0].max(this.points[1]).add(new Point(1));
 		let iterateClear = max.subtract(min);
@@ -235,8 +250,15 @@ class Move extends Edit {
 		for (let y = 0; y < iterateCopy.y; y++)
 			pixels.imageData.data.set(copyLines[y], (destMin.x + (destMin.y + y) * pixels.width) * 4);
 
-		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels);
-		new Select(this.points[0].add(this.delta), this.points[1].add(this.delta)).draw(pixels, sourcePixels);
+		// if (pending) {
+			new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
+			new Select(this.points[2], this.points[3]).draw(pixels, sourcePixels, pending);
+			// let colors = [Color.WHITE, Color.BLACK];
+			// Rect.points(this.points[0], this.points[1], (point, i) =>
+			// 	pixels.set(point, colors[i % colors.length]));
+			// Rect.points(this.points[2], this.points[3], (point, i) =>
+			// 	pixels.set(point, colors[i % colors.length]));
+		// }
 	}
 }
 
@@ -248,7 +270,7 @@ class Line extends Edit {
 		this.color = color;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let delta = this.points[1].subtract(this.points[0]);
 		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y));
 		for (let i = 0; i <= steps; i++)
@@ -278,7 +300,7 @@ class Rect extends Edit {
 			handler(new Point(max.x, y), i++);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		Rect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
 	}
 }
@@ -300,7 +322,7 @@ class FillRect extends Edit {
 				handler(new Point(x, y), i++);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
 	}
 }
@@ -310,7 +332,7 @@ class Clear extends Edit {
 		super([start, end]);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, Color.WHITE));
 	}
 }
@@ -325,7 +347,7 @@ class TextEdit extends Edit {
 		this.color = color;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 	}
 }
 
@@ -341,7 +363,7 @@ class BucketFill extends Edit {
 		return true;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 	}
 }
 
@@ -391,7 +413,7 @@ class Paste extends Edit {
 		return true;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels) {
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		this.pixelArray.forEach((column, x) =>
 			column.forEach((color, y) =>
 				pixels.set(this.points[0].add(new Point(x, y)), color)));
@@ -438,7 +460,7 @@ class Editor {
 	private redoEdits: Edit[] = [];
 	private readonly editCreator = new EditCreator();
 	private pendingEdit: Edit | null = null;
-	private tool = Tool.SELECT;
+	private tool = Tool.MOVE;
 	private color = Color.BLACK;
 
 	constructor(canvas: HTMLCanvasElement) {
@@ -502,7 +524,7 @@ class Editor {
 			}
 
 			let tool = {
-				s: Tool.SELECT,
+				s: Tool.MOVE,
 				l: Tool.LINE,
 				r: Tool.RECT,
 				f: Tool.FILL_RECT,
@@ -614,15 +636,10 @@ class Editor {
 	private draw(drawMode: DrawMode) {
 		if (drawMode === DrawMode.FULL) {
 			this.pixels.clear();
-			this.edits
-				.filter(edit => !(edit instanceof Select))
-				.forEach(edit => edit.draw(this.pixels, this.pixels));
+			this.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
 
-		} else if (drawMode === DrawMode.LAST_EDIT) {
-			let edit = this.edits.at(-1)!;
-			if (!(edit instanceof Select))
-				edit.draw(this.pixels, this.pixels);
-		}
+		} else if (drawMode === DrawMode.LAST_EDIT)
+			this.edits.at(-1)!.draw(this.pixels, this.pixels, false);
 
 		this.pendingDirty = true;
 	}
@@ -632,10 +649,10 @@ class Editor {
 			this.pendingDirty = false;
 			this.pendingPixels.clear();
 			if (this.pendingEdit) {
-				this.pendingEdit.draw(this.pendingPixels, this.pixels);
+				this.pendingEdit.draw(this.pendingPixels, this.pixels, true);
 				let r = new Point(EditCreator.nearRange / 2).round;
 				this.pendingEdit.points.forEach(p =>
-					new Select(p.subtract(r), p.add(r)).draw(this.pendingPixels, this.pixels));
+					new Select(p.subtract(r), p.add(r)).draw(this.pendingPixels, this.pixels, true));
 			}
 		}
 
