@@ -81,14 +81,14 @@ export default class Editor {
 			this.draw(DrawMode.PENDING_EDIT);
 		}));
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
+		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
+		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
-		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
-		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
 
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
@@ -140,22 +140,24 @@ export default class Editor {
 		switch (this.tool) {
 			case Tool.SELECT:
 				return new Select(point, point);
+			case Tool.MOVE:
+				return new Move(point, point);
 			case Tool.LINE:
 				return new Line(point, point, this.color);
 			case Tool.RECT:
 				return new Rect(point, point, this.color);
 			case Tool.FILL_RECT:
 				return new FillRect(point, point, this.color);
+			case Tool.CLEAR:
+				return new Clear(point, point);
 			case Tool.TEXT:
 				return new TextEdit(point, 12, this.color);
 			case Tool.COLOR_PICKER:
-				let never: never;
+				throw new Error('createPendingEdit() should not handle COLOR_PICKER');
 			case Tool.BUCKET_FILL:
 				return new BucketFill(point, this.color);
-			case Tool.CLEAR:
-				return new Clear(point, point);
-			case Tool.MOVE:
-				return new Move(point, point);
+			case Tool.PASTE:
+				throw new Error('createPendingEdit() should not handle PASTE');
 		}
 	}
 

@@ -275,3 +275,5 @@ export class Paste extends Edit {
 				pixels.set(this.points[0].add(new Point(x, y)), color)));
 	}
 }
+
+// todo rename pos/position to point

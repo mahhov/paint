@@ -79,14 +79,15 @@ export let A = (n: number) => [...Array(n)];
 
 export enum Tool {
 	SELECT, // copy, paste, move, delete
+	MOVE,
 	LINE,
 	RECT,
 	FILL_RECT,
+	CLEAR,
 	TEXT,
 	COLOR_PICKER,
 	BUCKET_FILL,
-	CLEAR,
-	MOVE,
+	PASTE,
 }
 
 export let NEAR_RANGE = 15;
