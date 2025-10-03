@@ -69,20 +69,21 @@ export class KeyBinding extends Binding {
 	}
 
 	keyDown(e: KeyboardEvent) {
-		if (this.filter(e))
+		if (this.filter(e).every(v => v))
 			this.press();
 	}
 
 	keyUp(e: KeyboardEvent) {
-		if (this.filter(e))
+		if (this.filter(e).some(v => v))
 			this.release();
 	}
 
 	private filter(e: KeyboardEvent) {
-		return this.key === e.key &&
-			this.modifiers.includes(KeyModifier.CONTROL) === e.ctrlKey &&
-			this.modifiers.includes(KeyModifier.SHIFT) === e.altKey &&
-			this.modifiers.includes(KeyModifier.ALT) === e.shiftKey;
+		return [
+			this.key === e.key,
+			this.modifiers.includes(KeyModifier.CONTROL) === e.ctrlKey,
+			this.modifiers.includes(KeyModifier.SHIFT) === e.shiftKey,
+			this.modifiers.includes(KeyModifier.ALT) === e.altKey];
 	}
 }
 
