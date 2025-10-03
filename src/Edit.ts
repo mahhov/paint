@@ -120,6 +120,18 @@ export class Line extends Edit {
 	}
 }
 
+export class StraightLine extends Line {
+	setPoint(index: number, point: Point) {
+		let delta = this.points_[0].subtract(this.points_[1]);
+		super.setPoint(index, point);
+		if (!index) {
+			delta = this.points_[0].subtract(this.points_[1]);
+			delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
+		}
+		this.points_[0] = this.points_[1].add(delta);
+	}
+}
+
 export class Rect extends Edit {
 	private readonly color: Color;
 

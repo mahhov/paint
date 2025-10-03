@@ -3,10 +3,9 @@ import Editor from './Editor.js';
 window.editor = new Editor(document.querySelector('canvas')!);
 
 // todo
+//   diff tool
 //   tool selector UI
 //   color selector UI
-//   shift to draw horizontal or vertical lines
-//   cut & copy
 //   paste text
 //   arrow keys to move
 //   save/load

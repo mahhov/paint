@@ -85,6 +85,7 @@ export enum Tool {
 	SELECT, // copy, paste, move, delete
 	MOVE,
 	LINE,
+	STRAIGHT_LINE,
 	RECT,
 	FILL_RECT,
 	CLEAR,

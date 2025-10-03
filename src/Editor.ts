@@ -1,6 +1,6 @@
 import {Color, NEAR_RANGE, Point, Tool} from './base.js';
 import Camera from './Camera.js';
-import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditCreator from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -104,6 +104,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => {this.selectTool(Tool.SELECT);}));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => {this.selectTool(Tool.MOVE);}));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => {this.selectTool(Tool.LINE);}));
+		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => {this.selectTool(Tool.STRAIGHT_LINE);}));
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => {this.selectTool(Tool.RECT);}));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => {this.selectTool(Tool.FILL_RECT);}));
 		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => {this.selectTool(Tool.CLEAR);}));
@@ -182,6 +183,8 @@ export default class Editor {
 				return new Move(point, point);
 			case Tool.LINE:
 				return new Line(point, point, this.color);
+				case Tool.STRAIGHT_LINE:
+				return new StraightLine(point, point, this.color);
 			case Tool.RECT:
 				return new Rect(point, point, this.color);
 			case Tool.FILL_RECT:
