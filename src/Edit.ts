@@ -1,4 +1,4 @@
-import {A, Color, NEAR_RANGE, Point} from './base.js';
+import {A, Color, Point} from './base.js';
 import Pixels from './Pixels.js';
 
 export class Edit {
@@ -17,7 +17,7 @@ export class Edit {
 	}
 
 	validCommit() {
-		return this.points_.length >= 2 && this.points[1].subtract(this.points[0]).magnitude2 >= NEAR_RANGE ** 2;
+		return true;
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
@@ -27,6 +27,10 @@ export class Edit {
 export class Select extends Edit {
 	constructor(start: Point, end: Point) {
 		super([start, end]);
+	}
+
+	validCommit() {
+		return !this.points[0].equals(this.points[1]);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
@@ -71,6 +75,10 @@ export class Move extends Edit {
 		}
 	}
 
+	validCommit() {
+		return !this.points[0].equals(this.points[1]);
+	}
+
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let min = this.points[0].min(this.points[1]);
 		let max = this.points[0].max(this.points[1]).add(new Point(1));
@@ -106,7 +114,7 @@ export class Line extends Edit {
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let delta = this.points[1].subtract(this.points[0]);
-		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y));
+		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y)) + 1;
 		for (let i = 0; i <= steps; i++)
 			pixels.set(this.points[0].add(delta.scale(i / steps).round), this.color);
 	}
@@ -162,13 +170,9 @@ export class FillRect extends Edit {
 	}
 }
 
-export class Clear extends Edit {
+export class Clear extends FillRect {
 	constructor(start: Point, end: Point) {
-		super([start, end]);
-	}
-
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, Color.WHITE));
+		super(start, end, Color.WHITE);
 	}
 }
 
@@ -233,10 +237,6 @@ export class BucketFill extends Edit {
 		this.color = color;
 	}
 
-	validCommit() {
-		return true;
-	}
-
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let targetColor = sourcePixels.get(this.points[0]);
 		if (targetColor.equals(this.color)) return;
@@ -296,10 +296,6 @@ export class Paste extends Edit {
 			};
 			reader.readAsDataURL(blob);
 		});
-	}
-
-	validCommit() {
-		return true;
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
