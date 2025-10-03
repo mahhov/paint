@@ -1,7 +1,7 @@
 import {A, Color, NEAR_RANGE, Point} from './base.js';
 import Pixels from './Pixels.js';
 
-export default class Edit {
+export class Edit {
 	protected readonly points_: Point[];
 
 	constructor(points: Point[]) {

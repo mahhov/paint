@@ -2,6 +2,7 @@ import {Color, NEAR_RANGE, Point, Tool} from './base.js';
 import Camera from './Camera.js';
 import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, TextEdit} from './Edit.js';
 import EditCreator from './EditCreator.js';
+import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
 
 enum DrawMode {
@@ -21,19 +22,17 @@ export default class Editor {
 	private pendingEdit: Edit | null = null;
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
+	private input: Input;
 	private camera = new Camera();
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(canvas.width, canvas.height, this.ctx, Color.WHITE);
 		this.pendingPixels = new Pixels(canvas.width, canvas.height, this.ctx, Color.CLEAR);
+		this.input = new Input(canvas);
 
-		canvas.addEventListener('mousedown', e => {
-			this.editCreator.mouseDown = new Point(e.offsetX, e.offsetY);
-			this.editCreator.mouseUp = this.editCreator.mouseDown;
-			this.editCreator.mouseIsDown = true;
-
-			let nearPendingPoint = this.pendingEdit ? this.editCreator.getNearPoint(this.pendingEdit.points, this.editCreator.mouseDown) : -1;
+		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
+			let nearPendingPoint = this.pendingEdit ? EditCreator.getNearPoint(this.pendingEdit.points, this.input.mouseDownPosition) : -1;
 			if (EditCreator.toolIsInstant(this.tool))
 				this.handleInstantEdit();
 			else if (nearPendingPoint === -1)
@@ -42,89 +41,77 @@ export default class Editor {
 				this.editCreator.selectedPoint = nearPendingPoint;
 				this.resumeEdit();
 			}
-		});
+		}));
 
-		canvas.addEventListener('mousemove', e => {
-			if (!this.editCreator.mouseIsDown) return;
-			this.editCreator.mouseUp = new Point(e.offsetX, e.offsetY);
-
+		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
 			if (EditCreator.toolIsInstant(this.tool))
 				this.handleInstantEdit();
 			else if (this.editCreator.selectedPoint !== -1)
 				this.resumeEdit();
-		});
+		}));
 
-		canvas.addEventListener('mouseup', e => {
-			if (!this.editCreator.mouseIsDown) return;
-			this.editCreator.mouseUp = new Point(e.offsetX, e.offsetY);
-			this.editCreator.mouseIsDown = false;
-
+		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.RELEASED], () => {
 			if (EditCreator.toolIsInstant(this.tool))
 				this.handleInstantEdit();
 			else if (this.editCreator.selectedPoint !== -1)
 				this.resumeEdit();
-		});
+		}));
 
-		document.addEventListener('keydown', e => {
-			if (e.ctrlKey) {
-				if (e.key === 'z' && !e.shiftKey)
-					this.undoEdit();
-				if (e.key === 'z' && e.shiftKey || e.key === 'y')
-					this.redoEdit();
-				return;
-			}
-
-			if (e.key === 'Delete' && this.pendingEdit instanceof Select)
+		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.undoEdit()));
+		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => this.redoEdit()));
+		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.redoEdit()));
+		this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => {
+			if (this.pendingEdit instanceof Select || this.pendingEdit instanceof Move)
 				this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
-
-			if (e.key === 'Escape' || e.key === 'Delete') {
-				this.pendingEdit = null;
-				this.draw(DrawMode.PENDING_EDIT);
-				return;
-			}
-
-			let tool = {
-				s: Tool.SELECT,
-				l: Tool.LINE,
-				r: Tool.RECT,
-				f: Tool.FILL_RECT,
-				t: Tool.TEXT,
-				c: Tool.COLOR_PICKER,
-				b: Tool.BUCKET_FILL,
-				e: Tool.CLEAR,
-				m: Tool.MOVE,
-			}[e.key];
-			if (tool === undefined) return;
-			this.tool = tool;
-			let edit = null;
-			if (tool === Tool.MOVE && this.pendingEdit && this.pendingEdit.points.length >= 2)
-				edit = new Move(this.pendingEdit.points[0], this.pendingEdit.points[1]);
-			this.startNewEdit(edit);
-		});
+			this.pendingEdit = null;
+			this.draw(DrawMode.PENDING_EDIT);
+		}));
+		this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => {
+			this.pendingEdit = null;
+			this.draw(DrawMode.PENDING_EDIT);
+		}));
+		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
+		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
+		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
+		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
+		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
+		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
+		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
+		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
+		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
 
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
 				.then(pixelArray => {
-					let paste = new Paste(this.editCreator.mouseUp, pixelArray);
+					let paste = new Paste(this.input.mousePosition, pixelArray);
 					this.startNewEdit(paste);
 					this.startNewEdit(new Select(paste.points[0], paste.points[1]));
 				})
 				.catch(e => console.warn(e)));
 
-		let drawLoop = async () => {
+		let loop = async () => {
 			await this.drawOnScreen();
-			requestAnimationFrame(drawLoop);
+			this.input.tick();
+			requestAnimationFrame(loop);
 		};
-		drawLoop();
+		loop();
+	}
+
+	selectTool(tool: Tool) {
+		this.tool = tool;
+		let edit = null;
+		if (tool === Tool.MOVE && this.pendingEdit && this.pendingEdit.points.length >= 2)
+			edit = new Move(this.pendingEdit.points[0], this.pendingEdit.points[1]);
+		this.startNewEdit(edit);
 	}
 
 	// handle mouse events to create, start, resume edits
 
 	private handleInstantEdit() {
-		this.color = this.pixels.get(this.editCreator.mouseUp);
+		this.color = this.pixels.get(this.input.mousePosition);
 	}
 
-	private startNewEdit(edit: Edit | null = this.createPendingEdit(this.editCreator.mouseUp)) {
+	private startNewEdit(edit: Edit | null = this.createPendingEdit(this.input.mousePosition)) {
 		let commit = this.pendingEdit?.validCommit();
 		if (commit)
 			this.addEdit(this.pendingEdit!);
@@ -135,7 +122,7 @@ export default class Editor {
 
 	private resumeEdit() {
 		if (!this.pendingEdit) return; // should this be moved to callsites?
-		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.editCreator.mouseUp);
+		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.input.mousePosition);
 		this.draw(DrawMode.PENDING_EDIT);
 	}
 

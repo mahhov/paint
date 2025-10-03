@@ -1,17 +1,13 @@
 import {NEAR_RANGE, Point, Tool} from './base.js';
 
 export default class EditCreator {
-	mouseDown = new Point();
-	mouseUp = new Point();
-	mouseIsDown = false;
-
 	selectedPoint = -1;
 
 	static toolIsInstant(tool: Tool) {
 		return tool === Tool.COLOR_PICKER;
 	}
 
-	getNearPoint(points: readonly Point[], point: Point) {
+	static getNearPoint(points: readonly Point[], point: Point) {
 		let magnitudes = points.map(p => p.subtract(point).magnitude2);
 		let minIndex = magnitudes.indexOf(Math.min(...magnitudes));
 		return magnitudes[minIndex] < NEAR_RANGE ** 2 ? minIndex : -1;
