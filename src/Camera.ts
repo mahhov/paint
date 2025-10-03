@@ -16,6 +16,7 @@ export default class Camera {
 		this.width = clamp(this.width + delta, .1, 1 + padding * 2);
 		this.leftTop = centerWorld.subtract(new Point(this.width / 2));
 		this.clamp();
+		// todo zoom towards cursor
 	}
 
 	clamp() {

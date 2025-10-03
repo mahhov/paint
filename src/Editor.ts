@@ -218,6 +218,7 @@ export default class Editor {
 		let srcSize = srcEnd.subtract(srcStart);
 		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, 0, 0, 1000, 1000] as [number, number, number, number, number, number, number, number];
 
+		this.ctx.imageSmoothingEnabled = srcSize.x > 1000;
 		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		let committed = await createImageBitmap(this.pixels.imageData);
 		this.ctx.drawImage(committed, ...srcDestCoordinates);

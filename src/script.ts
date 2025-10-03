@@ -16,3 +16,4 @@ window.editor = new Editor(document.querySelector('canvas')!);
 //   cut & copy
 //   paste text
 //   arrow keys to move
+//   control points shouldn't scale with camera zoom
