@@ -50,7 +50,7 @@ export class Move extends Edit {
 	}
 
 	setPoint(index: number, point: Point) {
-		this.points_[index] = point;
+		super.setPoint(index, point);
 		let center = Move.center(this.points[0], this.points[1]);
 		switch (index) {
 			case 0:
@@ -179,18 +179,26 @@ export class Clear extends Edit {
 }
 
 export class TextEdit extends Edit {
-	private readonly size: number;
 	private readonly color: Color;
 	text = '';
 
 	constructor(point: Point, size: number, color: Color) {
-		super([point]);
-		this.size = 50;
+		super([point, point.add(new Point(0, size))]);
 		this.color = color;
 	}
 
+	get size() {
+		return Math.abs(this.points[1].subtract(this.points[0]).y);
+	}
+
+	setPoint(index: number, point: Point) {
+		let size = this.size;
+		super.setPoint(index, point);
+		this.points_[1] = point.add(new Point(0, index ? this.size : size));
+	}
+
 	validCommit() {
-		return !!this.text && !!this.size;
+		return !!this.text;
 	}
 
 	private setContext(canvas: HTMLCanvasElement) {
