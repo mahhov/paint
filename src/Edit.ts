@@ -182,8 +182,8 @@ export class TextEdit extends Edit {
 	private readonly size: number;
 	private readonly color: Color;
 
-	constructor(pos: Point, size: number, color: Color) {
-		super([pos]);
+	constructor(point: Point, size: number, color: Color) {
+		super([point]);
 		this.size = size;
 		this.color = color;
 	}
@@ -195,8 +195,8 @@ export class TextEdit extends Edit {
 export class BucketFill extends Edit {
 	private readonly color: Color;
 
-	constructor(pos: Point, color: Color) {
-		super([pos]);
+	constructor(point: Point, color: Color) {
+		super([point]);
 		this.color = color;
 	}
 
@@ -226,8 +226,8 @@ export class BucketFill extends Edit {
 export class Paste extends Edit {
 	private readonly pixelArray: Color[][];
 
-	constructor(pos: Point, pixelArray: Color[][]) {
-		super([pos]);
+	constructor(point: Point, pixelArray: Color[][]) {
+		super([point]);
 		this.pixelArray = pixelArray;
 	}
 
@@ -275,5 +275,3 @@ export class Paste extends Edit {
 				pixels.set(this.points[0].add(new Point(x, y)), color)));
 	}
 }
-
-// todo rename pos/position to point
