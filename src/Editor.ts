@@ -118,6 +118,15 @@ export default class Editor {
 			this.draw(DrawMode.PENDING_EDIT);
 		});
 
+		document.addEventListener('copy', async e => {
+			e.preventDefault();
+			let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+			navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})])
+				.catch(e => console.warn('Failed to copy', e));
+			// todo only copy selected region
+			// todo allow cut
+		});
+
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
 				.then(pixelArray => this.startNewEdit(new Paste(this.canvasMousePosition(), pixelArray)))
@@ -216,10 +225,7 @@ export default class Editor {
 		this.draw(commit ? DrawMode.LAST_EDIT : DrawMode.PENDING_EDIT);
 	}
 
-	// other
-
-	private copy() {
-	}
+	// draw
 
 	private draw(drawMode: DrawMode) {
 		if (drawMode === DrawMode.FULL) {
