@@ -144,7 +144,7 @@ export default class Editor {
 	// handle mouse & keyboard events to create, start, resume edits
 
 	private canvasMousePosition(mousePosition = this.input.mousePosition) {
-		return this.camera.canvasToWorld(mousePosition.subtract(new Point(PANEL_SIZE, 0)).scale(1 / EDITOR_SIZE)).scale(PIXELS_SIZE).round;
+		return this.camera.canvasToWorld(mousePosition.subtract(new Point(PANEL_SIZE, 0)).scale(1 / EDITOR_SIZE)).scale(PIXELS_SIZE).clamp(new Point(), new Point(PIXELS_SIZE - 1)).round;
 	}
 
 	selectTool(tool: Tool) {
@@ -183,7 +183,7 @@ export default class Editor {
 				return new Move(point, point);
 			case Tool.LINE:
 				return new Line(point, point, this.color);
-				case Tool.STRAIGHT_LINE:
+			case Tool.STRAIGHT_LINE:
 				return new StraightLine(point, point, this.color);
 			case Tool.RECT:
 				return new Rect(point, point, this.color);
@@ -257,7 +257,8 @@ export default class Editor {
 		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, EDITOR_SIZE, EDITOR_SIZE] as [number, number, number, number, number, number, number, number];
 
 		this.ctx.imageSmoothingEnabled = srcSize.x > EDITOR_SIZE;
-		this.ctx.clearRect(PANEL_SIZE, 0, EDITOR_SIZE, EDITOR_SIZE);
+		this.ctx.fillStyle = '#f0f0f0';
+		this.ctx.fillRect(0, 0, PANEL_SIZE + EDITOR_SIZE, EDITOR_SIZE);
 		let committed = await createImageBitmap(this.pixels.imageData);
 		this.ctx.drawImage(committed, ...srcDestCoordinates);
 		let pending = await createImageBitmap(this.pendingPixels.imageData);
