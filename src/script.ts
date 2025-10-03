@@ -227,6 +227,9 @@ class Move extends Edit {
 			pixels.imageData.data.set(clearLine, (min.x + (min.y + y) * pixels.width) * 4);
 		for (let y = 0; y < iterateCopy.y; y++)
 			pixels.imageData.data.set(copyLines[y], (destMin.x + (destMin.y + y) * pixels.width) * 4);
+
+		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels);
+		new Select(this.points[0].add(this.delta), this.points[1].add(this.delta)).draw(pixels, sourcePixels);
 	}
 }
 
