@@ -192,7 +192,6 @@ export class TextEdit extends Edit {
 
 	constructor(point: Point, color: Color) {
 		super([point, point.add(new Point(0, TextEdit.lastSize))]);
-		console.log('create', TextEdit.lastSize);
 		this.color = color;
 	}
 
