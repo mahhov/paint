@@ -63,7 +63,6 @@ export default class Editor {
 			this.editCreator.moveControlPointTo(point);
 		}));
 
-		// todo right click drag to clear
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
 			this.editCreator.startNewEdit(null)));
 
@@ -90,10 +89,7 @@ export default class Editor {
 		// 	this.pendingEdit = null;
 		// 	this.draw(DrawMode.PENDING_EDIT);
 		// }));
-		// this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => {
-		// 	this.pendingEdit = null;
-		// 	this.draw(DrawMode.PENDING_EDIT);
-		// }));
+		this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
 		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
@@ -213,7 +209,7 @@ export default class Editor {
 			this.pixels.clear();
 			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
 		} else if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
-			this.editCreator?.edits.at(-1)!.draw(this.pixels, this.pixels, false);
+			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
 
 		if (this.editCreator.dirty !== DirtyMode.NONE) {
 			this.pendingPixels.clear();

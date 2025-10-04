@@ -60,12 +60,16 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
-	undoEdit() {
+	undoPendingEdit() {
 		if (this.pendingEdit?.validCommit()) {
 			this.redoEdits.push(this.pendingEdit);
 			this.pendingEdit = null;
 			this.maxDirty = DirtyMode.PENDING_EDIT;
 		}
+	}
+
+	undoEdit() {
+		this.undoPendingEdit();
 		if (this.edits.length) {
 			this.pendingEdit = this.edits.pop()!;
 			this.controlPoint = 0;
@@ -78,7 +82,7 @@ export default class EditCreator {
 		this.commitPendingEdit();
 		this.pendingEdit = this.redoEdits.pop()!;
 		this.controlPoint = 0;
-		this.maxDirty = DirtyMode.LAST_EDIT;
+		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 }
 
