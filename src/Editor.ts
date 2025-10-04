@@ -4,6 +4,7 @@ import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, Stra
 import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
+import Serializer from './Serializer.js';
 
 const PIXELS_SIZE = 3000;
 const EDITOR_SIZE = 1500;
@@ -14,13 +15,12 @@ export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
-
-	private readonly editCreator = new EditCreator();
-
+	private readonly editCreator;
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
 	private camera: Camera = new Camera(EDITOR_SIZE / PIXELS_SIZE);
+	private readonly serializer: Serializer;
 
 	constructor(canvas: HTMLCanvasElement) {
 		canvas.width = EDITOR_SIZE + PANEL_SIZE;
@@ -136,12 +136,43 @@ export default class Editor {
 				.then(pixelArray => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), pixelArray)))
 				.catch(e => console.warn('Paste failed:', e)));
 
+		this.serializer = new Serializer({
+			EditCreator,
+			Edit,
+			Select,
+			Move,
+			Line,
+			StraightLine,
+			Rect,
+			FillRect,
+			Clear,
+			TextEdit,
+			BucketFill,
+			Paste,
+			Point,
+			Color,
+			Uint8ClampedArray: null,
+		});
+		try {
+			let saveStr = localStorage.getItem('save');
+			if (!saveStr) throw new Error('empty local storage');
+			let saveObj = JSON.parse(saveStr);
+			this.editCreator = this.serializer.deserialize(saveObj);
+		} catch (e) {
+			console.warn('Failed to restore save', e);
+			this.editCreator = new EditCreator();
+		}
+
 		let loop = async () => {
 			await this.drawLoop();
 			this.input.tick();
 			requestAnimationFrame(loop);
 		};
 		loop();
+	}
+
+	save() {
+		localStorage.setItem('save', JSON.stringify(this.serializer.serialize(this.editCreator)));
 	}
 
 	// handle mouse & keyboard events to create, start, resume edits
@@ -208,6 +239,7 @@ export default class Editor {
 			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
 
 		if (this.editCreator.dirty !== DirtyMode.NONE) {
+			this.save();
 			this.pendingPixels.clear();
 			if (this.editCreator.pendingEdit) {
 				this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
