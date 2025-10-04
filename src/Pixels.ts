@@ -32,11 +32,19 @@ export default class Pixels {
 			this.imageData.data[index + 3]);
 	}
 
+	get32(index: number) {
+		return new Uint32Array(this.imageData.data.buffer)[index];
+	}
+
 	set(p: Point, c: Color) {
 		if (this.isInBounds(p)) {
 			let index = (p.x + p.y * this.width) * 4;
 			this.imageData.data.set(c.int8, index);
 		}
+	}
+
+	setIndex(index: number, c: Color) {
+		this.imageData.data.set(c.int8, index * 4);
 	}
 
 	clear() {

@@ -252,17 +252,18 @@ export class BucketFill extends Edit {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let targetColor = sourcePixels.get(this.points[0]);
 		if (targetColor.equals(this.color)) return;
-		let queue = [this.points[0]];
+		let queue = [this.points[0].x + this.points[0].y * pixels.width];
 		while (queue.length) {
-			let point = queue.pop()!;
-			if (!pixels.isInBounds(point)) continue;
-			if (pixels.get(point).equals(this.color)) continue;
-			if (!sourcePixels.get(point).equals(targetColor)) continue;
-			pixels.set(point, this.color);
-			queue.push(point.add(new Point(1, 0)));
-			queue.push(point.add(new Point(0, 1)));
-			queue.push(point.add(new Point(-1, 0)));
-			queue.push(point.add(new Point(0, -1)));
+			let index = queue.pop()!;
+			let x = index % pixels.width;
+			let y = (index / pixels.width) | 0;
+			if (pixels.get32(index) === this.color.int32) continue;
+			if (sourcePixels.get32(index) !== targetColor.int32) continue;
+			pixels.setIndex(index, this.color);
+			if (x < pixels.width - 1) queue.push(index + 1);
+			if (y < pixels.height - 1) queue.push(index + pixels.width);
+			if (x > 0) queue.push(index - 1);
+			if (y > 0) queue.push(index - pixels.width);
 		}
 		// todo optimize by batching horizontal lines
 	}

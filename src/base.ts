@@ -85,7 +85,7 @@ export class Color {
 	}
 
 	get int32() {
-		return this.int32Cache ??= (this.a << 24) | (this.b << 16) | (this.g << 8) | this.r;
+		return this.int32Cache ??= ((this.a << 24) | (this.b << 16) | (this.g << 8) | this.r) >>> 0;
 	}
 }
 
