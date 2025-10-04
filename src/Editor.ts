@@ -1,5 +1,6 @@
 import {Color, NEAR_RANGE, Point, Tool} from './base.js';
 import Camera from './Camera.js';
+import Clipboard from './Clipboard.js';
 import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
@@ -131,10 +132,20 @@ export default class Editor {
 			// todo allow cut
 		});
 
-		document.addEventListener('paste', e =>
-			Paste.clipboardPixelArray(e)
+		document.addEventListener('paste', e => {
+			let str = Clipboard.clipboardToText(e);
+			if (str) {
+				if (!(this.editCreator.pendingEdit instanceof TextEdit))
+					this.editCreator.startNewEdit(new TextEdit(this.mousePositionToPixelsPosition(), this.color));
+				this.editCreator.pendingEdit.text += str;
+				this.tool = Tool.TEXT;
+				return;
+			}
+
+			Clipboard.clipboardToPixelArray(e)
 				.then(pixelArray => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), pixelArray)))
-				.catch(e => console.warn('Paste failed:', e)));
+				.catch(e => console.warn('Paste failed:', e));
+		});
 
 		this.serializer = new Serializer({
 			EditCreator,
@@ -172,7 +183,11 @@ export default class Editor {
 	}
 
 	save() {
-		localStorage.setItem('save', JSON.stringify(this.serializer.serialize(this.editCreator)));
+		try {
+			localStorage.setItem('save', JSON.stringify(this.serializer.serialize(this.editCreator)));
+		} catch (e) {
+			console.warn('Failed to save:', e);
+		}
 	}
 
 	// handle mouse & keyboard events to create, start, resume edits

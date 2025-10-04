@@ -1,4 +1,4 @@
-import {A, Color, Point} from './base.js';
+import {Color, Point} from './base.js';
 import Pixels from './Pixels.js';
 
 export class Edit {
@@ -274,40 +274,6 @@ export class Paste extends Edit {
 	constructor(point: Point, pixelArray: Color[][]) {
 		super([point]);
 		this.pixelArray = pixelArray;
-	}
-
-	static async clipboardPixelArray(e: ClipboardEvent): Promise<Color[][]> {
-		return new Promise((resolve, reject) => {
-			let canvas = document.createElement('canvas');
-			let ctx = canvas.getContext('2d');
-			if (!ctx) return reject('no canvas context');
-
-			if (!e.clipboardData) return reject('no clipboard data');
-			let clipboardItem = [...e.clipboardData.items]
-				.find(item => item.type.startsWith('image/'));
-			if (!clipboardItem) return reject('no clipboard image data');
-			let blob = clipboardItem.getAsFile();
-			if (!blob) return reject(('no clipboard image blob data'));
-			let reader = new FileReader();
-
-			reader.onload = e => {
-				let img = document.createElement('img');
-				img.onload = () => {
-					canvas.width = img.width;
-					canvas.height = img.height;
-					ctx.drawImage(img, 0, 0);
-					let imageData = ctx.getImageData(0, 0, img.width, img.height);
-					let pixelArray = A(img.width).map((_, x) => A(img.height).map((_, y) => {
-						let index = (x + y * img.width) * 4;
-						let rgb = [...imageData.data.subarray(index, index + 3)] as [number, number, number];
-						return new Color(...rgb);
-					}));
-					resolve(pixelArray);
-				};
-				img.src = e.target?.result as string;
-			};
-			reader.readAsDataURL(blob);
-		});
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {

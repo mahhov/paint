@@ -6,7 +6,6 @@ import Editor from './Editor.js';
 //   diff tool
 //   tool selector UI
 //   color selector UI
-//   paste text
 //   allow scaling move
 //   pencil tool
 //   out of bounds error for computed points
