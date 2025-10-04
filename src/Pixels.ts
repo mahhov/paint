@@ -12,11 +12,8 @@ export default class Pixels {
 		this.height = height;
 		this.defaultColor = defaultColor;
 		this.imageData = ctx.createImageData(width, height);
-
-		let rawDefaultColor = new Uint8ClampedArray([this.defaultColor.r, this.defaultColor.g, this.defaultColor.b, this.defaultColor.a]);
-		this.cachedClearedImageDataData = new Uint8ClampedArray(width * height * rawDefaultColor.length);
-		for (let i = 0; i < this.cachedClearedImageDataData.length; i += rawDefaultColor.length)
-			this.cachedClearedImageDataData.set(rawDefaultColor, i);
+		this.cachedClearedImageDataData = new Uint8ClampedArray(width * height * 4);
+		new Uint32Array(this.cachedClearedImageDataData.buffer).fill(this.defaultColor.int32);
 		this.clear();
 	}
 
@@ -27,31 +24,19 @@ export default class Pixels {
 	get(p: Point) {
 		if (!this.isInBounds(p))
 			return this.defaultColor;
-		let raw = this.getRaw(p);
-		return new Color(raw[0], raw[1], raw[2], raw[3]);
-	}
-
-	getRaw(p: Point) {
 		let index = (p.x + p.y * this.width) * 4;
-		return this.imageData.data.subarray(index, index + 4);
+		return new Color(
+			this.imageData.data[index],
+			this.imageData.data[index + 1],
+			this.imageData.data[index + 2],
+			this.imageData.data[index + 3]);
 	}
 
 	set(p: Point, c: Color) {
 		if (this.isInBounds(p)) {
 			let index = (p.x + p.y * this.width) * 4;
-			this.imageData.data[index] = c.r;
-			this.imageData.data[index + 1] = c.g;
-			this.imageData.data[index + 2] = c.b;
-			this.imageData.data[index + 3] = c.a;
+			this.imageData.data.set(c.raw, index);
 		}
-	}
-
-	setRaw(p: Point, raw: Uint8ClampedArray) {
-		let index = (p.x + p.y * this.width) * 4;
-		this.imageData.data[index] = raw[0];
-		this.imageData.data[index + 1] = raw[1];
-		this.imageData.data[index + 2] = raw[2];
-		this.imageData.data[index + 3] = raw[3];
 	}
 
 	clear() {

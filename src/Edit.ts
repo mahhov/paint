@@ -167,16 +167,9 @@ export class FillRect extends Edit {
 		this.color = color;
 	}
 
-	static points(start: Point, end: Point, handler: (point: Point, index: number) => void) {
-		let min = start.min(end);
-		let max = start.max(end);
-		let i = 0;
-		for (let x = min.x; x <= max.x; x++)
-			for (let y = min.y; y <= max.y; y++)
-				handler(new Point(x, y), i++);
-	}
-
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		console.time('fill rect');
+
 		let min = this.points[0].min(this.points[1]);
 		let max = this.points[0].max(this.points[1]);
 		let delta = max.subtract(min);
@@ -186,6 +179,8 @@ export class FillRect extends Edit {
 			fillLine.set(rawDefaultColor, i);
 		for (let y = 0; y < delta.y; y++)
 			pixels.imageData.data.set(fillLine, (min.x + (min.y + y) * pixels.width) * 4);
+
+		console.timeEnd('fill rect');
 	}
 }
 
