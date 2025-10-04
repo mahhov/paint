@@ -189,11 +189,13 @@ export class Clear extends FillRect {
 }
 
 export class TextEdit extends Edit {
+	static lastSize: number = 12;
 	private readonly color: Color;
 	text = '';
 
-	constructor(point: Point, size: number, color: Color) {
-		super([point, point.add(new Point(0, size))]);
+	constructor(point: Point, color: Color) {
+		super([point, point.add(new Point(0, TextEdit.lastSize))]);
+		console.log('create', TextEdit.lastSize);
 		this.color = color;
 	}
 
@@ -202,9 +204,10 @@ export class TextEdit extends Edit {
 	}
 
 	setPoint(index: number, point: Point) {
-		let size = this.size;
 		super.setPoint(index, point);
-		this.points_[1] = point.add(new Point(0, index ? this.size : size));
+		if (index)
+			TextEdit.lastSize = this.size;
+		this.points_[1] = this.points[0].add(new Point(0, TextEdit.lastSize));
 	}
 
 	validCommit() {

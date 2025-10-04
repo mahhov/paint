@@ -198,7 +198,7 @@ export default class Editor {
 			case Tool.CLEAR:
 				return new Clear(point, point);
 			case Tool.TEXT:
-				return new TextEdit(point, 12, this.color);
+				return new TextEdit(point, this.color);
 			case Tool.COLOR_PICKER:
 				throw new Error('createEdit() should not handle COLOR_PICKER');
 			case Tool.BUCKET_FILL:
