@@ -85,5 +85,3 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 }
-
-// todo either move more logic here, ore get rid of

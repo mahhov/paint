@@ -81,14 +81,6 @@ export default class Editor {
 			this.editCreator.redoEdit();
 		}));
 
-		// todo reimplement
-		// this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => {
-		// 	if ((this.pendingEdit instanceof TextEdit)) return;
-		// 	if (this.pendingEdit instanceof Select || this.pendingEdit instanceof Move)
-		// 		this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
-		// 	this.pendingEdit = null;
-		// 	this.draw(DrawMode.PENDING_EDIT);
-		// }));
 		this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
 		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
@@ -98,6 +90,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
 		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
+		this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
@@ -172,8 +165,11 @@ export default class Editor {
 		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 		this.tool = tool;
 		let edit = null;
-		if (tool === Tool.MOVE && this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
-			edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
+			if (tool === Tool.MOVE)
+				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+			else if (tool === Tool.CLEAR)
+				edit = new Clear(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
 		this.editCreator.startNewEdit(edit);
 	}
 
