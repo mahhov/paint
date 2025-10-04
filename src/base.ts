@@ -62,6 +62,7 @@ export class Color {
 	readonly g: number;
 	readonly b: number;
 	readonly a: number;
+	private rawCache_: Uint8ClampedArray | undefined;
 
 	constructor(r: number, g: number, b: number, a = 255) {
 		this.r = r;
@@ -76,6 +77,14 @@ export class Color {
 
 	get invert() {
 		return new Color(255 - this.r, 255 - this.g, 255 - this.b, 255);
+	}
+
+	get raw() {
+		return this.rawCache_ ||= new Uint8ClampedArray([this.r, this.g, this.b, this.a]);
+	}
+
+	get int32() {
+		return (this.a << 24) | (this.b << 16) | (this.g << 8) | this.r;
 	}
 }
 

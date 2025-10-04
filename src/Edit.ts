@@ -177,8 +177,15 @@ export class FillRect extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		FillRect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
-		// todo optimize by batching horizontal lines
+		let min = this.points[0].min(this.points[1]);
+		let max = this.points[0].max(this.points[1]);
+		let delta = max.subtract(min);
+		let rawDefaultColor = this.color.raw;
+		let fillLine = new Uint8ClampedArray(delta.x * 4);
+		for (let i = 0; i < fillLine.length; i += 4)
+			fillLine.set(rawDefaultColor, i);
+		for (let y = 0; y < delta.y; y++)
+			pixels.imageData.data.set(fillLine, (min.x + (min.y + y) * pixels.width) * 4);
 	}
 }
 
