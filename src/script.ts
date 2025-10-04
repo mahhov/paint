@@ -1,6 +1,6 @@
 import Editor from './Editor.js';
 
-window.editor = new Editor(document.querySelector('canvas')!);
+(window as any).editor = new Editor(document.querySelector('canvas')!);
 
 // todo
 //   diff tool

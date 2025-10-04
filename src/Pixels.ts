@@ -79,6 +79,6 @@ export default class Pixels {
 			seen2[x]++;
 		}
 
-		console.log(seen1, seen2);
+		console.debug(seen1, seen2);
 	}
 }

@@ -135,9 +135,12 @@ export default class Editor {
 
 		document.addEventListener('copy', async e => {
 			e.preventDefault();
-			let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-			navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})])
-				.catch(e => console.warn('Failed to copy', e));
+			let blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+			if (!blob)
+				console.warn('Copy failed to get blob');
+			else
+				navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})])
+					.catch(e => console.warn('Copy failed to write to clipboard', e));
 			// todo only copy selected region
 			// todo allow cut
 		});
@@ -145,7 +148,7 @@ export default class Editor {
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
 				.then(pixelArray => this.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), pixelArray)))
-				.catch(e => console.warn(e)));
+				.catch(e => console.warn('Paste failed:', e)));
 
 		let loop = async () => {
 			await this.drawOnScreen();
