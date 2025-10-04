@@ -35,7 +35,7 @@ export default class Pixels {
 	set(p: Point, c: Color) {
 		if (this.isInBounds(p)) {
 			let index = (p.x + p.y * this.width) * 4;
-			this.imageData.data.set(c.raw, index);
+			this.imageData.data.set(c.int8, index);
 		}
 	}
 

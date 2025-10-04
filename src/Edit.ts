@@ -83,7 +83,8 @@ export class Move extends Edit {
 		let min = this.points[0].min(this.points[1]);
 		let max = this.points[0].max(this.points[1]).add(new Point(1));
 		let iterateClear = max.subtract(min);
-		let clearLine = new Uint8ClampedArray(iterateClear.x * 4).fill(255);
+		let clearLine = new Uint8ClampedArray(iterateClear.x * 4);
+		new Uint32Array(clearLine.buffer).fill(255);
 
 		let destMin = min.add(this.delta).max(new Point());
 		let destMax = max.add(this.delta).min(pixels.size);
@@ -168,19 +169,13 @@ export class FillRect extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		console.time('fill rect');
-
 		let min = this.points[0].min(this.points[1]);
 		let max = this.points[0].max(this.points[1]);
 		let delta = max.subtract(min);
-		let rawDefaultColor = this.color.raw;
 		let fillLine = new Uint8ClampedArray(delta.x * 4);
-		for (let i = 0; i < fillLine.length; i += 4)
-			fillLine.set(rawDefaultColor, i);
+		new Uint32Array(fillLine.buffer).fill(this.color.int32);
 		for (let y = 0; y < delta.y; y++)
 			pixels.imageData.data.set(fillLine, (min.x + (min.y + y) * pixels.width) * 4);
-
-		console.timeEnd('fill rect');
 	}
 }
 
