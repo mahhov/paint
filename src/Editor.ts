@@ -1,7 +1,7 @@
 import {Color, NEAR_RANGE, Point, Tool} from './base.js';
 import Camera from './Camera.js';
 import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, StraightLine, TextEdit} from './Edit.js';
-import EditCreator from './EditCreator.js';
+import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
 
@@ -10,21 +10,13 @@ const EDITOR_SIZE = 1500;
 // todo responsive
 const PANEL_SIZE = 300;
 
-enum DrawMode {
-	FULL,
-	LAST_EDIT,
-	PENDING_EDIT
-}
-
 export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
-	private pendingDirty = false;
-	private readonly edits: Edit[] = [];
-	private redoEdits: Edit[] = [];
+
 	private readonly editCreator = new EditCreator();
-	private pendingEdit: Edit | null = null;
+
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
@@ -47,61 +39,62 @@ export default class Editor {
 		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(1, this.mousePositionToCanvasPosition())));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
-			let nearPendingPoint = this.pendingEdit ? EditCreator.getNearPoint(this.pendingEdit.points, this.mousePositionToPixelsPosition()) : -1;
-			if (EditCreator.toolIsInstant(this.tool))
-				this.handleInstantEdit();
-			else if (nearPendingPoint === -1)
-				this.startNewEdit();
+			let point = this.mousePositionToPixelsPosition();
+			if (this.tool === Tool.COLOR_PICKER) {
+				this.color = this.pixels.get(point);
+				return;
+			}
+			let controlPoint = this.editCreator.findControlPoint(point);
+			if (controlPoint === -1)
+				this.editCreator.startNewEdit(this.createEdit(point));
 			else {
-				this.editCreator.selectedPoint = nearPendingPoint;
-				this.resumeEdit();
+				this.editCreator.setControlPoint(controlPoint);
+				this.editCreator.moveControlPointTo(point);
 			}
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => this.startNewEdit(null)));
-
-		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
+		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.RELEASED], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
-			if (EditCreator.toolIsInstant(this.tool))
-				this.handleInstantEdit();
-			else if (this.editCreator.selectedPoint !== -1)
-				this.resumeEdit();
+			let point = this.mousePositionToPixelsPosition();
+			if (this.tool === Tool.COLOR_PICKER) {
+				this.color = this.pixels.get(point);
+				return;
+			}
+			this.editCreator.moveControlPointTo(point);
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.RELEASED], () => {
-			if (EditCreator.toolIsInstant(this.tool))
-				this.handleInstantEdit();
-			else if (this.editCreator.selectedPoint !== -1)
-				this.resumeEdit();
-		}));
+		// todo right click drag to clear
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
+			this.editCreator.startNewEdit(null)));
 
-		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.undoEdit()));
-		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.redoEdit()));
+		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editCreator.undoEdit()));
+		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editCreator.redoEdit()));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			if ((this.pendingEdit instanceof TextEdit)) return;
-			this.undoEdit();
+			if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+			this.editCreator.undoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
-			if ((this.pendingEdit instanceof TextEdit)) return;
-			this.redoEdit();
+			if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+			this.editCreator.redoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			if ((this.pendingEdit instanceof TextEdit)) return;
-			this.redoEdit();
+			if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+			this.editCreator.redoEdit();
 		}));
 
-		this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => {
-			if ((this.pendingEdit instanceof TextEdit)) return;
-			if (this.pendingEdit instanceof Select || this.pendingEdit instanceof Move)
-				this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
-			this.pendingEdit = null;
-			this.draw(DrawMode.PENDING_EDIT);
-		}));
-		this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => {
-			this.pendingEdit = null;
-			this.draw(DrawMode.PENDING_EDIT);
-		}));
-		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.startNewEdit(null)));
+		// todo reimplement
+		// this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => {
+		// 	if ((this.pendingEdit instanceof TextEdit)) return;
+		// 	if (this.pendingEdit instanceof Select || this.pendingEdit instanceof Move)
+		// 		this.addEdit(new Clear(this.pendingEdit.points[0], this.pendingEdit.points[1]));
+		// 	this.pendingEdit = null;
+		// 	this.draw(DrawMode.PENDING_EDIT);
+		// }));
+		// this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => {
+		// 	this.pendingEdit = null;
+		// 	this.draw(DrawMode.PENDING_EDIT);
+		// }));
+		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
@@ -123,14 +116,18 @@ export default class Editor {
 			[[KeyModifier.CONTROL], 10],
 			[[KeyModifier.SHIFT], 50],
 		] as [KeyModifier[], number][]).forEach(([modifiers, scale]) => {
-			this.input.addBinding(new KeyBinding(key, modifiers, [InputState.PRESSED, InputState.DOWN], () => this.movePendingEdit(delta.scale(scale))));
+			this.input.addBinding(new KeyBinding(key, modifiers, [InputState.PRESSED, InputState.DOWN], () => this.editCreator.moveControlPointBy(delta.scale(scale))));
 		}));
 
 		document.addEventListener('keydown', e => {
-			if (!(this.pendingEdit instanceof TextEdit)) return;
-			if (e.key.length > 1) return;
-			this.pendingEdit.text += e.key;
-			this.draw(DrawMode.PENDING_EDIT);
+			if (!(this.editCreator.pendingEdit instanceof TextEdit)) return;
+			if (e.key === 'Delete' || e.key === 'Backspace') {
+				this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
+				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
+			} else if (e.key.length === 1) {
+				this.editCreator.pendingEdit.text += e.key;
+				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
+			}
 		});
 
 		document.addEventListener('copy', async e => {
@@ -147,11 +144,11 @@ export default class Editor {
 
 		document.addEventListener('paste', e =>
 			Paste.clipboardPixelArray(e)
-				.then(pixelArray => this.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), pixelArray)))
+				.then(pixelArray => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), pixelArray)))
 				.catch(e => console.warn('Paste failed:', e)));
 
 		let loop = async () => {
-			await this.drawOnScreen();
+			await this.drawLoop();
 			this.input.tick();
 			requestAnimationFrame(loop);
 		};
@@ -176,40 +173,15 @@ export default class Editor {
 	}
 
 	selectTool(tool: Tool) {
-		if ((this.pendingEdit instanceof TextEdit)) return;
+		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 		this.tool = tool;
 		let edit = null;
-		if (tool === Tool.MOVE && this.pendingEdit && this.pendingEdit.points.length >= 2)
-			edit = new Move(this.pendingEdit.points[0], this.pendingEdit.points[1]);
-		this.startNewEdit(edit);
+		if (tool === Tool.MOVE && this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
+			edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+		this.editCreator.startNewEdit(edit);
 	}
 
-	movePendingEdit(delta: Point) {
-		if (!this.pendingEdit) return;
-		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.pendingEdit.points[this.editCreator.selectedPoint].add(delta));
-		this.draw(DrawMode.PENDING_EDIT);
-	}
-
-	private handleInstantEdit() {
-		this.color = this.pixels.get(this.mousePositionToPixelsPosition());
-	}
-
-	private startNewEdit(edit: Edit | null = this.createPendingEdit(this.mousePositionToPixelsPosition())) {
-		let commit = this.pendingEdit?.validCommit();
-		if (commit)
-			this.addEdit(this.pendingEdit!);
-		this.pendingEdit = edit;
-		this.editCreator.selectedPoint = 0;
-		this.draw(DrawMode.PENDING_EDIT);
-	}
-
-	private resumeEdit() {
-		if (!this.pendingEdit) return;
-		this.pendingEdit.setPoint(this.editCreator.selectedPoint, this.mousePositionToPixelsPosition());
-		this.draw(DrawMode.PENDING_EDIT);
-	}
-
-	private createPendingEdit(point: Point): Edit {
+	private createEdit(point: Point): Edit {
 		switch (this.tool) {
 			case Tool.SELECT:
 				return new Select(point, point);
@@ -228,68 +200,36 @@ export default class Editor {
 			case Tool.TEXT:
 				return new TextEdit(point, 12, this.color);
 			case Tool.COLOR_PICKER:
-				throw new Error('createPendingEdit() should not handle COLOR_PICKER');
+				throw new Error('createEdit() should not handle COLOR_PICKER');
 			case Tool.BUCKET_FILL:
 				return new BucketFill(point, this.color);
 			case Tool.PASTE:
-				throw new Error('createPendingEdit() should not handle PASTE');
+				throw new Error('createEdit() should not handle PASTE');
 		}
 	}
 
-	// manage edit, undo, redo stacks
-
-	private addEdit(edit: Edit) {
-		this.edits.push(edit);
-		this.draw(DrawMode.LAST_EDIT);
-	}
-
-	private undoEdit() {
-		if (this.pendingEdit) {
-			this.redoEdits.push(this.pendingEdit);
-			this.pendingEdit = null;
-		}
-		if (this.edits.length)
-			this.pendingEdit = this.edits.pop()!;
-		this.editCreator.selectedPoint = 0;
-		this.draw(DrawMode.FULL);
-	}
-
-	private redoEdit() {
-		if (!this.redoEdits.length) return;
-		let commit = !!this.pendingEdit;
-		if (commit)
-			this.edits.push(this.pendingEdit!);
-		this.pendingEdit = this.redoEdits.pop()!;
-		this.editCreator.selectedPoint = 0;
-		this.draw(commit ? DrawMode.LAST_EDIT : DrawMode.PENDING_EDIT);
-	}
-
-	// draw
-
-	private draw(drawMode: DrawMode) {
-		if (drawMode === DrawMode.FULL) {
+	private async drawLoop() {
+		if (this.editCreator.dirty === DirtyMode.ALL_EDITS) {
 			this.pixels.clear();
-			this.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
-		} else if (drawMode === DrawMode.LAST_EDIT)
-			this.edits.at(-1)!.draw(this.pixels, this.pixels, false);
-		this.pendingDirty = true;
-	}
+			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
+		} else if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
+			this.editCreator?.edits.at(-1)!.draw(this.pixels, this.pixels, false);
 
-	private async drawOnScreen() {
-		if (this.pendingDirty) {
-			this.pendingDirty = false;
+		if (this.editCreator.dirty !== DirtyMode.NONE) {
 			this.pendingPixels.clear();
-			if (this.pendingEdit) {
-				this.pendingEdit.draw(this.pendingPixels, this.pixels, true);
+			if (this.editCreator.pendingEdit) {
+				this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
 				([
-					...this.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
-					[this.pendingEdit.points[this.editCreator.selectedPoint], NEAR_RANGE / 4],
+					...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
+					[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
 				] as [Point, number][]).forEach(([p, r]) => {
 					let rp = new Point(r).round;
 					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
 				});
 			}
 		}
+
+		this.editCreator.dirty = DirtyMode.NONE;
 
 		let srcStart = this.camera.canvasToWorld(new Point()).scale(PIXELS_SIZE).round;
 		let srcEnd = this.camera.canvasToWorld(new Point(1)).scale(PIXELS_SIZE).round;
