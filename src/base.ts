@@ -58,38 +58,10 @@ export class Color {
 	static GREEN = new Color(0, 255, 0, 255);
 	static CLEAR = new Color(0, 0, 0, 0);
 
-	private readonly r: number;
-	private readonly g: number;
-	private readonly b: number;
-	private readonly a: number;
-	private int8Cache: Uint8ClampedArray | undefined;
-	private int32Cache: number | undefined;
+	readonly int32: number;
 
-	constructor(r: number, g: number, b: number, a = 255) {
-		this.r = r;
-		this.g = g;
-		this.b = b;
-		this.a = a;
-	}
-
-	private static rgbaToInt32(r: number, g: number, b: number, a: number) {
-		return ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
-	}
-
-	equals(color: Color) {
-		return this.r === color.r && this.g === color.g && this.b === color.b && this.a === color.a;
-	}
-
-	get invert() {
-		return new Color(255 - this.r, 255 - this.g, 255 - this.b, 255);
-	}
-
-	get int8() {
-		return this.int8Cache ||= new Uint8ClampedArray([this.r, this.g, this.b, this.a]);
-	}
-
-	get int32() {
-		return this.int32Cache ??= Color.rgbaToInt32(this.r, this.g, this.b, this.a);
+	constructor(r: number, g: number, b: number, a: number) {
+		this.int32 = ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
 	}
 }
 

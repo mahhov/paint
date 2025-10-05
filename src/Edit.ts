@@ -250,7 +250,7 @@ export class BucketFill extends Edit {
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let targetColor = sourcePixels.get(this.points[0]);
-		if (targetColor.equals(this.color)) return;
+		if (targetColor.int32 === this.color.int32) return;
 		let queue = [this.points[0].x + this.points[0].y * pixels.width];
 		while (queue.length) {
 			let index = queue.pop()!;

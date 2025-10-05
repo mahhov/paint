@@ -27,7 +27,7 @@ export default class Clipboard {
 					let pixelArray = A(img.width).map((_, x) => A(img.height).map((_, y) => {
 						let index = (x + y * img.width) * 4;
 						let rgb = [...imageData.data.subarray(index, index + 3)] as [number, number, number];
-						return new Color(...rgb);
+						return new Color(...rgb, 255);
 					}));
 					resolve(pixelArray);
 				};
