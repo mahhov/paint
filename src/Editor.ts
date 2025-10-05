@@ -139,7 +139,7 @@ export default class Editor {
 			if (str) {
 				if (!(this.editCreator.pendingEdit instanceof TextEdit))
 					this.editCreator.startNewEdit(new TextEdit(this.mousePositionToPixelsPosition(), this.color));
-				this.editCreator.pendingEdit.text += str;
+				(this.editCreator.pendingEdit as TextEdit).text += str;
 				this.tool = Tool.TEXT;
 				return;
 			}
@@ -158,7 +158,7 @@ export default class Editor {
 	}
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
-		let serializer = new Serializer({
+		let typeMap = {
 			EditCreator,
 			Edit,
 			Select,
@@ -174,12 +174,12 @@ export default class Editor {
 			Point,
 			Color,
 			Uint8ClampedArray: null,
-		});
+		};
 
 		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
 				if (!saveObj) throw new Error('empty storage');
-				return serializer.deserialize(saveObj);
+				return Serializer.deserialize(typeMap, saveObj);
 			})
 			.catch(e => {
 				console.warn('Failed to restore save', e);

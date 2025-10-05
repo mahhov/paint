@@ -1,13 +1,7 @@
 type Class = new (...args: any[]) => any;
 
 export default class Serializer {
-	private typeMap: Record<string, Class | null>;
-
-	constructor(typeMap: Record<string, Class | null>) {
-		this.typeMap = typeMap;
-	}
-
-	private static mapEntries(obj: Record<string, any>, handler: typeof this.serialize | typeof this.deserialize): Record<string, any> {
+	private static mapEntries(obj: Record<string, any>, handler: (arg: any) => any): Record<string, any> {
 		return Object.fromEntries(Object.entries(obj)
 			.map(([key, value]) => [key, handler(value)]));
 	}
@@ -23,13 +17,12 @@ export default class Serializer {
 		return obj;
 	}
 
-	// todo make static
-	deserialize(obj: any): any {
+	static deserialize(typeMap: Record<string, Class | null>, obj: any): any {
 		if (Array.isArray(obj))
-			return obj.map(value => this.deserialize(value));
+			return obj.map(value => Serializer.deserialize(typeMap, value));
 		if (obj && typeof obj === 'object') {
-			let x = Serializer.mapEntries(obj, value => this.deserialize(value));
-			let Type = this.typeMap[obj.type__];
+			let x = Serializer.mapEntries(obj, value => Serializer.deserialize(typeMap, value));
+			let Type = typeMap[obj.type__];
 			if (Type === undefined) {
 				console.warn('Missing type:', obj.type__);
 				return;
