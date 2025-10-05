@@ -97,6 +97,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
+		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
 
 		([
 			['ArrowUp', new Point(0, -1)],
@@ -261,7 +262,6 @@ export default class Editor {
 		else if (this.editCreator.dirty === DirtyMode.NONE)
 			return;
 
-		this.save();
 		this.pendingPixels.clear();
 		if (this.editCreator.pendingEdit) {
 			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
