@@ -27,12 +27,8 @@ export default class Pixels {
 	get(p: Point) {
 		if (!this.isInBounds(p))
 			return this.defaultColor;
-		let index4 = (p.x + p.y * this.width) * 4;
-		return new Color(
-			this.imageData.data[index4],
-			this.imageData.data[index4 + 1],
-			this.imageData.data[index4 + 2],
-			this.imageData.data[index4 + 3]);
+		let index = (p.x + p.y * this.width);
+		return new Color(this.imageData32View[index]);
 	}
 
 	get32(index: number) {

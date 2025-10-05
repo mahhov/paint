@@ -24,10 +24,10 @@ export default class Clipboard {
 					canvas.height = img.height;
 					ctx.drawImage(img, 0, 0);
 					let imageData = ctx.getImageData(0, 0, img.width, img.height);
+					let imageData32View = new Uint32Array(imageData.data.buffer);
 					let pixelArray = A(img.width).map((_, x) => A(img.height).map((_, y) => {
-						let index = (x + y * img.width) * 4;
-						let rgb = [...imageData.data.subarray(index, index + 3)] as [number, number, number];
-						return new Color(...rgb, 255);
+						let index = x + y * img.width;
+						return Color.fromInt32IgnoreAlpha(imageData32View[index]);
 					}));
 					resolve(pixelArray);
 				};

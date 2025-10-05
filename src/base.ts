@@ -53,15 +53,23 @@ export class Point {
 }
 
 export class Color {
-	static WHITE = new Color(255, 255, 255, 255);
-	static BLACK = new Color(0, 0, 0, 255);
-	static GREEN = new Color(0, 255, 0, 255);
-	static CLEAR = new Color(0, 0, 0, 0);
+	static WHITE = Color.fromRgba(255, 255, 255, 255);
+	static BLACK = Color.fromRgba(0, 0, 0, 255);
+	static GREEN = Color.fromRgba(0, 255, 0, 255);
+	static CLEAR = Color.fromRgba(0, 0, 0, 0);
 
 	readonly int32: number;
 
-	constructor(r: number, g: number, b: number, a: number) {
-		this.int32 = ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
+	constructor(int32: number) {
+		this.int32 = int32;
+	}
+
+	static fromRgba(r: number, g: number, b: number, a: number) {
+		return new Color(((a << 24) | (b << 16) | (g << 8) | r) >>> 0);
+	}
+
+	static fromInt32IgnoreAlpha(int32: number) {
+		return new Color((int32 | 255 << 24) >>> 0);
 	}
 }
 
