@@ -10,6 +10,7 @@ export default class Storage {
 			openRequest.onerror = event => reject((event.target as IDBTransaction).error);
 		});
 
+	// todo this is taking 120ms
 	static write(key: string, value: any): Promise<void> {
 		return new Promise(async (resolve, reject) => {
 			let transaction = (await Storage.db).transaction('myTable', 'readwrite');

@@ -13,7 +13,7 @@ export default class EditCreator {
 	pendingEdit: Edit | null = null;
 	controlPoint = 0;
 	private readonly redoEdits: Edit[] = [];
-	dirty = DirtyMode.NONE;
+	dirty = DirtyMode.PENDING_EDIT; // just to trigger an initial draw
 
 	set maxDirty(dirtyMode: DirtyMode) {
 		this.dirty = Math.max(this.dirty, dirtyMode);

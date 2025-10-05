@@ -6,6 +6,7 @@ export default class Pixels {
 	private readonly defaultColor: Color;
 	readonly imageData: ImageData;
 	private readonly cachedClearedImageDataData: Uint8ClampedArray;
+	private image: Promise<ImageBitmap> | undefined;
 
 	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
 		this.width = width;
@@ -41,17 +42,24 @@ export default class Pixels {
 			let index = (p.x + p.y * this.width) * 4;
 			this.imageData.data.set(c.int8, index);
 		}
+		this.image = undefined;
 	}
 
 	setIndex(index: number, c: Color) {
 		this.imageData.data.set(c.int8, index * 4);
+		this.image = undefined;
 	}
 
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
+		this.image = undefined;
 	}
 
-	isInBounds(p: Point) {
+	getImage(): Promise<ImageBitmap> {
+		return this.image ||= createImageBitmap(this.imageData);
+	}
+
+	private isInBounds(p: Point) {
 		return p.x >= 0 && p.x < this.width && p.y >= 0 && p.y < this.height;
 	}
 

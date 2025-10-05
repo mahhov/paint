@@ -258,20 +258,20 @@ export default class Editor {
 			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
 		} else if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
 			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
+		else if (this.editCreator.dirty === DirtyMode.NONE)
+			return;
 
-		if (this.editCreator.dirty !== DirtyMode.NONE) {
-			this.save();
-			this.pendingPixels.clear();
-			if (this.editCreator.pendingEdit) {
-				this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
-				([
-					...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
-					[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
-				] as [Point, number][]).forEach(([p, r]) => {
-					let rp = new Point(r).round;
-					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
-				});
-			}
+		this.save();
+		this.pendingPixels.clear();
+		if (this.editCreator.pendingEdit) {
+			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
+			([
+				...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
+				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
+			] as [Point, number][]).forEach(([p, r]) => {
+				let rp = new Point(r).round;
+				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
+			});
 		}
 
 		this.editCreator.dirty = DirtyMode.NONE;
@@ -284,9 +284,7 @@ export default class Editor {
 		this.ctx.imageSmoothingEnabled = srcSize.x > EDITOR_SIZE;
 		this.ctx.fillStyle = '#f0f0f0';
 		this.ctx.fillRect(0, 0, PANEL_SIZE + EDITOR_SIZE, EDITOR_SIZE);
-		let committed = await createImageBitmap(this.pixels.imageData);
-		this.ctx.drawImage(committed, ...srcDestCoordinates);
-		let pending = await createImageBitmap(this.pendingPixels.imageData);
-		this.ctx.drawImage(pending, ...srcDestCoordinates);
+		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
 	}
 }
