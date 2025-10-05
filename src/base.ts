@@ -58,10 +58,10 @@ export class Color {
 	static GREEN = new Color(0, 255, 0, 255);
 	static CLEAR = new Color(0, 0, 0, 0);
 
-	readonly r: number;
-	readonly g: number;
-	readonly b: number;
-	readonly a: number;
+	private readonly r: number;
+	private readonly g: number;
+	private readonly b: number;
+	private readonly a: number;
 	private int8Cache: Uint8ClampedArray | undefined;
 	private int32Cache: number | undefined;
 
@@ -70,6 +70,10 @@ export class Color {
 		this.g = g;
 		this.b = b;
 		this.a = a;
+	}
+
+	private static rgbaToInt32(r: number, g: number, b: number, a: number) {
+		return ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
 	}
 
 	equals(color: Color) {
@@ -85,7 +89,7 @@ export class Color {
 	}
 
 	get int32() {
-		return this.int32Cache ??= ((this.a << 24) | (this.b << 16) | (this.g << 8) | this.r) >>> 0;
+		return this.int32Cache ??= Color.rgbaToInt32(this.r, this.g, this.b, this.a);
 	}
 }
 

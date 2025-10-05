@@ -94,11 +94,11 @@ export class Move extends Edit {
 		let copyLines = [];
 
 		for (let y = 0; y < iterateCopy.y; y++)
-			copyLines[y] = sourcePixels.imageData.data.slice((sourceMin.x + (sourceMin.y + y) * pixels.width) * 4, (sourceMin.x + iterateCopy.x + (sourceMin.y + y) * pixels.width) * 4);
+			copyLines[y] = sourcePixels.getLine((sourceMin.x + (sourceMin.y + y) * pixels.width) * 4, (sourceMin.x + iterateCopy.x + (sourceMin.y + y) * pixels.width) * 4);
 		for (let y = 0; y < iterateClear.y; y++)
-			pixels.imageData.data.set(clearLine, (min.x + (min.y + y) * pixels.width) * 4);
+			pixels.setLine((min.x + (min.y + y) * pixels.width) * 4, clearLine);
 		for (let y = 0; y < iterateCopy.y; y++)
-			pixels.imageData.data.set(copyLines[y], (destMin.x + (destMin.y + y) * pixels.width) * 4);
+			pixels.setLine((destMin.x + (destMin.y + y) * pixels.width) * 4, copyLines[y]);
 
 		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
 		new Select(this.points[2], this.points[3]).draw(pixels, sourcePixels, pending);
@@ -175,7 +175,7 @@ export class FillRect extends Edit {
 		let fillLine = new Uint8ClampedArray(delta.x * 4);
 		new Uint32Array(fillLine.buffer).fill(this.color.int32);
 		for (let y = 0; y < delta.y; y++)
-			pixels.imageData.data.set(fillLine, (min.x + (min.y + y) * pixels.width) * 4);
+			pixels.setLine((min.x + (min.y + y) * pixels.width) * 4, fillLine);
 	}
 }
 

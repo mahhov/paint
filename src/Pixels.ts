@@ -4,15 +4,17 @@ export default class Pixels {
 	readonly width: number;
 	readonly height: number;
 	private readonly defaultColor: Color;
-	readonly imageData: ImageData;
+	private readonly imageData: ImageData;
+	private readonly imageData32View: Uint32Array;
 	private readonly cachedClearedImageDataData: Uint8ClampedArray;
-	private image: Promise<ImageBitmap> | undefined;
+	private cachedImage: Promise<ImageBitmap> | undefined;
 
 	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
 		this.width = width;
 		this.height = height;
 		this.defaultColor = defaultColor;
 		this.imageData = ctx.createImageData(width, height);
+		this.imageData32View = new Uint32Array(this.imageData.data.buffer);
 		this.cachedClearedImageDataData = new Uint8ClampedArray(width * height * 4);
 		new Uint32Array(this.cachedClearedImageDataData.buffer).fill(this.defaultColor.int32);
 		this.clear();
@@ -25,61 +27,50 @@ export default class Pixels {
 	get(p: Point) {
 		if (!this.isInBounds(p))
 			return this.defaultColor;
-		let index = (p.x + p.y * this.width) * 4;
+		let index4 = (p.x + p.y * this.width) * 4;
 		return new Color(
-			this.imageData.data[index],
-			this.imageData.data[index + 1],
-			this.imageData.data[index + 2],
-			this.imageData.data[index + 3]);
+			this.imageData.data[index4],
+			this.imageData.data[index4 + 1],
+			this.imageData.data[index4 + 2],
+			this.imageData.data[index4 + 3]);
 	}
 
 	get32(index: number) {
-		return new Uint32Array(this.imageData.data.buffer)[index];
+		return this.imageData32View[index];
+	}
+
+	getLine(start4: number, end4: number) {
+		return this.imageData.data.slice(start4, end4);
 	}
 
 	set(p: Point, c: Color) {
 		if (this.isInBounds(p)) {
-			let index = (p.x + p.y * this.width) * 4;
-			this.imageData.data.set(c.int8, index);
+			let index = p.x + p.y * this.width;
+			this.imageData32View[index] = c.int32;
 		}
-		this.image = undefined;
+		this.cachedImage = undefined;
 	}
 
 	setIndex(index: number, c: Color) {
-		this.imageData.data.set(c.int8, index * 4);
-		this.image = undefined;
+		this.imageData32View[index] = c.int32;
+		this.cachedImage = undefined;
+	}
+
+	setLine(index4: number, line: Uint8ClampedArray) {
+		this.imageData.data.set(line, index4);
+		this.cachedImage = undefined;
 	}
 
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
-		this.image = undefined;
+		this.cachedImage = undefined;
 	}
 
 	getImage(): Promise<ImageBitmap> {
-		return this.image ||= createImageBitmap(this.imageData);
+		return this.cachedImage ||= createImageBitmap(this.imageData);
 	}
 
 	private isInBounds(p: Point) {
 		return p.x >= 0 && p.x < this.width && p.y >= 0 && p.y < this.height;
-	}
-
-	debug() {
-		let seen1: Record<string, number> = {};
-		for (let i = 0; i < this.width; i++)
-			for (let j = 0; j < this.width; j++) {
-				let x = this.get(new Point(i, j));
-				let y = [x.r, x.g, x.b, x.a].toString();
-				seen1[y] ||= 0;
-				seen1[y]++;
-			}
-
-		let seen2: Record<string, number> = {};
-		for (let i = 0; i < this.imageData.data.length; i += 4) {
-			let x = this.imageData.data.subarray(i, i + 4).toString();
-			seen2[x] ||= 0;
-			seen2[x]++;
-		}
-
-		console.debug(seen1, seen2);
 	}
 }
