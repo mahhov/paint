@@ -6,6 +6,7 @@ import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
 import Serializer from './Serializer.js';
+import Storage from './Storage.js';
 
 const PIXELS_SIZE = 3000;
 const EDITOR_SIZE = 1500;
@@ -16,14 +17,15 @@ export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
-	private readonly editCreator;
+	private readonly editCreator: EditCreator;
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
 	private camera: Camera = new Camera(EDITOR_SIZE / PIXELS_SIZE);
-	private readonly serializer: Serializer;
 
-	constructor(canvas: HTMLCanvasElement) {
+	constructor(canvas: HTMLCanvasElement, editCreator: EditCreator) {
+		this.editCreator = editCreator;
+
 		canvas.width = EDITOR_SIZE + PANEL_SIZE;
 		canvas.height = EDITOR_SIZE;
 
@@ -147,7 +149,16 @@ export default class Editor {
 				.catch(e => console.warn('Paste failed:', e));
 		});
 
-		this.serializer = new Serializer({
+		let loop = async () => {
+			await this.drawLoop();
+			this.input.tick();
+			requestAnimationFrame(loop);
+		};
+		loop();
+	}
+
+	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
+		let serializer = new Serializer({
 			EditCreator,
 			Edit,
 			Select,
@@ -164,30 +175,23 @@ export default class Editor {
 			Color,
 			Uint8ClampedArray: null,
 		});
-		try {
-			let saveStr = localStorage.getItem('save');
-			if (!saveStr) throw new Error('empty local storage');
-			let saveObj = JSON.parse(saveStr);
-			this.editCreator = this.serializer.deserialize(saveObj);
-		} catch (e) {
-			console.warn('Failed to restore save', e);
-			this.editCreator = new EditCreator();
-		}
 
-		let loop = async () => {
-			await this.drawLoop();
-			this.input.tick();
-			requestAnimationFrame(loop);
-		};
-		loop();
+		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
+			.then(saveObj => {
+				if (!saveObj) throw new Error('empty storage');
+				return serializer.deserialize(saveObj);
+			})
+			.catch(e => {
+				console.warn('Failed to restore save', e);
+				return new EditCreator();
+			});
+
+		return new Editor(canvas, await editorCreatorPromise);
 	}
 
 	save() {
-		try {
-			localStorage.setItem('save', JSON.stringify(this.serializer.serialize(this.editCreator)));
-		} catch (e) {
-			console.warn('Failed to save:', e);
-		}
+		Storage.write('save', Serializer.serialize(this.editCreator))
+			.catch(e => console.warn('Failed to save:', e));
 	}
 
 	// handle mouse & keyboard events to create, start, resume edits

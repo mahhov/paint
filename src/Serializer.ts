@@ -7,27 +7,28 @@ export default class Serializer {
 		this.typeMap = typeMap;
 	}
 
-	private mapEntries(obj: Record<string, any>, handler: typeof this.serialize | typeof this.deserialize): Record<string, any> {
+	private static mapEntries(obj: Record<string, any>, handler: typeof this.serialize | typeof this.deserialize): Record<string, any> {
 		return Object.fromEntries(Object.entries(obj)
 			.map(([key, value]) => [key, handler(value)]));
 	}
 
-	serialize(obj: any): any {
+	static serialize(obj: any): any {
 		if (Array.isArray(obj))
-			return obj.map(value => this.serialize(value));
+			return obj.map(value => Serializer.serialize(value));
 		if (obj && typeof obj === 'object') {
-			let x = this.mapEntries(obj, value => this.serialize(value));
+			let x = Serializer.mapEntries(obj, value => Serializer.serialize(value));
 			x.type__ = obj.constructor.name;
 			return x;
 		}
 		return obj;
 	}
 
+	// todo make static
 	deserialize(obj: any): any {
 		if (Array.isArray(obj))
 			return obj.map(value => this.deserialize(value));
 		if (obj && typeof obj === 'object') {
-			let x = this.mapEntries(obj, value => this.deserialize(value));
+			let x = Serializer.mapEntries(obj, value => this.deserialize(value));
 			let Type = this.typeMap[obj.type__];
 			if (Type === undefined) {
 				console.warn('Missing type:', obj.type__);
