@@ -179,7 +179,9 @@ export default class Editor {
 		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
 				if (!saveObj) throw new Error('empty storage');
-				return Serializer.deserialize(typeMap, saveObj);
+				let editorCreator = Serializer.deserialize(typeMap, saveObj);
+				editorCreator.maxDirty = DirtyMode.ALL_EDITS;
+				return editorCreator;
 			})
 			.catch(e => {
 				console.warn('Failed to restore save', e);
