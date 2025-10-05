@@ -17,7 +17,7 @@ export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
-	private readonly editCreator: EditCreator;
+	private editCreator: EditCreator;
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
@@ -97,7 +97,13 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
-		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
+
+		// todo find better bindings like ctrl+s and ctrl+n if we can preventDefault on those
+		this.input.addBinding(new KeyBinding('q', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
+		this.input.addBinding(new KeyBinding('q', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
+			this.editCreator = new EditCreator();
+			this.editCreator.maxDirty = DirtyMode.ALL_EDITS;
+		}));
 
 		([
 			['ArrowUp', new Point(0, -1)],
