@@ -10,7 +10,6 @@ import Storage from './Storage.js';
 
 const PIXELS_SIZE = 3000;
 const PANEL_SIZE = 300;
-let EDITOR_SIZE = Math.min(window.innerWidth - PANEL_SIZE, window.innerHeight);
 
 export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
@@ -20,13 +19,13 @@ export default class Editor {
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
-	private camera: Camera = new Camera(EDITOR_SIZE / PIXELS_SIZE);
+	private camera!: Camera;
+	editorWidth!: number;
+	editorHeight!: number;
+	editorSize!: number;
 
 	constructor(canvas: HTMLCanvasElement, editCreator: EditCreator) {
 		this.editCreator = editCreator;
-
-		canvas.width = EDITOR_SIZE + PANEL_SIZE;
-		canvas.height = EDITOR_SIZE;
 
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
@@ -35,7 +34,7 @@ export default class Editor {
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
-			this.camera.move(delta.scale(1 / EDITOR_SIZE));
+			this.camera.move(delta.scale(1 / this.editorSize));
 		}));
 		this.input.addBinding(new MouseWheelBinding(false, () => this.camera.zoom(-1, this.mousePositionToCanvasPosition())));
 		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(1, this.mousePositionToCanvasPosition())));
@@ -159,8 +158,8 @@ export default class Editor {
 				.catch(e => console.warn('Paste failed:', e));
 		});
 
-		// window.addEventListener('resize', () => this.resizeCanvas());
-		// this.resizeCanvas();
+		window.addEventListener('resize', () => this.resizeCanvas());
+		this.resizeCanvas();
 
 		this.loop();
 	}
@@ -186,11 +185,12 @@ export default class Editor {
 	}
 
 	private resizeCanvas() {
-		// todo responsive to window resize
-		// todo allow width and height to differ
-		EDITOR_SIZE = Math.min(window.innerWidth - PANEL_SIZE, window.innerHeight);
-		this.ctx.canvas.width = EDITOR_SIZE + PANEL_SIZE;
-		this.ctx.canvas.height = EDITOR_SIZE;
+		this.editorWidth = Math.floor(window.innerWidth - PANEL_SIZE);
+		this.editorHeight = Math.floor(window.innerHeight);
+		this.editorSize = Math.min(this.editorWidth, this.editorHeight);
+		this.ctx.canvas.width = this.editorWidth + PANEL_SIZE;
+		this.ctx.canvas.height = this.editorHeight;
+		this.camera = new Camera(this.editorSize / PIXELS_SIZE);
 	}
 
 	private async loop() {
@@ -214,7 +214,7 @@ export default class Editor {
 
 	private mousePositionToCanvasPosition(mousePosition = this.input.mousePosition) {
 		// return [0,1) canvas position
-		return mousePosition.subtract(new Point(PANEL_SIZE, 0)).scale(1 / EDITOR_SIZE);
+		return mousePosition.subtract(new Point(PANEL_SIZE, 0)).scale(1 / this.editorSize);
 	}
 
 	private mousePositionToWorldPosition(mousePosition = this.input.mousePosition) {
@@ -292,13 +292,13 @@ export default class Editor {
 		this.editCreator.dirty = DirtyMode.NONE;
 
 		let srcStart = this.camera.canvasToWorld(new Point()).scale(PIXELS_SIZE).round;
-		let srcEnd = this.camera.canvasToWorld(new Point(1)).scale(PIXELS_SIZE).round;
+		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE).round;
 		let srcSize = srcEnd.subtract(srcStart);
-		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, EDITOR_SIZE, EDITOR_SIZE] as [number, number, number, number, number, number, number, number];
+		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, this.editorWidth, this.editorHeight] as [number, number, number, number, number, number, number, number];
 
-		this.ctx.imageSmoothingEnabled = srcSize.x > EDITOR_SIZE;
+		this.ctx.imageSmoothingEnabled = srcSize.x > this.editorSize;
 		this.ctx.fillStyle = '#f0f0f0';
-		this.ctx.fillRect(0, 0, PANEL_SIZE + EDITOR_SIZE, EDITOR_SIZE);
+		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
 		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
 	}
