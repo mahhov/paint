@@ -7,19 +7,22 @@ import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, M
 import Pixels from './Pixels.js';
 import Serializer from './Serializer.js';
 import Storage from './Storage.js';
+import UiPanel from './UiPanel.js';
 
 const PIXELS_SIZE = 3000;
-const PANEL_SIZE = 300;
+const PANEL_SIZE = 200;
 
 export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
+	private readonly panelPixels: Pixels;
 	private editCreator: EditCreator;
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
 	private camera!: Camera;
+	private readonly panel = new UiPanel(PANEL_SIZE);
 	editorWidth!: number;
 	editorHeight!: number;
 	editorSize!: number;
@@ -30,6 +33,7 @@ export default class Editor {
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
+		this.panelPixels = new Pixels(PANEL_SIZE, 1000, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
@@ -137,6 +141,8 @@ export default class Editor {
 
 		window.addEventListener('resize', () => this.resizeCanvas());
 		this.resizeCanvas();
+
+		this.panel.draw(this.panelPixels);
 
 		this.loop();
 	}
@@ -307,5 +313,6 @@ export default class Editor {
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
 		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(await this.panelPixels.getImage(), 0, 0);
 	}
 }
