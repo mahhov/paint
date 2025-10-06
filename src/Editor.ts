@@ -172,15 +172,13 @@ export default class Editor {
 			.catch(e => console.warn('Failed to save:', e));
 	}
 
-	private copy() {
-		let start = new Point(PANEL_SIZE, 0);
-		let end = start;
-		if (this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move) {
-			start = start.add(this.editCreator.pendingEdit.points[0]);
-			end = end.add(this.editCreator.pendingEdit.points[1]);
-		} else
-			end = end.add(this.pixels.size);
-		Clipboard.copyCanvasRegion(this.ctx.canvas, start, end);
+	private async copy() {
+		let region =
+			(this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move) &&
+			!this.editCreator.pendingEdit.points[0].equals(this.editCreator.pendingEdit.points[1]);
+		let start = region ? this.editCreator.pendingEdit!.points[0] : new Point();
+		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
+		Clipboard.copyCanvasRegion([await this.pixels.getImage(), await this.pendingPixels.getImage()], start, end);
 	}
 
 	private paste(e: ClipboardEvent) {
