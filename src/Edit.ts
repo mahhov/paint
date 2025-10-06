@@ -176,6 +176,8 @@ export class Clear extends FillRect {
 }
 
 export class TextEdit extends Edit {
+	static canvas = document.createElement('canvas');
+	static ctx = TextEdit.canvas.getContext('2d')!;
 	static lastSize: number = 12;
 	private readonly color: Color;
 	text = '';
@@ -200,25 +202,22 @@ export class TextEdit extends Edit {
 		return !!this.text;
 	}
 
-	private setContext(canvas: HTMLCanvasElement) {
-		let ctx = canvas.getContext('2d')!;
-		ctx.font = `${this.size}px Arial`;
-		ctx.imageSmoothingEnabled = false;
-		ctx.textBaseline = 'top';
-		ctx.globalAlpha = 1;
-		return ctx;
+	private updateContext() {
+		TextEdit.ctx.font = `${this.size}px Arial`;
+		TextEdit.ctx.imageSmoothingEnabled = false;
+		TextEdit.ctx.textBaseline = 'top';
+		TextEdit.ctx.globalAlpha = 1;
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		let canvas = document.createElement('canvas');
-		let ctx = this.setContext(canvas);
-		let metrics = ctx.measureText(this.text);
-		canvas.width = Math.ceil(metrics.width);
-		if (!canvas.width) return;
-		canvas.height = Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
-		ctx = this.setContext(canvas);
-		ctx.fillText(this.text, 0, 0);
-		let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		this.updateContext();
+		let metrics = TextEdit.ctx.measureText(this.text);
+		TextEdit.canvas.width = Math.ceil(metrics.width);
+		if (!TextEdit.canvas.width) return;
+		TextEdit.canvas.height = Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
+		this.updateContext();
+		TextEdit.ctx.fillText(this.text, 0, 0);
+		let imageData = TextEdit.ctx.getImageData(0, 0, TextEdit.canvas.width, TextEdit.canvas.height);
 		for (let x = 0; x < imageData.width; x++) {
 			for (let y = 0; y < imageData.height; y++) {
 				let index = (x + y * imageData.width) * 4;
