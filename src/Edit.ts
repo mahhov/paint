@@ -259,7 +259,6 @@ export class BucketFill extends Edit {
 }
 
 export class Paste extends Edit {
-	// todo serialize this
 	private readonly pasteData: PasteData;
 
 	constructor(point: Point, pasteData: PasteData) {

@@ -104,6 +104,7 @@ export default class Editor {
 		// todo find better bindings like ctrl+s and ctrl+n if we can preventDefault on those
 		this.input.addBinding(new KeyBinding('q', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
 		this.input.addBinding(new KeyBinding('q', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
+			console.log('new');
 			this.editCreator = new EditCreator();
 			this.editCreator.maxDirty = DirtyMode.ALL_EDITS;
 		}));
@@ -168,33 +169,13 @@ export default class Editor {
 	}
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
-		return new Editor(canvas, new EditCreator());
-
-		let typeMap = {
-			EditCreator,
-			Edit,
-			Select,
-			Move,
-			Line,
-			StraightLine,
-			Rect,
-			FillRect,
-			Clear,
-			TextEdit,
-			BucketFill,
-			Paste,
-			Point,
-			Color,
-			Uint8ClampedArray: null,
-		};
-
 		console.time('load read');
 		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
 				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
 				console.time('load deserialize');
-				let editorCreator = Serializer.deserialize(typeMap, saveObj);
+				let editorCreator = Serializer.deserialize(saveObj);
 				console.timeEnd('load deserialize');
 				editorCreator.maxDirty = DirtyMode.ALL_EDITS;
 				return editorCreator;
