@@ -95,6 +95,12 @@ export let clamp = (v: number, min: number, max: number) => Math.min(Math.max(v,
 
 export let round = (v: number, precision: number = 1) => Math.round(v / precision) * precision;
 
+export let boundRect = (source1: Point, source2: Point, maxSize: Point): [Point, Point] => {
+	return [
+		source1.min(source2).max(new Point()),
+		source1.max(source2).min(maxSize),
+	];
+};
 export let boundTransferRect = (source1: Point, source2: Point, sourceSize: Point, destDelta: Point, destSize: Point): [Point, Point] => {
 	return [
 		source1.min(source2).max(new Point()).max(destDelta.scale(-1)),

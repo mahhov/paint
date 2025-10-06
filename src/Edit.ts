@@ -1,4 +1,4 @@
-import {boundTransferRect, Color, getIndex, Point} from './base.js';
+import {boundRect, boundTransferRect, Color, getIndex, Point} from './base.js';
 import {PasteData} from './Clipboard.js';
 import Pixels from './Pixels.js';
 
@@ -170,13 +170,11 @@ export class FillRect extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		let min = this.points[0].min(this.points[1]);
-		let max = this.points[0].max(this.points[1]);
-		let delta = max.subtract(min);
-		let fillLine = new Uint8ClampedArray(delta.x * 4);
-		new Uint32Array(fillLine.buffer).fill(this.color.int32);
-		for (let y = 0; y < delta.y; y++)
-			pixels.setLine((min.x + (min.y + y) * pixels.width) * 4, fillLine);
+		let [min, max] = boundRect(this.points[0], this.points[1], pixels.size);
+		let line = new Uint8ClampedArray(max.subtract(min).x * 4);
+		new Uint32Array(line.buffer).fill(this.color.int32);
+		for (let y = min.y; y < max.y; y++)
+			pixels.setLine(getIndex(min.x, y, pixels.width, true), line);
 	}
 }
 
