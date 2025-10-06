@@ -114,11 +114,11 @@ export default class Editor {
 			['ArrowDown', new Point(0, 1)],
 			['ArrowLeft', new Point(-1, 0)],
 		] as [string, Point][]).forEach(([key, delta]) => ([
-			[[], 1],
-			[[KeyModifier.CONTROL], 10],
-			[[KeyModifier.SHIFT], 50],
-		] as [KeyModifier[], number][]).forEach(([modifiers, scale]) => {
-			this.input.addBinding(new KeyBinding(key, modifiers, [InputState.PRESSED, InputState.DOWN], () => this.editCreator.moveControlPointBy(delta.scale(scale))));
+			[[], [InputState.PRESSED], 1],
+			[[KeyModifier.CONTROL], [InputState.PRESSED, InputState.DOWN], 10],
+			[[KeyModifier.SHIFT], [InputState.PRESSED, InputState.DOWN], 50],
+		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
+			this.input.addBinding(new KeyBinding(key, modifiers, states, () => this.editCreator.moveControlPointBy(delta.scale(scale))));
 		}));
 
 		document.addEventListener('keydown', e => {
