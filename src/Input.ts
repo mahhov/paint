@@ -35,7 +35,7 @@ abstract class Binding {
 			this.state = InputState.RELEASED;
 	}
 
-	keyDown(e: KeyboardEvent) {}
+	keyDown(e: KeyboardEvent) {return false;}
 
 	keyUp(e: KeyboardEvent) {}
 
@@ -69,8 +69,11 @@ export class KeyBinding extends Binding {
 	}
 
 	keyDown(e: KeyboardEvent) {
-		if (this.filter(e).every(v => v))
+		if (this.filter(e).every(v => v)) {
 			this.press();
+			return true;
+		}
+		return false;
 	}
 
 	keyUp(e: KeyboardEvent) {
@@ -97,6 +100,7 @@ export class TypeBinding extends Binding {
 	keyDown(e: KeyboardEvent) {
 		this.key = e.key;
 		this.press();
+		return false;
 	}
 }
 
@@ -153,12 +157,15 @@ export class Input {
 			Object.values(this.bindings).forEach(binding => binding.release()));
 
 		document.addEventListener('keydown', e => {
-			if (!e.repeat)
-				Object.values(this.bindings).forEach(binding => binding.keyDown(e));
+			if (e.repeat) return;
+			if (Object.values(this.bindings)
+				.map(binding => binding.keyDown(e))
+				.some(v => v))
+				e.preventDefault();
 		});
 		document.addEventListener('keyup', e => {
-			if (!e.repeat)
-				Object.values(this.bindings).forEach(binding => binding.keyUp(e));
+			if (e.repeat) return;
+			Object.values(this.bindings).forEach(binding => binding.keyUp(e));
 		});
 
 		mouseTarget.addEventListener('mousedown', e => {

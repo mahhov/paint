@@ -84,8 +84,7 @@ export default class Editor {
 
 		this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
 		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
-		// todo use Tab when we can prevent default
-		this.input.addBinding(new KeyBinding('`', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
+		this.input.addBinding(new KeyBinding('Tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
@@ -99,10 +98,8 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
 
-		// todo find better bindings like ctrl+s and ctrl+n if we can preventDefault on those
-		this.input.addBinding(new KeyBinding('q', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
-		this.input.addBinding(new KeyBinding('q', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
-			console.log('new');
+		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
+		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
 			this.editCreator = new EditCreator();
 			this.editCreator.maxDirty = DirtyMode.ALL_EDITS;
 		}));
@@ -164,7 +161,7 @@ export default class Editor {
 		this.loop();
 	}
 
-	private static async load(canvas: HTMLCanvasElement): Promise<Editor> {
+	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
 		console.time('load read');
 		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
