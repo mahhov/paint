@@ -1,4 +1,4 @@
-import {Color, Point} from './base.js';
+import {boundTransferRect, Color, getIndex, Point} from './base.js';
 import {PasteData} from './Clipboard.js';
 import Pixels from './Pixels.js';
 
@@ -279,11 +279,12 @@ export class Paste extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		let size = pixels.size.subtract(this.points[0]).min(new Point(this.pasteData.width, this.pasteData.height));
-		for (let y = 0; y < size.y; y++) {
+		let size = new Point(this.pasteData.width, this.pasteData.height);
+		let [min, max] = boundTransferRect(new Point(), size, size, this.points[0], pixels.size);
+		for (let y = min.y; y < max.y; y++)
 			pixels.setLine(
-				(this.points[0].x + (this.points[0].y + y) * pixels.width) * 4,
-				this.pasteData.int8Array.subarray(y * size.x * 4, y * size.x * 4 + size.x * 4));
-		}
+				getIndex(min.x + this.points[0].x, y + this.points[0].y, pixels.width, true),
+				this.pasteData.int8Array.subarray(getIndex(min.x, y, size.x, true), getIndex(max.x, y, size.x, true)));
 	}
 }
+

@@ -1,4 +1,4 @@
-import {Color, Point} from './base.js';
+import {Color, getPIndex, Point} from './base.js';
 
 export default class Pixels {
 	readonly width: number;
@@ -27,7 +27,7 @@ export default class Pixels {
 	get(p: Point) {
 		if (!this.isInBounds(p))
 			return this.defaultColor;
-		let index = (p.x + p.y * this.width);
+		let index = getPIndex(p, this.width);
 		return new Color(this.imageData32View[index]);
 	}
 
@@ -41,7 +41,7 @@ export default class Pixels {
 
 	set(p: Point, c: Color) {
 		if (this.isInBounds(p)) {
-			let index = p.x + p.y * this.width;
+			let index = getPIndex(p, this.width);
 			this.imageData32View[index] = c.int32;
 		}
 		this.cachedImage = undefined;
