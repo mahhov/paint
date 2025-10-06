@@ -81,25 +81,16 @@ export class Move extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		let min = this.points[0].min(this.points[1]);
-		let max = this.points[0].max(this.points[1]).add(new Point(1));
-		let iterateClear = max.subtract(min);
-		let clearLine = new Uint8ClampedArray(iterateClear.x * 4);
-		new Uint32Array(clearLine.buffer).fill(255);
-
-		let destMin = min.add(this.delta).max(new Point());
-		let destMax = max.add(this.delta).min(pixels.size);
-		let sourceMin = destMin.subtract(this.delta);
-		let sourceMax = destMax.subtract(this.delta);
-		let iterateCopy = sourceMax.subtract(sourceMin);
+		let move = this.points[2].subtract(this.points[0]);
+		let [min, max] = boundTransferRect(this.points[0], this.points[1], pixels.size, move, pixels.size);
+		let clearLine = new Uint8ClampedArray(max.subtract(min).x * 4).fill(255);
 		let copyLines = [];
-
-		for (let y = 0; y < iterateCopy.y; y++)
-			copyLines[y] = sourcePixels.getLine((sourceMin.x + (sourceMin.y + y) * pixels.width) * 4, (sourceMin.x + iterateCopy.x + (sourceMin.y + y) * pixels.width) * 4);
-		for (let y = 0; y < iterateClear.y; y++)
-			pixels.setLine((min.x + (min.y + y) * pixels.width) * 4, clearLine);
-		for (let y = 0; y < iterateCopy.y; y++)
-			pixels.setLine((destMin.x + (destMin.y + y) * pixels.width) * 4, copyLines[y]);
+		for (let y = min.y; y < max.y; y++)
+			copyLines[y] = sourcePixels.getLine(getIndex(min.x, y, pixels.width, true), getIndex(max.x, y, pixels.width, true));
+		for (let y = min.y; y < max.y; y++)
+			pixels.setLine(getIndex(min.x, y, pixels.width, true), clearLine);
+		for (let y = min.y; y < max.y; y++)
+			pixels.setLine(getIndex(min.x + move.x, y + move.y, pixels.width, true), copyLines[y]);
 
 		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
 		new Select(this.points[2], this.points[3]).draw(pixels, sourcePixels, pending);
