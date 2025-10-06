@@ -176,8 +176,8 @@ export class Clear extends FillRect {
 }
 
 export class TextEdit extends Edit {
-	static canvas = document.createElement('canvas');
-	static ctx = TextEdit.canvas.getContext('2d')!;
+	static canvas = new OffscreenCanvas(0, 0);
+	static ctx = TextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
 	static lastSize: number = 12;
 	private readonly color: Color;
 	text = '';
