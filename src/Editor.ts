@@ -128,32 +128,12 @@ export default class Editor {
 			}
 		});
 
-		document.addEventListener('copy', async e => {
-			e.preventDefault();
-			let blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-			if (!blob)
-				console.warn('Copy failed to get blob');
-			else
-				navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})])
-					.catch(e => console.warn('Copy failed to write to clipboard', e));
-			// todo only copy selected region
-			// todo allow cut
+		document.addEventListener('copy', () => this.copy());
+		document.addEventListener('cut', () => {
+			this.copy();
+			this.selectTool(Tool.CLEAR);
 		});
-
-		document.addEventListener('paste', e => {
-			let str = Clipboard.clipboardToText(e);
-			if (str) {
-				if (!(this.editCreator.pendingEdit instanceof TextEdit))
-					this.editCreator.startNewEdit(new TextEdit(this.mousePositionToPixelsPosition(), this.color));
-				(this.editCreator.pendingEdit as TextEdit).text += str;
-				this.tool = Tool.TEXT;
-				return;
-			}
-
-			Clipboard.clipboardToPixelArray(e)
-				.then(int8Array => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), int8Array)))
-				.catch(e => console.warn('Paste failed:', e));
-		});
+		document.addEventListener('paste', e => this.paste(e));
 
 		window.addEventListener('resize', () => this.resizeCanvas());
 		this.resizeCanvas();
@@ -181,6 +161,43 @@ export default class Editor {
 		return new Editor(canvas, await editorCreatorPromise);
 	}
 
+	private save() {
+		console.time('save serialize');
+		Serializer.serialize(this.editCreator);
+		console.timeEnd('save serialize');
+
+		console.time('save storage');
+		Storage.write('save', Serializer.serialize(this.editCreator))
+			.then(() => console.timeEnd('save storage'))
+			.catch(e => console.warn('Failed to save:', e));
+	}
+
+	private copy() {
+		let start = new Point(PANEL_SIZE, 0);
+		let end = start;
+		if (this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move) {
+			start = start.add(this.editCreator.pendingEdit.points[0]);
+			end = end.add(this.editCreator.pendingEdit.points[1]);
+		} else
+			end = end.add(this.pixels.size);
+		Clipboard.copyCanvasRegion(this.ctx.canvas, start, end);
+	}
+
+	private paste(e: ClipboardEvent) {
+		let str = Clipboard.clipboardToText(e);
+		if (str) {
+			if (!(this.editCreator.pendingEdit instanceof TextEdit))
+				this.editCreator.startNewEdit(new TextEdit(this.mousePositionToPixelsPosition(), this.color));
+			(this.editCreator.pendingEdit as TextEdit).text += str;
+			this.tool = Tool.TEXT;
+			return;
+		}
+
+		Clipboard.clipboardToPixelArray(e)
+			.then(int8Array => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), int8Array)))
+			.catch(e => console.warn('Paste failed:', e));
+	}
+
 	private resizeCanvas() {
 		this.editorWidth = Math.floor(window.innerWidth - PANEL_SIZE);
 		this.editorHeight = Math.floor(window.innerHeight);
@@ -195,19 +212,6 @@ export default class Editor {
 		this.input.tick();
 		requestAnimationFrame(() => this.loop());
 	}
-
-	private save() {
-		console.time('save serialize');
-		Serializer.serialize(this.editCreator);
-		console.timeEnd('save serialize');
-
-		console.time('save storage');
-		Storage.write('save', Serializer.serialize(this.editCreator))
-			.then(() => console.timeEnd('save storage'))
-			.catch(e => console.warn('Failed to save:', e));
-	}
-
-	// handle mouse & keyboard events to create, start, resume edits
 
 	private mousePositionToCanvasPosition(mousePosition = this.input.mousePosition) {
 		// return [0,1) canvas position
