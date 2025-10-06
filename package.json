@@ -10,10 +10,6 @@
     "build-win": "copy src\\index.html out\\index.html && tsc -w"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "pixi-filters": "^6.1.4",
-    "pixi.js": "^8.10.1"
+    "typescript": "^5.9.3"
   }
 }
