@@ -21,8 +21,8 @@ export default class Editor {
 	private tool = Tool.SELECT;
 	private color = Color.BLACK;
 	private input: Input;
+	private readonly panel;
 	private camera!: Camera;
-	private readonly panel = new UiPanel(PANEL_SIZE);
 	editorWidth!: number;
 	editorHeight!: number;
 	editorSize!: number;
@@ -35,6 +35,10 @@ export default class Editor {
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
 		this.panelPixels = new Pixels(PANEL_SIZE, 1000, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
+		this.panel = new UiPanel(PANEL_SIZE, this.input);
+
+		this.panel.undo.setHandler(() => this.editCreator.undoEdit());
+		this.panel.redo.setHandler(() => this.editCreator.redoEdit());
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);

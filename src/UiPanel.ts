@@ -1,14 +1,20 @@
 import {A, Color, Point, Tool} from './base.js';
 import {Edit, Rect} from './Edit.js';
+import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
 
 class UiElement {
 	protected position = new Point();
 	protected size = new Point();
+	private handler = () => {};
 
 	setPosition(position: Point, size: Point) {
 		this.position = position;
 		this.size = size;
+	}
+
+	setHandler(handler: () => void) {
+		this.handler = handler;
 	}
 
 	draw(pixels: Pixels) {
@@ -17,6 +23,14 @@ class UiElement {
 
 	protected get edits(): Edit[] {
 		return [new Rect(this.position, this.position.add(this.size), Color.BLACK)];
+	}
+
+	maybeClick(point: Point) {
+		if (point.atLeast(this.position) && point.atMost(this.position.add(this.size))) {
+			this.handler();
+			return true;
+		}
+		return false;
 	}
 }
 
@@ -69,23 +83,25 @@ class GridLayout {
 }
 
 export default class UiPanel {
-	private tools = A(Object.values(Tool).length / 2).map(() => new UiButton());
-	private colorCircle = new UiColorCircle();
-	private colorBrightness = new UiRange();
-	private recentColors = A(16).map(() => new UiButton());
-	private undo = new UiButton();
-	private redo = new UiButton();
-	private zoom = new UiText();
+	readonly tools = A(Object.values(Tool).length / 2).map(() => new UiButton());
+	readonly colorCircle = new UiColorCircle();
+	readonly colorBrightness = new UiRange();
+	readonly recentColors = A(16).map(() => new UiButton());
+	readonly undo = new UiButton();
+	readonly redo = new UiButton();
+	readonly zoom = new UiText();
+	readonly save = new UiText();
+	readonly reset = new UiText();
 
-	constructor(width: number) {
-		let margin = 10;
+	constructor(width: number, input: Input) {
+		let margin = 10, extraMargin = margin * 3;
 		let grid = new GridLayout(width, margin);
 		let smallButtonSize = new Point(grid.divide(4));
 		let fullRowSize = grid.divide(1);
 
 		this.tools.forEach(ui => grid.add(ui, smallButtonSize));
 
-		grid.nextRow(margin * 3);
+		grid.nextRow(extraMargin);
 		grid.add(this.colorCircle, new Point(fullRowSize));
 
 		grid.nextRow();
@@ -94,16 +110,23 @@ export default class UiPanel {
 		grid.nextRow();
 		this.recentColors.forEach(ui => grid.add(ui, smallButtonSize));
 
-		grid.nextRow(margin * 3);
+		grid.nextRow(extraMargin);
 		grid.add(this.undo, smallButtonSize);
 		grid.add(this.redo, smallButtonSize);
 
-		grid.nextRow(margin * 3);
+		grid.nextRow(extraMargin);
 		grid.add(this.zoom, new Point(fullRowSize, smallButtonSize.y));
+
+		grid.nextRow(extraMargin);
+		grid.add(this.save, smallButtonSize);
+		grid.add(this.reset, smallButtonSize);
+
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED],
+			() => this.uis.some(ui => ui.maybeClick(input.mouseLastPosition))));
 	}
 
-	draw(pixels: Pixels) {
-		[
+	private get uis() {
+		return [
 			this.tools,
 			this.colorCircle,
 			this.colorBrightness,
@@ -111,6 +134,12 @@ export default class UiPanel {
 			this.undo,
 			this.redo,
 			this.zoom,
-		].flat().forEach(ui => ui.draw(pixels));
+			this.save,
+			this.reset,
+		].flat();
+	}
+
+	draw(pixels: Pixels) {
+		this.uis.forEach(ui => ui.draw(pixels));
 	}
 }
