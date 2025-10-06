@@ -9,9 +9,8 @@ import Serializer from './Serializer.js';
 import Storage from './Storage.js';
 
 const PIXELS_SIZE = 3000;
-const EDITOR_SIZE = 1500;
-// todo responsive
 const PANEL_SIZE = 300;
+let EDITOR_SIZE = Math.min(window.innerWidth - PANEL_SIZE, window.innerHeight);
 
 export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
@@ -160,15 +159,13 @@ export default class Editor {
 				.catch(e => console.warn('Paste failed:', e));
 		});
 
-		let loop = async () => {
-			await this.drawLoop();
-			this.input.tick();
-			requestAnimationFrame(loop);
-		};
-		loop();
+		// window.addEventListener('resize', () => this.resizeCanvas());
+		// this.resizeCanvas();
+
+		this.loop();
 	}
 
-	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
+	private static async load(canvas: HTMLCanvasElement): Promise<Editor> {
 		console.time('load read');
 		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
@@ -188,7 +185,21 @@ export default class Editor {
 		return new Editor(canvas, await editorCreatorPromise);
 	}
 
-	save() {
+	private resizeCanvas() {
+		// todo responsive to window resize
+		// todo allow width and height to differ
+		EDITOR_SIZE = Math.min(window.innerWidth - PANEL_SIZE, window.innerHeight);
+		this.ctx.canvas.width = EDITOR_SIZE + PANEL_SIZE;
+		this.ctx.canvas.height = EDITOR_SIZE;
+	}
+
+	private async loop() {
+		await this.drawLoop();
+		this.input.tick();
+		requestAnimationFrame(() => this.loop());
+	}
+
+	private save() {
 		console.time('save serialize');
 		Serializer.serialize(this.editCreator);
 		console.timeEnd('save serialize');
@@ -216,7 +227,7 @@ export default class Editor {
 		return this.mousePositionToWorldPosition(mousePosition).scale(PIXELS_SIZE).clamp(new Point(), new Point(PIXELS_SIZE - 1)).round;
 	}
 
-	selectTool(tool: Tool) {
+	private selectTool(tool: Tool) {
 		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 		this.tool = tool;
 		let edit = null;
