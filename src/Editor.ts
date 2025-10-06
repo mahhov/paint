@@ -152,7 +152,7 @@ export default class Editor {
 			}
 
 			Clipboard.clipboardToPixelArray(e)
-				.then(pixelArray => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), pixelArray)))
+				.then(int8Array => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), int8Array)))
 				.catch(e => console.warn('Paste failed:', e));
 		});
 
@@ -165,6 +165,8 @@ export default class Editor {
 	}
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
+		return new Editor(canvas, new EditCreator());
+
 		let typeMap = {
 			EditCreator,
 			Edit,
@@ -183,10 +185,14 @@ export default class Editor {
 			Uint8ClampedArray: null,
 		};
 
+		console.time('load read');
 		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
+				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
+				console.time('load deserialize');
 				let editorCreator = Serializer.deserialize(typeMap, saveObj);
+				console.timeEnd('load deserialize');
 				editorCreator.maxDirty = DirtyMode.ALL_EDITS;
 				return editorCreator;
 			})
@@ -199,7 +205,13 @@ export default class Editor {
 	}
 
 	save() {
+		console.time('save serialize');
+		Serializer.serialize(this.editCreator);
+		console.timeEnd('save serialize');
+
+		console.time('save storage');
 		Storage.write('save', Serializer.serialize(this.editCreator))
+			.then(() => console.timeEnd('save storage'))
 			.catch(e => console.warn('Failed to save:', e));
 	}
 
@@ -265,20 +277,22 @@ export default class Editor {
 			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
 		} else if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
 			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
-		else if (this.editCreator.dirty === DirtyMode.NONE)
-			return;
 
-		this.pendingPixels.clear();
-		if (this.editCreator.pendingEdit) {
-			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
-			([
-				...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
-				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
-			] as [Point, number][]).forEach(([p, r]) => {
-				let rp = new Point(r).round;
-				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
-			});
+		if (this.editCreator.dirty !== DirtyMode.NONE) {
+			this.pendingPixels.clear();
+			if (this.editCreator.pendingEdit) {
+				this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
+				([
+					...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
+					[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
+				] as [Point, number][]).forEach(([p, r]) => {
+					let rp = new Point(r).round;
+					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
+				});
+			}
 		}
+
+		// Can't early exit in case of NONE, because camera may have moved. Besides, the following isn't expensive enough to warrant a dirt
 
 		this.editCreator.dirty = DirtyMode.NONE;
 

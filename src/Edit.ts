@@ -1,4 +1,5 @@
 import {Color, Point} from './base.js';
+import {PasteData} from './Clipboard.js';
 import Pixels from './Pixels.js';
 
 export class Edit {
@@ -269,16 +270,20 @@ export class BucketFill extends Edit {
 }
 
 export class Paste extends Edit {
-	private readonly pixelArray: Color[][];
+	// todo serialize this
+	private readonly pasteData: PasteData;
 
-	constructor(point: Point, pixelArray: Color[][]) {
+	constructor(point: Point, pasteData: PasteData) {
 		super([point]);
-		this.pixelArray = pixelArray;
+		this.pasteData = pasteData;
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		this.pixelArray.forEach((column, x) =>
-			column.forEach((color, y) =>
-				pixels.set(this.points[0].add(new Point(x, y)), color)));
+		let size = pixels.size.subtract(this.points[0]).min(new Point(this.pasteData.width, this.pasteData.height));
+		for (let y = 0; y < size.y; y++) {
+			pixels.setLine(
+				(this.points[0].x + (this.points[0].y + y) * pixels.width) * 4,
+				this.pasteData.int8Array.subarray(y * size.x * 4, y * size.x * 4 + size.x * 4));
+		}
 	}
 }

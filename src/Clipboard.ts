@@ -1,11 +1,11 @@
-import {A, Color} from './base.js';
+export type PasteData = { width: number, height: number, int8Array: Uint8ClampedArray }
 
 export default class Clipboard {
 	static clipboardToText(e: ClipboardEvent): string {
 		return e.clipboardData?.getData('text') || '';
 	}
 
-	static clipboardToPixelArray(e: ClipboardEvent): Promise<Color[][]> {
+	static clipboardToPixelArray(e: ClipboardEvent): Promise<PasteData> {
 		return new Promise((resolve, reject) => {
 			if (!e.clipboardData) return reject('no clipboard data');
 			let clipboardItem = [...e.clipboardData.items]
@@ -24,12 +24,7 @@ export default class Clipboard {
 					canvas.height = img.height;
 					ctx.drawImage(img, 0, 0);
 					let imageData = ctx.getImageData(0, 0, img.width, img.height);
-					let imageData32View = new Uint32Array(imageData.data.buffer);
-					let pixelArray = A(img.width).map((_, x) => A(img.height).map((_, y) => {
-						let index = x + y * img.width;
-						return Color.fromInt32IgnoreAlpha(imageData32View[index]);
-					}));
-					resolve(pixelArray);
+					resolve({width: imageData.width, height: imageData.height, int8Array: imageData.data});
 				};
 				img.src = e.target?.result as string;
 			};
