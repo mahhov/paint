@@ -178,7 +178,9 @@ export default class Editor {
 			!this.editCreator.pendingEdit.points[0].equals(this.editCreator.pendingEdit.points[1]);
 		let start = region ? this.editCreator.pendingEdit!.points[0] : new Point();
 		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
-		Clipboard.copyCanvasRegion([await this.pixels.getImage(), await this.pendingPixels.getImage()], start, end);
+		this.editCreator.startNewEdit(null);
+		this.flushEditCreatorToPixels();
+		Clipboard.copyCanvasRegion(await this.pixels.getImage(), start, end);
 	}
 
 	private paste(e: ClipboardEvent) {
@@ -265,30 +267,35 @@ export default class Editor {
 		}
 	}
 
-	private async drawLoop() {
+	private flushEditCreatorToPixels() {
+		if (this.editCreator.dirty === DirtyMode.NONE)
+			return;
+
+		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
+			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
+
 		if (this.editCreator.dirty === DirtyMode.ALL_EDITS) {
 			this.pixels.clear();
 			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
-		} else if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
-			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
-
-		if (this.editCreator.dirty !== DirtyMode.NONE) {
-			this.pendingPixels.clear();
-			if (this.editCreator.pendingEdit) {
-				this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
-				([
-					...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
-					[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
-				] as [Point, number][]).forEach(([p, r]) => {
-					let rp = new Point(r).round;
-					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
-				});
-			}
 		}
 
-		// Can't early exit in case of NONE, because camera may have moved. Besides, the following isn't expensive enough to warrant a dirt
+		this.pendingPixels.clear();
+		if (this.editCreator.pendingEdit) {
+			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
+			([
+				...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
+				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
+			] as [Point, number][]).forEach(([p, r]) => {
+				let rp = new Point(r).round;
+				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
+			});
+		}
 
 		this.editCreator.dirty = DirtyMode.NONE;
+	}
+
+	private async drawLoop() {
+		this.flushEditCreatorToPixels();
 
 		let srcStart = this.camera.canvasToWorld(new Point()).scale(PIXELS_SIZE).round;
 		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE).round;

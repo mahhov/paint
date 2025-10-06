@@ -8,4 +8,3 @@ import Editor from './Editor.js';
 //   color selector UI
 //   allow scaling move
 //   pencil tool
-//   out of bounds error for computed points

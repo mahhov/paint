@@ -51,7 +51,7 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
-	commitPendingEdit() {
+	private commitPendingEdit() {
 		if (this.pendingEdit?.validCommit()) {
 			this.edits.push(this.pendingEdit);
 			this.pendingEdit = null;
