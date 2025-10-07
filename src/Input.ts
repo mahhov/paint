@@ -1,4 +1,4 @@
-import {Point} from './base.js';
+import Point from './util/Point.js';
 
 export enum InputState {
 	DOWN, UP, PRESSED, RELEASED

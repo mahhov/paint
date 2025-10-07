@@ -1,6 +1,8 @@
-import {boundRect, boundTransferRect, Color, getIndex, Point} from './base.js';
 import {PasteData} from './Clipboard.js';
 import Pixels from './Pixels.js';
+import Color from './util/Color.js';
+import Point from './util/Point.js';
+import {boundRect, boundTransferRect, getIndex} from './util/util.js';
 
 export class Edit {
 	protected readonly points_: Point[];

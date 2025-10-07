@@ -1,5 +1,6 @@
-import {NEAR_RANGE, Point} from './base.js';
 import {Edit} from './Edit.js';
+import Point from './util/Point.js';
+import {NEAR_RANGE} from './util/util.js';
 
 export enum DirtyMode {
 	NONE,

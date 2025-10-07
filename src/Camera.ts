@@ -1,4 +1,5 @@
-import {clamp, Point, round} from './base.js';
+import Point from './util/Point.js';
+import {clamp, round} from './util/util.js';
 
 let zoomDelta = .2;
 let minWidth = .1;

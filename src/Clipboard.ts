@@ -1,4 +1,5 @@
-import {boundRect, Point} from './base.js';
+import Point from './util/Point.js';
+import {boundRect} from './util/util.js';
 
 export type PasteData = { width: number, height: number, int8Array: Uint8ClampedArray }
 

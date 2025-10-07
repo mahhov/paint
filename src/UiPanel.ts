@@ -1,8 +1,11 @@
-import {Color, Emitter, Point, round, Tool} from './base.js';
 import {Edit, Line, Rect, TextEdit} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
+import Color from './util/Color.js';
+import Emitter from './util/Emitter.js';
+import Point from './util/Point.js';
+import {round, Tool} from './util/util.js';
 
 class UiElement extends Emitter {
 	protected position = new Point();
@@ -133,7 +136,7 @@ class UiText extends UiElement {
 		textEdit.text = this.text;
 		return super.edits.concat(textEdit);
 	}
-	
+
 	onClick(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('click');

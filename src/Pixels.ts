@@ -1,4 +1,6 @@
-import {Color, getPIndex, Point} from './base.js';
+import Color from './util/Color.js';
+import Point from './util/Point.js';
+import {getPIndex} from './util/util.js';
 
 export default class Pixels {
 	readonly width: number;

@@ -1,4 +1,3 @@
-import {Color, NEAR_RANGE, Point, Tool} from './base.js';
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
 import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, StraightLine, TextEdit} from './Edit.js';
@@ -8,6 +7,9 @@ import Pixels from './Pixels.js';
 import Serializer from './Serializer.js';
 import Storage from './Storage.js';
 import UiPanel from './UiPanel.js';
+import Color from './util/Color.js';
+import Point from './util/Point.js';
+import {NEAR_RANGE, Tool} from './util/util.js';
 
 const PIXELS_SIZE = 3000;
 const PANEL_SIZE = 178;

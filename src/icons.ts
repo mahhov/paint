@@ -1,5 +1,6 @@
-import {Color, Point} from './base.js';
 import {Edit, FillRect, Line, Rect, Select} from './Edit.js';
+import Color from './util/Color.js';
+import Point from './util/Point.js';
 
 enum IconInstructionType {SELECT, LINE, RECT, FILL_RECT}
 
