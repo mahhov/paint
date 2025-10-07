@@ -5,7 +5,7 @@ import Pixels from './Pixels.js';
 import Color from './util/Color.js';
 import Emitter from './util/Emitter.js';
 import Point from './util/Point.js';
-import {round, Tool} from './util/util.js';
+import {Tool} from './util/util.js';
 
 class UiElement extends Emitter {
 	protected position = new Point();
@@ -56,29 +56,14 @@ class UiButton extends UiElement {
 
 class UiColorCircle extends UiElement {
 	float = new Point(.5);
-
-	static colorFromFloat(float: Point, brightness: number) {
-		let rx = Math.cos(0) + .5;
-		let ry = Math.sin(0) + .5;
-		let gx = Math.cos(Math.PI * 2 / 3) + .5;
-		let gy = Math.sin(Math.PI * 2 / 3) + .5;
-		let bx = Math.cos(Math.PI * 4 / 3) + .5;
-		let by = Math.sin(Math.PI * 4 / 3) + .5;
-
-		let rgb = [
-			new Point(rx, ry),
-			new Point(gx, gy),
-			new Point(bx, by),
-		]
-			.map(colorCenter => 1 + brightness - float.subtract(colorCenter).magnitude2 ** .5)
-			.map(f => round(f * 255)) as [number, number, number];
-
-		return Color.fromRgba(...rgb, 255);
-	}
+	brightness = .5;
 
 	private getColor(point: Point): Color | null {
 		let float = this.pointToFloat(point);
-		return float ? UiColorCircle.colorFromFloat(float, .5) : null;
+		if (!float) return null;
+		if (float.subtract(this.float).atLeast(new Point(-.03)) && float.subtract(this.float).atMost(new Point(.03)))
+			return Color.WHITE;
+		return Color.fromFloat(float, this.brightness);
 	}
 
 	protected get edits(): Edit[] {
@@ -107,12 +92,15 @@ class UiColorCircle extends UiElement {
 	}
 }
 
-class UiRange extends UiElement {
-	value = .5;
+class UiColorRange extends UiElement {
+	float = new Point(.5);
+	brightness = .5;
 
 	private getPointColor(point: Point): Color | null {
-		let x = 1 - point.subtract(this.position).divide(this.size).x;
-		return UiColorCircle.colorFromFloat(new Point(.5), x);
+		let x = point.subtract(this.position).divide(this.size).x;
+		if (Math.abs(x - this.brightness) < .03)
+			return Color.WHITE;
+		return Color.fromFloat(this.float, x);
 	}
 
 	protected get edits(): Edit[] {
@@ -130,7 +118,7 @@ class UiRange extends UiElement {
 
 	onClick(point: Point) {
 		if (this.containsPoint(point)) {
-			this.value = point.x / this.size.x;
+			this.brightness = point.x / this.size.x;
 			this.emit('click');
 		}
 	}
@@ -196,6 +184,9 @@ class GridLayout {
 export default class UiPanel extends Emitter {
 	private readonly grid: GridLayout;
 	private readonly uis: UiElement[] = [];
+	private readonly colorCircle: UiColorCircle;
+	private readonly colorBrightness: UiColorRange;
+	private pixels!: Pixels; // todo temporary
 
 	constructor(width: number, input: Input) {
 		super();
@@ -205,6 +196,7 @@ export default class UiPanel extends Emitter {
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
 
+		// todo indicate tool selected
 		([
 			[icons.SELECT, Tool.SELECT],
 			[icons.MOVE, Tool.MOVE],
@@ -220,14 +212,15 @@ export default class UiPanel extends Emitter {
 			this.add(new UiButton(icon), smallButtonSize).addListener('click', () => this.emit('tool', tool)));
 
 		this.grid.nextRow(extraMargin);
-		let colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
+		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
 
 		this.grid.nextRow();
-		let colorBrightness = this.add(new UiRange(), new Point(fullRowSize, smallButtonSize.y));
+		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, smallButtonSize.y));
 
-		[colorCircle, colorBrightness].forEach(ui => ui.addListener('click', () =>
-			this.emit('color', UiColorCircle.colorFromFloat(colorCircle.float, colorBrightness.value))));
+		[this.colorCircle, this.colorBrightness].forEach(ui => ui.addListener('click', () =>
+			this.emit('color', Color.fromFloat(this.colorCircle.float, this.colorBrightness.brightness))));
 
+		// todo reduce colors
 		this.grid.nextRow();
 		([
 			[0, 0, 0, 255],
@@ -306,13 +299,15 @@ export default class UiPanel extends Emitter {
 		this.add(new UiButton(icons.REDO), smallButtonSize).addListener('click', () => this.emit('redo'));
 
 		this.grid.nextRow(extraMargin);
+		// todo update zoom text
 		this.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)).addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(extraMargin);
 		this.add(new UiButton(icons.SAVE), smallButtonSize).addListener('click', () => this.emit('save'));
 		this.add(new UiButton(icons.START_NEW), smallButtonSize).addListener('click', () => this.emit('start-new'));
 
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => this.uis.forEach(ui => ui.onClick(input.mouseLastPosition))));
+		// todo don't repeat on buttons like undo/redo
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED, InputState.DOWN], () => this.uis.forEach(ui => ui.onClick(input.mouseLastPosition))));
 	}
 
 	private add<T extends UiElement>(ui: T, size: Point): T {
@@ -323,7 +318,18 @@ export default class UiPanel extends Emitter {
 		return ui;
 	}
 
+	setColor(color: Color) {
+		let [float, brightness] = color.toFloat();
+		this.colorCircle.float = float;
+		this.colorCircle.brightness = brightness;
+		this.colorBrightness.float = float;
+		this.colorBrightness.brightness = brightness;
+		this.draw(this.pixels);
+	}
+
 	draw(pixels: Pixels) {
+		this.pixels = pixels;
+		pixels.clear();
 		this.uis.forEach(ui => ui.draw(pixels));
 	}
 }

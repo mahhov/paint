@@ -40,7 +40,7 @@ export default class Editor {
 		this.panel = new UiPanel(PANEL_SIZE, this.input);
 
 		this.panel.addListener('tool', (tool: Tool) => this.selectTool(tool));
-		this.panel.addListener('color', (color: Color) => this.color = color);
+		this.panel.addListener('color', (color: Color) => this.setColor(color));
 		this.panel.addListener('undo', () => this.editCreator.undoEdit());
 		this.panel.addListener('redo', () => this.editCreator.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
@@ -58,7 +58,7 @@ export default class Editor {
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
 			if (this.tool === Tool.COLOR_PICKER) {
-				this.color = this.pixels.get(point);
+				this.setColor(this.pixels.get(point));
 				return;
 			}
 			let controlPoint = this.editCreator.findControlPoint(point);
@@ -70,12 +70,13 @@ export default class Editor {
 			}
 		}));
 
+		// todo ignore events that started off screen / missed the pressed event
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.RELEASED], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
 			if (this.tool === Tool.COLOR_PICKER) {
-				this.color = this.pixels.get(point);
+				this.setColor(this.pixels.get(point));
 				return;
 			}
 			this.editCreator.moveControlPointTo(point);
@@ -245,6 +246,11 @@ export default class Editor {
 			this.camera.zoom(delta, canvasPosition);
 	}
 
+	private setColor(color: Color) {
+		this.color = color;
+		this.panel.setColor(color);
+	}
+
 	private async loop() {
 		await this.drawLoop();
 		this.input.tick();
@@ -351,3 +357,5 @@ export default class Editor {
 		this.ctx.drawImage(await this.panelPixels.getImage(), 0, 0);
 	}
 }
+
+// todo reorder methods
