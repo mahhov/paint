@@ -4,6 +4,7 @@ export default class Emitter {
 	addListener(event: string, listener: (...args: any[]) => void) {
 		this.listeners[event] ||= [];
 		this.listeners[event].push(listener);
+		return this;
 	}
 
 	emit(event: string, ...args: any[]) {

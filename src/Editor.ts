@@ -37,7 +37,7 @@ export default class Editor {
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
 		this.panelPixels = new Pixels(PANEL_SIZE, 5000, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
-		this.panel = new UiPanel(PANEL_SIZE, this.input);
+		this.panel = new UiPanel(this.panelPixels, this.input);
 
 		this.panel.addListener('tool', (tool: Tool) => this.selectTool(tool));
 		this.panel.addListener('color', (color: Color) => this.setColor(color));
@@ -157,7 +157,9 @@ export default class Editor {
 		window.addEventListener('resize', () => this.resizeCanvas());
 		this.resizeCanvas();
 
-		this.panel.draw(this.panelPixels);
+		this.panel.setTool(this.tool);
+		this.panel.setColor(this.color);
+		this.panel.setZoom(this.camera.width);
 
 		this.loop();
 	}
@@ -238,17 +240,34 @@ export default class Editor {
 
 	private cameraReset() {
 		this.camera = new Camera(this.editorSize / PIXELS_SIZE);
+		this.panel.setZoom(this.camera.width);
 	}
 
-	private zoom(delta: number) {
-		let canvasPosition = this.mousePositionToCanvasPosition();
-		if (canvasPosition)
-			this.camera.zoom(delta, canvasPosition);
+	private selectTool(tool: Tool) {
+		console.log('editor select tool', tool)
+		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+		this.tool = tool;
+		this.panel.setTool(tool);
+		let edit = null;
+		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
+			if (tool === Tool.MOVE)
+				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+			else if (tool === Tool.CLEAR)
+				edit = new Clear(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+		this.editCreator.startNewEdit(edit);
 	}
 
 	private setColor(color: Color) {
 		this.color = color;
 		this.panel.setColor(color);
+	}
+
+	private zoom(delta: number) {
+		let canvasPosition = this.mousePositionToCanvasPosition();
+		if (canvasPosition) {
+			this.camera.zoom(delta, canvasPosition);
+			this.panel.setZoom(this.camera.width);
+		}
 	}
 
 	private async loop() {
@@ -273,18 +292,6 @@ export default class Editor {
 		// return [0, PIXELS_SIZE) pixel position
 		let worldPosition = this.mousePositionToWorldPosition(mousePosition);
 		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(new Point(), new Point(PIXELS_SIZE - 1)).round : null;
-	}
-
-	private selectTool(tool: Tool) {
-		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
-		this.tool = tool;
-		let edit = null;
-		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
-			if (tool === Tool.MOVE)
-				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
-			else if (tool === Tool.CLEAR)
-				edit = new Clear(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
-		this.editCreator.startNewEdit(edit);
 	}
 
 	private createEdit(point: Point): Edit {

@@ -1,9 +1,10 @@
 import Point from './util/Point.js';
 import {clamp, round} from './util/util.js';
 
+// todo center around initial zoom
 let zoomDelta = .2;
-let minWidth = .1;
-let maxWidth = 1.5; // maxWidth-minWidth should be divisible by zoomDelta
+let minWidth = .2;
+let maxWidth = 1.4; // maxWidth-minWidth should be divisible by zoomDelta
 let padding = (maxWidth - 1) / 2;
 
 export default class Camera {
@@ -21,7 +22,7 @@ export default class Camera {
 
 	zoom(delta: number, canvasPoint: Point) {
 		let worldPoint = this.canvasToWorld(canvasPoint);
-		this.width = round(clamp(this.width + delta * zoomDelta, minWidth, maxWidth), .1);
+		this.width = round(clamp(this.width + delta * zoomDelta, minWidth, maxWidth), 1);
 		this.leftTop = worldPoint.subtract(canvasPoint.scale(this.width));
 		this.clamp();
 	}

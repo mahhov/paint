@@ -54,6 +54,40 @@ class UiButton extends UiElement {
 	}
 }
 
+class UiToolButton extends UiButton {
+	readonly tool: Tool;
+	selected = false;
+
+	constructor(tool: Tool) {
+		super(UiToolButton.toolIcons[tool]![1]);
+		this.tool = tool;
+	}
+
+	static get toolIcons(): Partial<Record<Tool, [Tool, IconInstruction[]]>> {
+		return {
+			[Tool.SELECT]: [Tool.SELECT, icons.SELECT],
+			[Tool.MOVE]: [Tool.MOVE, icons.MOVE],
+			[Tool.LINE]: [Tool.LINE, icons.LINE],
+			[Tool.STRAIGHT_LINE]: [Tool.STRAIGHT_LINE, icons.STRAIGHT_LINE],
+			[Tool.RECT]: [Tool.RECT, icons.RECT],
+			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT],
+			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR],
+			[Tool.TEXT]: [Tool.TEXT, icons.TEXT],
+			[Tool.COLOR_PICKER]: [Tool.COLOR_PICKER, icons.COLOR_PICKER],
+			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL],
+		};
+	}
+
+	protected get edits(): Edit[] {
+		let edits = super.edits;
+		if (this.selected) {
+			edits.push(new Rect(this.position.subtract(new Point(1)), this.position.add(this.size).add(new Point(1)), Color.fromRgba(0, 0, 0, 255)));
+			edits.push(new Rect(this.position.subtract(new Point(2)), this.position.add(this.size).add(new Point(2)), Color.fromRgba(0, 0, 0, 255)));
+		}
+		return edits;
+	}
+}
+
 class UiColorCircle extends UiElement {
 	float = new Point(.5);
 	brightness = .5;
@@ -125,7 +159,7 @@ class UiColorRange extends UiElement {
 }
 
 class UiText extends UiElement {
-	private readonly text: string;
+	text: string;
 
 	constructor(text: string) {
 		super();
@@ -184,32 +218,23 @@ class GridLayout {
 export default class UiPanel extends Emitter {
 	private readonly grid: GridLayout;
 	private readonly uis: UiElement[] = [];
+	private readonly toolButtons: UiToolButton[];
 	private readonly colorCircle: UiColorCircle;
 	private readonly colorBrightness: UiColorRange;
-	private pixels!: Pixels; // todo temporary
+	private readonly zoomText: UiText;
+	private readonly pixels: Pixels;
 
-	constructor(width: number, input: Input) {
+	constructor(pixels: Pixels, input: Input) {
 		super();
 
+		this.pixels = pixels;
 		let margin = 10, extraMargin = margin * 3;
-		this.grid = new GridLayout(width, margin);
+		this.grid = new GridLayout(pixels.width, margin);
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
 
-		// todo indicate tool selected
-		([
-			[icons.SELECT, Tool.SELECT],
-			[icons.MOVE, Tool.MOVE],
-			[icons.LINE, Tool.LINE],
-			[icons.STRAIGHT_LINE, Tool.STRAIGHT_LINE],
-			[icons.RECT, Tool.RECT],
-			[icons.FILL_RECT, Tool.FILL_RECT],
-			[icons.CLEAR, Tool.CLEAR],
-			[icons.TEXT, Tool.TEXT],
-			[icons.COLOR_PICKER, Tool.COLOR_PICKER],
-			[icons.BUCKET_FILL, Tool.BUCKET_FILL],
-		] as [IconInstruction[], Tool][]).forEach(([icon, tool]) =>
-			this.add(new UiButton(icon), smallButtonSize).addListener('click', () => this.emit('tool', tool)));
+		this.toolButtons = Object.values(UiToolButton.toolIcons).map(([tool]) =>
+			this.add(new UiToolButton(tool), smallButtonSize).addListener('click', () => this.emit('tool', tool)));
 
 		this.grid.nextRow(extraMargin);
 		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
@@ -299,8 +324,7 @@ export default class UiPanel extends Emitter {
 		this.add(new UiButton(icons.REDO), smallButtonSize).addListener('click', () => this.emit('redo'));
 
 		this.grid.nextRow(extraMargin);
-		// todo update zoom text
-		this.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)).addListener('click', () => this.emit('camera-reset'));
+		this.zoomText = this.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)).addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(extraMargin);
 		this.add(new UiButton(icons.SAVE), smallButtonSize).addListener('click', () => this.emit('save'));
@@ -318,18 +342,28 @@ export default class UiPanel extends Emitter {
 		return ui;
 	}
 
+	setTool(tool: Tool) {
+		console.log('panel set tool', tool);
+		this.toolButtons.forEach(button => button.selected = button.tool === tool);
+		this.draw();
+	}
+
 	setColor(color: Color) {
 		let [float, brightness] = color.toFloat();
 		this.colorCircle.float = float;
 		this.colorCircle.brightness = brightness;
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
-		this.draw(this.pixels);
+		this.draw();
 	}
 
-	draw(pixels: Pixels) {
-		this.pixels = pixels;
-		pixels.clear();
-		this.uis.forEach(ui => ui.draw(pixels));
+	setZoom(zoom: number) {
+		this.zoomText.text = `${zoom}%`;
+		this.draw();
+	}
+
+	draw() {
+		this.pixels.clear();
+		this.uis.forEach(ui => ui.draw(this.pixels));
 	}
 }
