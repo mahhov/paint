@@ -40,6 +40,7 @@ export default class Editor {
 		this.panel = new UiPanel(PANEL_SIZE, this.input);
 
 		this.panel.addListener('tool', (tool: Tool) => this.selectTool(tool));
+		this.panel.addListener('color', (color: Color) => this.color = color);
 		this.panel.addListener('undo', () => this.editCreator.undoEdit());
 		this.panel.addListener('redo', () => this.editCreator.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());

@@ -55,6 +55,8 @@ class UiButton extends UiElement {
 }
 
 class UiColorCircle extends UiElement {
+	float = new Point(.5);
+
 	static colorFromFloat(float: Point, brightness: number) {
 		let rx = Math.cos(0) + .5;
 		let ry = Math.sin(0) + .5;
@@ -75,9 +77,8 @@ class UiColorCircle extends UiElement {
 	}
 
 	private getColor(point: Point): Color | null {
-		let float = point.subtract(this.position).divide(this.size);
-		return float.subtract(new Point(.5)).magnitude2 <= .25 ?
-			UiColorCircle.colorFromFloat(float, .5) : null;
+		let float = this.pointToFloat(point);
+		return float ? UiColorCircle.colorFromFloat(float, .5) : null;
 	}
 
 	protected get edits(): Edit[] {
@@ -93,13 +94,22 @@ class UiColorCircle extends UiElement {
 	}
 
 	onClick(point: Point) {
-		let color = this.getColor(point);
-		if (color)
-			this.emit('click', color);
+		let float = this.pointToFloat(point);
+		if (float) {
+			this.float = float;
+			this.emit('click');
+		}
+	}
+
+	private pointToFloat(point: Point) {
+		let float = point.subtract(this.position).divide(this.size);
+		return float.subtract(new Point(.5)).magnitude2 <= .25 ? float : null;
 	}
 }
 
 class UiRange extends UiElement {
+	value = .5;
+
 	private getPointColor(point: Point): Color | null {
 		let x = 1 - point.subtract(this.position).divide(this.size).x;
 		return UiColorCircle.colorFromFloat(new Point(.5), x);
@@ -119,7 +129,10 @@ class UiRange extends UiElement {
 	}
 
 	onClick(point: Point) {
-		this.emit('click', point.x / this.size.x);
+		if (this.containsPoint(point)) {
+			this.value = point.x / this.size.x;
+			this.emit('click');
+		}
 	}
 }
 
@@ -192,7 +205,6 @@ export default class UiPanel extends Emitter {
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
 
-
 		([
 			[icons.SELECT, Tool.SELECT],
 			[icons.MOVE, Tool.MOVE],
@@ -208,10 +220,13 @@ export default class UiPanel extends Emitter {
 			this.add(new UiButton(icon), smallButtonSize).addListener('click', () => this.emit('tool', tool)));
 
 		this.grid.nextRow(extraMargin);
-		this.add(new UiColorCircle(), new Point(fullRowSize));
+		let colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
 
 		this.grid.nextRow();
-		this.add(new UiRange(), new Point(fullRowSize, smallButtonSize.y));
+		let colorBrightness = this.add(new UiRange(), new Point(fullRowSize, smallButtonSize.y));
+
+		[colorCircle, colorBrightness].forEach(ui => ui.addListener('click', () =>
+			this.emit('color', UiColorCircle.colorFromFloat(colorCircle.float, colorBrightness.value))));
 
 		this.grid.nextRow();
 		([
@@ -300,7 +315,7 @@ export default class UiPanel extends Emitter {
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => this.uis.forEach(ui => ui.onClick(input.mouseLastPosition))));
 	}
 
-	private add(ui: UiElement, size: Point) {
+	private add<T extends UiElement>(ui: T, size: Point): T {
 		let position = this.grid.add(size);
 		ui.setPosition(position);
 		ui.setSize(size);
