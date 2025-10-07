@@ -10,7 +10,7 @@ import Storage from './Storage.js';
 import UiPanel from './UiPanel.js';
 
 const PIXELS_SIZE = 3000;
-const PANEL_SIZE = 200;
+const PANEL_SIZE = 178;
 
 export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;

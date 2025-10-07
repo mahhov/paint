@@ -19,6 +19,10 @@ export class Point {
 		return new Point(this.x * n, this.y * n);
 	}
 
+	multiply(point: Point) {
+		return new Point(this.x * point.x, this.y * point.y);
+	}
+
 	min(point: Point) {
 		return new Point(Math.min(this.x, point.x), Math.min(this.y, point.y));
 	}
@@ -55,8 +59,9 @@ export class Point {
 export class Color {
 	static WHITE = Color.fromRgba(255, 255, 255, 255);
 	static BLACK = Color.fromRgba(0, 0, 0, 255);
-	static GREEN = Color.fromRgba(0, 255, 0, 255);
 	static CLEAR = Color.fromRgba(0, 0, 0, 0);
+	static DARK_GRAY = Color.fromRgba(60, 60, 60, 255);
+	static LIGHT_GRAY = Color.fromRgba(180, 180, 180, 255);
 
 	readonly int32: number;
 
