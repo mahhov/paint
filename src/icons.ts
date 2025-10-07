@@ -142,7 +142,7 @@ export let icons: Record<string, IconInstruction[]> = {
 		// outline
 		{type: IconInstructionType.RECT, coords: [5, 5, 27, 27], color: Color.DARK_GRAY},
 	],
-	RESET: [
+	START_NEW: [
 		// circle shape (approximated with three lines for a clean, chunky look)
 		// top right curve
 		{type: IconInstructionType.LINE, coords: [16, 5, 26, 10], color: Color.DARK_GRAY},
@@ -161,6 +161,9 @@ export let icons: Record<string, IconInstruction[]> = {
 		{type: IconInstructionType.LINE, coords: [6, 10, 10, 14], color: Color.DARK_GRAY},
 	],
 };
+
+export let colorIcon = (color: Color): IconInstruction[] =>
+	[{type: IconInstructionType.FILL_RECT, coords: [1, 1, 32, 32], color}];
 
 let iconCoordinates = (point32: Point, position: Point, size: Point) => {
 	return point32.scale(1 / 32).multiply(size).add(position).round;

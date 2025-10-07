@@ -37,8 +37,20 @@ export default class Editor {
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(PANEL_SIZE, this.input);
 
-		// this.panel.undo.setHandler(() => this.editCreator.undoEdit());
-		// this.panel.redo.setHandler(() => this.editCreator.redoEdit());
+		this.panel.addListener('tool-select', () => this.selectTool(Tool.SELECT));
+		this.panel.addListener('tool-move', () => this.selectTool(Tool.MOVE));
+		this.panel.addListener('tool-line', () => this.selectTool(Tool.LINE));
+		this.panel.addListener('tool-straight-line', () => this.selectTool(Tool.STRAIGHT_LINE));
+		this.panel.addListener('tool-rect', () => this.selectTool(Tool.RECT));
+		this.panel.addListener('tool-fill-rect', () => this.selectTool(Tool.FILL_RECT));
+		this.panel.addListener('tool-clear', () => this.selectTool(Tool.CLEAR));
+		this.panel.addListener('tool-text', () => this.selectTool(Tool.TEXT));
+		this.panel.addListener('tool-color-picker', () => this.selectTool(Tool.COLOR_PICKER));
+		this.panel.addListener('tool-bucket-fill', () => this.selectTool(Tool.BUCKET_FILL));
+		this.panel.addListener('undo', () => this.editCreator.undoEdit());
+		this.panel.addListener('redo', () => this.editCreator.redoEdit());
+		this.panel.addListener('save', () => this.save());
+		this.panel.addListener('start-new', () => this.startNew());
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
@@ -106,11 +118,12 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
 
+		// todo ctrl+1-9 to select colors
+
+		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.camera = new Camera(this.editorSize / PIXELS_SIZE)));
+
 		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
-		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			this.editCreator = new EditCreator();
-			this.editCreator.maxDirty = DirtyMode.ALL_EDITS;
-		}));
+		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.startNew()));
 
 		([
 			['ArrowUp', new Point(0, -1)],
@@ -180,6 +193,11 @@ export default class Editor {
 		Storage.write('save', Serializer.serialize(this.editCreator))
 			.then(() => console.timeEnd('save storage'))
 			.catch(e => console.warn('Failed to save:', e));
+	}
+
+	private startNew() {
+		this.editCreator = new EditCreator();
+		this.editCreator.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
 	private async copy() {

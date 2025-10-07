@@ -1,6 +1,6 @@
-import {Color, Emitter, Point} from './base.js';
-import {Edit, Rect} from './Edit.js';
-import {IconInstruction, icons, iconToEdits} from './icons.js';
+import {Color, Emitter, Point, round} from './base.js';
+import {Edit, Line, Rect, TextEdit} from './Edit.js';
+import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
 
@@ -19,14 +19,6 @@ class UiElement {
 
 	protected get edits(): Edit[] {
 		return [new Rect(this.position, this.position.add(this.size), Color.BLACK)];
-	}
-
-	protected iconCoordinates(point32: Point) {
-		return point32.scale(1 / 32).multiply(this.size).add(this.position).round;
-	}
-
-	protected iconCoordinates2(x1: number, y1: number, x2: number, y2: number): [Point, Point] {
-		return [this.iconCoordinates(new Point(x1, y1)), this.iconCoordinates(new Point(x2, y2))];
 	}
 
 	containsPoint(point: Point) {
@@ -50,12 +42,77 @@ class UiButton extends UiElement {
 }
 
 class UiColorCircle extends UiElement {
+	static colorFromFloat(float: Point, brightness: number) {
+		let rx = Math.cos(0) + .5;
+		let ry = Math.sin(0) + .5;
+		let gx = Math.cos(Math.PI * 2 / 3) + .5;
+		let gy = Math.sin(Math.PI * 2 / 3) + .5;
+		let bx = Math.cos(Math.PI * 4 / 3) + .5;
+		let by = Math.sin(Math.PI * 4 / 3) + .5;
+
+		let rgb = [
+			new Point(rx, ry),
+			new Point(gx, gy),
+			new Point(bx, by),
+		]
+			.map(colorCenter => 1 + brightness - float.subtract(colorCenter).magnitude2 ** .5)
+			.map(f => round(f * 255)) as [number, number, number];
+
+		return Color.fromRgba(...rgb, 255);
+	}
+
+	private getPointColor(point: Point): Color | null {
+		let float = point.subtract(this.position).divide(this.size);
+		if (float.subtract(new Point(.5)).magnitude2 > .25)
+			return null;
+		return UiColorCircle.colorFromFloat(float, .5);
+	}
+
+	protected get edits(): Edit[] {
+		let edits = super.edits;
+		for (let x = this.position.x; x < this.position.add(this.size).x; x++)
+			for (let y = this.position.y; y < this.position.add(this.size).y; y++) {
+				let point = new Point(x, y);
+				let color = this.getPointColor(point);
+				if (color)
+					edits.push(new Line(point, point, color));
+			}
+		return edits;
+	}
 }
 
 class UiRange extends UiElement {
+	private getPointColor(point: Point): Color | null {
+		let x = 1 - point.subtract(this.position).divide(this.size).x;
+		return UiColorCircle.colorFromFloat(new Point(.5), x);
+	}
+
+	protected get edits(): Edit[] {
+		let edits = super.edits;
+		for (let x = this.position.x; x < this.position.add(this.size).x; x++)
+			for (let y = this.position.y; y < this.position.add(this.size).y; y++) {
+				let point = new Point(x, y);
+				let color = this.getPointColor(point);
+				if (color)
+					edits.push(new Line(point, point, color));
+			}
+		return edits;
+	}
 }
 
 class UiText extends UiElement {
+	private readonly text: string;
+
+	constructor(text: string) {
+		super();
+		this.text = text;
+	}
+
+	protected get edits(): Edit[] {
+		let textEdit = new TextEdit(this.position.add(new Point(4, 11)), Color.DARK_GRAY);
+		textEdit.text = this.text;
+		return super.edits.concat(textEdit);
+	}
 }
 
 class GridLayout {
@@ -118,27 +175,98 @@ export default class UiPanel extends Emitter {
 		this.uis.push(grid.add(new UiButton(icons.BUCKET_FILL, 'tool-bucket-fill'), smallButtonSize));
 
 		grid.nextRow(extraMargin);
-		// this.uis.push(grid.add(this.colorCircle, new Point(fullRowSize)));
+		this.uis.push(grid.add(new UiColorCircle(), new Point(fullRowSize)));
 
 		grid.nextRow();
-		// this.uis.push(grid.add(this.colorBrightness, new Point(fullRowSize, smallButtonSize.y)));
+		this.uis.push(grid.add(new UiRange(), new Point(fullRowSize, smallButtonSize.y)));
 
 		grid.nextRow();
-		// this.recentColors.forEach(ui => grid.add(ui, smallButtonSize));
+		([
+			[0, 0, 0, 255],
+			[85, 85, 85, 255],
+			[170, 170, 170, 255],
+			[255, 255, 255, 255],
+
+			[255, 0, 0, 255],
+			[0, 255, 0, 255],
+			[0, 0, 255, 255],
+			[255, 255, 0, 255],
+			[0, 255, 255, 255],
+			[255, 0, 255, 255],
+			[255, 200, 150, 255],
+			[255, 170, 0, 255],
+			[0, 128, 0, 255],
+			[128, 64, 0, 255],
+			[0, 128, 255, 255],
+			[128, 0, 128, 255],
+
+			[255, 0, 0, 255],
+			[255, 85, 0, 255],
+			[255, 172, 0, 255],
+			[212, 255, 0, 255],
+			[128, 255, 0, 255],
+			[43, 255, 0, 255],
+			[0, 255, 85, 255],
+			[0, 255, 172, 255],
+			[0, 255, 255, 255],
+			[0, 212, 255, 255],
+			[0, 128, 255, 255],
+			[43, 0, 255, 255],
+			[128, 0, 255, 255],
+			[212, 0, 255, 255],
+			[255, 0, 172, 255],
+			[255, 0, 85, 255],
+
+			[255, 0, 0, 255],
+			[255, 255, 0, 255],
+			[0, 255, 0, 255],
+			[0, 255, 255, 255],
+			[0, 0, 255, 255],
+			[255, 0, 255, 255],
+			[128, 0, 0, 255],
+			[128, 128, 0, 255],
+			[0, 128, 0, 255],
+			[0, 128, 128, 255],
+			[0, 0, 128, 255],
+			[128, 0, 128, 255],
+
+			[255, 255, 255, 255], // Pure White
+			[191, 191, 191, 255], // Light Gray
+			[102, 102, 102, 255], // Dark Gray
+			[0, 0, 0, 255],      // Pure Black
+			[217, 0, 0, 255],    // Red (V=85%)
+			[217, 217, 0, 255],  // Yellow (V=85%)
+			[0, 217, 0, 255],    // Green (V=85%)
+			[0, 217, 217, 255],  // Cyan (V=85%)
+			[0, 0, 217, 255],    // Blue (V=85%)
+			[217, 0, 217, 255],  // Magenta (V=85%)
+			[166, 0, 0, 255],    // Deep Red (V=65%)
+			[166, 166, 0, 255],  // Dark Yellow (V=65%)
+			[0, 166, 0, 255],    // Dark Green (V=65%)
+			[0, 166, 166, 255],  // Dark Cyan (V=65%)
+			[0, 0, 166, 255],    // Deep Blue (V=65%)
+			[166, 0, 166, 255],   // Dark Purple (V=65%)
+		] as [number, number, number, number][])
+			.forEach(rgba => this.uis.push(grid.add(new UiButton(colorIcon(Color.fromRgba(...rgba)), `color-${rgba}-${rgba.map(x => round(x / 255, .01))}`), smallButtonSize)));
 
 		grid.nextRow(extraMargin);
 		this.uis.push(grid.add(new UiButton(icons.UNDO, 'undo'), smallButtonSize));
 		this.uis.push(grid.add(new UiButton(icons.REDO, 'redo'), smallButtonSize));
 
 		grid.nextRow(extraMargin);
-		// this.uis.push(grid.add(this.zoom, new Point(fullRowSize, smallButtonSize.y)));
+		this.uis.push(grid.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)));
 
 		grid.nextRow(extraMargin);
 		this.uis.push(grid.add(new UiButton(icons.SAVE, 'save'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.RESET, 'reset'), smallButtonSize));
+		this.uis.push(grid.add(new UiButton(icons.START_NEW, 'start-new'), smallButtonSize));
 
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED],
-			() => this.uis.some(ui => ui.containsPoint(input.mouseLastPosition))));
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
+			let ui = this.uis.find(ui => ui.containsPoint(input.mouseLastPosition));
+			if (ui && ui.event) {
+				console.log(ui.event);
+				this.emit(ui.event);
+			}
+		}));
 	}
 
 	draw(pixels: Pixels) {

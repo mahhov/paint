@@ -23,6 +23,10 @@ export class Point {
 		return new Point(this.x * point.x, this.y * point.y);
 	}
 
+	divide(point: Point) {
+		return new Point(this.x / point.x, this.y / point.y);
+	}
+
 	min(point: Point) {
 		return new Point(Math.min(this.x, point.x), Math.min(this.y, point.y));
 	}
