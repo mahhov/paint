@@ -107,30 +107,58 @@ export let icons: Record<string, IconInstruction[]> = {
 		{type: IconInstructionType.FILL_RECT, coords: [6, 5, 24, 10], color: Color.LIGHT_GRAY},
 	],
 	UNDO: [
-		// Vertical Stem
+		// vertical stem
 		{type: IconInstructionType.LINE, coords: [26, 6, 26, 26], color: Color.DARK_GRAY},
-		// Horizontal Section
+		// horizontal section
 		{type: IconInstructionType.LINE, coords: [26, 6, 10, 6], color: Color.DARK_GRAY},
-		// Curve Bend (Approximation using short lines)
+		// curve bend (approximation using short lines)
 		{type: IconInstructionType.LINE, coords: [10, 6, 7, 9], color: Color.DARK_GRAY},
-		// Vertical Section
+		// vertical section
 		{type: IconInstructionType.LINE, coords: [7, 9, 7, 18], color: Color.DARK_GRAY},
-		// Arrowhead (Pointing left/up from bend point)
+		// arrowhead (pointing left/up from bend point)
 		{type: IconInstructionType.LINE, coords: [7, 18, 3, 14], color: Color.DARK_GRAY},
 		{type: IconInstructionType.LINE, coords: [7, 18, 11, 14], color: Color.DARK_GRAY},
 	],
 	REDO: [
-		// Vertical Stem
+		// vertical stem
 		{type: IconInstructionType.LINE, coords: [6, 6, 6, 26], color: Color.DARK_GRAY},
-		// Horizontal Section
+		// horizontal section
 		{type: IconInstructionType.LINE, coords: [6, 6, 22, 6], color: Color.DARK_GRAY},
-		// Curve Bend (Approximation using short lines)
+		// curve bend (approximation using short lines)
 		{type: IconInstructionType.LINE, coords: [22, 6, 25, 9], color: Color.DARK_GRAY},
-		// Vertical Section
+		// vertical section
 		{type: IconInstructionType.LINE, coords: [25, 9, 25, 18], color: Color.DARK_GRAY},
-		// Arrowhead (Pointing right/up from bend point)
+		// arrowhead (pointing right/up from bend point)
 		{type: IconInstructionType.LINE, coords: [25, 18, 29, 14], color: Color.DARK_GRAY},
 		{type: IconInstructionType.LINE, coords: [25, 18, 21, 14], color: Color.DARK_GRAY},
+	],
+	SAVE: [
+		// floppy disk body
+		{type: IconInstructionType.FILL_RECT, coords: [5, 5, 27, 27], color: Color.LIGHT_GRAY},
+		// floppy disk notch/top detail
+		{type: IconInstructionType.FILL_RECT, coords: [19, 5, 27, 12], color: Color.WHITE},
+		// floppy disk magnetic area (dark center)
+		{type: IconInstructionType.FILL_RECT, coords: [9, 17, 23, 24], color: Color.DARK_GRAY},
+		// outline
+		{type: IconInstructionType.RECT, coords: [5, 5, 27, 27], color: Color.DARK_GRAY},
+	],
+	RESET: [
+		// circle shape (approximated with three lines for a clean, chunky look)
+		// top right curve
+		{type: IconInstructionType.LINE, coords: [16, 5, 26, 10], color: Color.DARK_GRAY},
+		// right vertical curve
+		{type: IconInstructionType.LINE, coords: [26, 10, 26, 22], color: Color.DARK_GRAY},
+		// bottom curve
+		{type: IconInstructionType.LINE, coords: [26, 22, 16, 27], color: Color.DARK_GRAY},
+		// bottom left curve
+		{type: IconInstructionType.LINE, coords: [16, 27, 6, 22], color: Color.DARK_GRAY},
+		// left vertical curve
+		{type: IconInstructionType.LINE, coords: [6, 22, 6, 10], color: Color.DARK_GRAY},
+		// top left curve
+		{type: IconInstructionType.LINE, coords: [6, 10, 16, 5], color: Color.DARK_GRAY},
+		// arrowhead (pointing left/up)
+		{type: IconInstructionType.LINE, coords: [6, 10, 2, 14], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [6, 10, 10, 14], color: Color.DARK_GRAY},
 	],
 };
 

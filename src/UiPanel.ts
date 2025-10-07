@@ -1,4 +1,4 @@
-import {A, Color, Emitter, Point} from './base.js';
+import {Color, Emitter, Point} from './base.js';
 import {Edit, Rect} from './Edit.js';
 import {IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
@@ -98,15 +98,6 @@ class GridLayout {
 export default class UiPanel extends Emitter {
 	private readonly uis: UiElement[] = [];
 
-	readonly colorCircle = new UiColorCircle();
-	readonly colorBrightness = new UiRange();
-	readonly recentColors = A(16).map(() => new UiButton());
-	readonly undo = new UiButton();
-	readonly redo = new UiButton();
-	readonly zoom = new UiText();
-	readonly save = new UiText();
-	readonly reset = new UiText();
-
 	constructor(width: number, input: Input) {
 		super();
 
@@ -126,25 +117,25 @@ export default class UiPanel extends Emitter {
 		this.uis.push(grid.add(new UiButton(icons.COLOR_PICKER, 'tool-color-picker'), smallButtonSize));
 		this.uis.push(grid.add(new UiButton(icons.BUCKET_FILL, 'tool-bucket-fill'), smallButtonSize));
 
-		// grid.nextRow(extraMargin);
+		grid.nextRow(extraMargin);
 		// this.uis.push(grid.add(this.colorCircle, new Point(fullRowSize)));
 
-		// grid.nextRow();
+		grid.nextRow();
 		// this.uis.push(grid.add(this.colorBrightness, new Point(fullRowSize, smallButtonSize.y)));
 
-		// grid.nextRow();
+		grid.nextRow();
 		// this.recentColors.forEach(ui => grid.add(ui, smallButtonSize));
 
-		// grid.nextRow(extraMargin);
-		// this.uis.push(grid.add(this.undo, smallButtonSize));
-		// this.uis.push(grid.add(this.redo, smallButtonSize));
+		grid.nextRow(extraMargin);
+		this.uis.push(grid.add(new UiButton(icons.UNDO, 'undo'), smallButtonSize));
+		this.uis.push(grid.add(new UiButton(icons.REDO, 'redo'), smallButtonSize));
 
-		// grid.nextRow(extraMargin);
+		grid.nextRow(extraMargin);
 		// this.uis.push(grid.add(this.zoom, new Point(fullRowSize, smallButtonSize.y)));
 
-		// grid.nextRow(extraMargin);
-		// this.uis.push(grid.add(this.save, smallButtonSize));
-		// this.uis.push(grid.add(this.reset, smallButtonSize));
+		grid.nextRow(extraMargin);
+		this.uis.push(grid.add(new UiButton(icons.SAVE, 'save'), smallButtonSize));
+		this.uis.push(grid.add(new UiButton(icons.RESET, 'reset'), smallButtonSize));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED],
 			() => this.uis.some(ui => ui.containsPoint(input.mouseLastPosition))));
