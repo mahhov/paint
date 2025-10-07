@@ -37,8 +37,8 @@ export default class Editor {
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(PANEL_SIZE, this.input);
 
-		this.panel.undo.setHandler(() => this.editCreator.undoEdit());
-		this.panel.redo.setHandler(() => this.editCreator.redoEdit());
+		// this.panel.undo.setHandler(() => this.editCreator.undoEdit());
+		// this.panel.redo.setHandler(() => this.editCreator.redoEdit());
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);

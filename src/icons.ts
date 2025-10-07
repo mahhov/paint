@@ -3,7 +3,7 @@ import {Edit, FillRect, Line, Rect, Select} from './Edit.js';
 
 enum IconInstructionType {SELECT, LINE, RECT, FILL_RECT}
 
-interface IconInstruction {
+export interface IconInstruction {
 	type: IconInstructionType;
 	coords: [number, number, number, number];
 	color: Color;
@@ -77,14 +77,14 @@ export let icons: Record<string, IconInstruction[]> = {
 	],
 	COLOR_PICKER: [
 		// color base
-		{type: IconInstructionType.FILL_RECT, coords: [4, 23, 28, 28], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.FILL_RECT, coords: [5, 5, 27, 27], color: Color.LIGHT_GRAY},
 		// magnifier handle (thicker)
-		{type: IconInstructionType.LINE, coords: [27, 4, 17, 14], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [28, 5, 18, 15], color: Color.DARK_GRAY},
-		// magnifier loop (rect to simulate circular loop)
-		{type: IconInstructionType.RECT, coords: [8, 8, 18, 18], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [27, 5, 20, 12], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [26, 4, 19, 11], color: Color.DARK_GRAY},
 		// magnifier fill (to imply clear center)
-		{type: IconInstructionType.FILL_RECT, coords: [10, 10, 16, 16], color: Color.WHITE},
+		{type: IconInstructionType.FILL_RECT, coords: [11, 12, 19, 20], color: Color.WHITE},
+		// magnifier loop (rect to simulate circular loop)
+		{type: IconInstructionType.RECT, coords: [11, 12, 19, 20], color: Color.DARK_GRAY},
 	],
 	BUCKET_FILL: [
 		// bucket rim
@@ -96,15 +96,15 @@ export let icons: Record<string, IconInstruction[]> = {
 		// paint spout fill
 		{type: IconInstructionType.FILL_RECT, coords: [24, 8, 26, 12], color: Color.DARK_GRAY},
 		// paint puddle
-		{type: IconInstructionType.FILL_RECT, coords: [20, 25, 25, 29], color: Color.DARK_GRAY},
+		{type: IconInstructionType.FILL_RECT, coords: [23, 22, 27, 25], color: Color.DARK_GRAY},
 	],
 	PASTE: [
 		// back document
-		{type: IconInstructionType.RECT, coords: [8, 7, 30, 30], color: Color.DARK_GRAY},
+		{type: IconInstructionType.RECT, coords: [7, 6, 29, 29], color: Color.DARK_GRAY},
 		// front document
-		{type: IconInstructionType.RECT, coords: [5, 4, 27, 27], color: Color.DARK_GRAY},
+		{type: IconInstructionType.RECT, coords: [4, 3, 26, 26], color: Color.DARK_GRAY},
 		// highlight/fill for front document
-		{type: IconInstructionType.FILL_RECT, coords: [7, 6, 25, 11], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.FILL_RECT, coords: [6, 5, 24, 10], color: Color.LIGHT_GRAY},
 	],
 	UNDO: [
 		// Vertical Stem

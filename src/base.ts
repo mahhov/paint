@@ -78,6 +78,20 @@ export class Color {
 	}
 }
 
+export class Emitter {
+	private readonly listeners: Record<string, (() => void)[]> = {};
+
+	addListener(event: string, listener: () => void) {
+		this.listeners[event] ||= [];
+		this.listeners[event].push(listener);
+	}
+
+	emit(event: string) {
+		if (this.listeners[event])
+			this.listeners[event].forEach(listener => listener());
+	}
+}
+
 export let A = (n: number) => [...Array(n)];
 
 export enum Tool {
