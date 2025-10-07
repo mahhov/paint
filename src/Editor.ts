@@ -33,22 +33,14 @@ export default class Editor {
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
-		this.panelPixels = new Pixels(PANEL_SIZE, 1000, this.ctx, Color.CLEAR);
+		this.panelPixels = new Pixels(PANEL_SIZE, 5000, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(PANEL_SIZE, this.input);
 
-		this.panel.addListener('tool-select', () => this.selectTool(Tool.SELECT));
-		this.panel.addListener('tool-move', () => this.selectTool(Tool.MOVE));
-		this.panel.addListener('tool-line', () => this.selectTool(Tool.LINE));
-		this.panel.addListener('tool-straight-line', () => this.selectTool(Tool.STRAIGHT_LINE));
-		this.panel.addListener('tool-rect', () => this.selectTool(Tool.RECT));
-		this.panel.addListener('tool-fill-rect', () => this.selectTool(Tool.FILL_RECT));
-		this.panel.addListener('tool-clear', () => this.selectTool(Tool.CLEAR));
-		this.panel.addListener('tool-text', () => this.selectTool(Tool.TEXT));
-		this.panel.addListener('tool-color-picker', () => this.selectTool(Tool.COLOR_PICKER));
-		this.panel.addListener('tool-bucket-fill', () => this.selectTool(Tool.BUCKET_FILL));
+		this.panel.addListener('tool', (tool: Tool) => this.selectTool(tool));
 		this.panel.addListener('undo', () => this.editCreator.undoEdit());
 		this.panel.addListener('redo', () => this.editCreator.redoEdit());
+		this.panel.addListener('camera-reset', () => this.cameraReset());
 		this.panel.addListener('save', () => this.save());
 		this.panel.addListener('start-new', () => this.startNew());
 
@@ -56,11 +48,12 @@ export default class Editor {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
 			this.camera.move(delta.scale(1 / this.editorSize));
 		}));
-		this.input.addBinding(new MouseWheelBinding(false, () => this.camera.zoom(-1, this.mousePositionToCanvasPosition())));
-		this.input.addBinding(new MouseWheelBinding(true, () => this.camera.zoom(1, this.mousePositionToCanvasPosition())));
+		this.input.addBinding(new MouseWheelBinding(false, () => this.zoom(-1)));
+		this.input.addBinding(new MouseWheelBinding(true, () => this.zoom(1)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
 			let point = this.mousePositionToPixelsPosition();
+			if (!point) return;
 			if (this.tool === Tool.COLOR_PICKER) {
 				this.color = this.pixels.get(point);
 				return;
@@ -77,6 +70,7 @@ export default class Editor {
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.RELEASED], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
 			let point = this.mousePositionToPixelsPosition();
+			if (!point) return;
 			if (this.tool === Tool.COLOR_PICKER) {
 				this.color = this.pixels.get(point);
 				return;
@@ -120,7 +114,7 @@ export default class Editor {
 
 		// todo ctrl+1-9 to select colors
 
-		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.camera = new Camera(this.editorSize / PIXELS_SIZE)));
+		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
 
 		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
 		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.startNew()));
@@ -212,17 +206,20 @@ export default class Editor {
 	}
 
 	private paste(e: ClipboardEvent) {
+		let point = this.mousePositionToPixelsPosition();
+		if (!point) return;
+
 		let str = Clipboard.clipboardToText(e);
 		if (str) {
 			if (!(this.editCreator.pendingEdit instanceof TextEdit))
-				this.editCreator.startNewEdit(new TextEdit(this.mousePositionToPixelsPosition(), this.color));
+				this.editCreator.startNewEdit(new TextEdit(point, this.color));
 			(this.editCreator.pendingEdit as TextEdit).text += str;
 			this.tool = Tool.TEXT;
 			return;
 		}
 
 		Clipboard.clipboardToPixelArray(e)
-			.then(int8Array => this.editCreator.startNewEdit(new Paste(this.mousePositionToPixelsPosition(), int8Array)))
+			.then(int8Array => this.editCreator.startNewEdit(new Paste(point, int8Array)))
 			.catch(e => console.warn('Paste failed:', e));
 	}
 
@@ -232,7 +229,17 @@ export default class Editor {
 		this.editorSize = Math.min(this.editorWidth, this.editorHeight);
 		this.ctx.canvas.width = this.editorWidth + PANEL_SIZE;
 		this.ctx.canvas.height = this.editorHeight;
+		this.cameraReset();
+	}
+
+	private cameraReset() {
 		this.camera = new Camera(this.editorSize / PIXELS_SIZE);
+	}
+
+	private zoom(delta: number) {
+		let canvasPosition = this.mousePositionToCanvasPosition();
+		if (canvasPosition)
+			this.camera.zoom(delta, canvasPosition);
 	}
 
 	private async loop() {
@@ -243,17 +250,20 @@ export default class Editor {
 
 	private mousePositionToCanvasPosition(mousePosition = this.input.mousePosition) {
 		// return [0,1) canvas position
-		return mousePosition.subtract(new Point(PANEL_SIZE, 0)).scale(1 / this.editorSize);
+		let offset = mousePosition.subtract(new Point(PANEL_SIZE, 0));
+		return offset.x >= 0 ? offset.scale(1 / this.editorSize) : null;
 	}
 
 	private mousePositionToWorldPosition(mousePosition = this.input.mousePosition) {
 		// return [0, 1) world position
-		return this.camera.canvasToWorld(this.mousePositionToCanvasPosition(mousePosition));
+		let canvasPosition = this.mousePositionToCanvasPosition(mousePosition);
+		return canvasPosition ? this.camera.canvasToWorld(canvasPosition) : null;
 	}
 
 	private mousePositionToPixelsPosition(mousePosition = this.input.mousePosition) {
 		// return [0, PIXELS_SIZE) pixel position
-		return this.mousePositionToWorldPosition(mousePosition).scale(PIXELS_SIZE).clamp(new Point(), new Point(PIXELS_SIZE - 1)).round;
+		let worldPosition = this.mousePositionToWorldPosition(mousePosition);
+		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(new Point(), new Point(PIXELS_SIZE - 1)).round : null;
 	}
 
 	private selectTool(tool: Tool) {

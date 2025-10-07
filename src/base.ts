@@ -83,16 +83,16 @@ export class Color {
 }
 
 export class Emitter {
-	private readonly listeners: Record<string, (() => void)[]> = {};
+	private readonly listeners: Record<string, ((...args: any[]) => void)[]> = {};
 
-	addListener(event: string, listener: () => void) {
+	addListener(event: string, listener: (...args: any[]) => void) {
 		this.listeners[event] ||= [];
 		this.listeners[event].push(listener);
 	}
 
-	emit(event: string) {
+	emit(event: string, ...args: any[]) {
 		if (this.listeners[event])
-			this.listeners[event].forEach(listener => listener());
+			this.listeners[event].forEach(listener => listener(...args));
 	}
 }
 

@@ -1,16 +1,21 @@
-import {Color, Emitter, Point, round} from './base.js';
+import {Color, Emitter, Point, round, Tool} from './base.js';
 import {Edit, Line, Rect, TextEdit} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
 
-class UiElement {
+class UiElement extends Emitter {
 	protected position = new Point();
 	protected size = new Point();
 
-	setPosition(position: Point, size: Point) {
+	setPosition(position: Point) {
 		this.position = position;
+		return this;
+	}
+
+	setSize(size: Point) {
 		this.size = size;
+		return this;
 	}
 
 	draw(pixels: Pixels) {
@@ -21,23 +26,28 @@ class UiElement {
 		return [new Rect(this.position, this.position.add(this.size), Color.BLACK)];
 	}
 
-	containsPoint(point: Point) {
+	onClick(point: Point) {}
+
+	protected containsPoint(point: Point) {
 		return point.atLeast(this.position) && point.atMost(this.position.add(this.size));
 	}
 }
 
 class UiButton extends UiElement {
 	private readonly icon: IconInstruction[];
-	private readonly event: string;
 
-	constructor(icon: IconInstruction[], event: string) {
+	constructor(icon: IconInstruction[]) {
 		super();
 		this.icon = icon;
-		this.event = event;
 	}
 
 	protected get edits(): Edit[] {
 		return super.edits.concat(iconToEdits(this.icon, this.position, this.size));
+	}
+
+	onClick(point: Point) {
+		if (this.containsPoint(point))
+			this.emit('click');
 	}
 }
 
@@ -61,11 +71,10 @@ class UiColorCircle extends UiElement {
 		return Color.fromRgba(...rgb, 255);
 	}
 
-	private getPointColor(point: Point): Color | null {
+	private getColor(point: Point): Color | null {
 		let float = point.subtract(this.position).divide(this.size);
-		if (float.subtract(new Point(.5)).magnitude2 > .25)
-			return null;
-		return UiColorCircle.colorFromFloat(float, .5);
+		return float.subtract(new Point(.5)).magnitude2 <= .25 ?
+			UiColorCircle.colorFromFloat(float, .5) : null;
 	}
 
 	protected get edits(): Edit[] {
@@ -73,11 +82,17 @@ class UiColorCircle extends UiElement {
 		for (let x = this.position.x; x < this.position.add(this.size).x; x++)
 			for (let y = this.position.y; y < this.position.add(this.size).y; y++) {
 				let point = new Point(x, y);
-				let color = this.getPointColor(point);
+				let color = this.getColor(point);
 				if (color)
 					edits.push(new Line(point, point, color));
 			}
 		return edits;
+	}
+
+	onClick(point: Point) {
+		let color = this.getColor(point);
+		if (color)
+			this.emit('click', color);
 	}
 }
 
@@ -97,6 +112,11 @@ class UiRange extends UiElement {
 					edits.push(new Line(point, point, color));
 			}
 		return edits;
+		// todo optimize y
+	}
+
+	onClick(point: Point) {
+		this.emit('click', point.x / this.size.x);
 	}
 }
 
@@ -113,6 +133,11 @@ class UiText extends UiElement {
 		textEdit.text = this.text;
 		return super.edits.concat(textEdit);
 	}
+	
+	onClick(point: Point) {
+		if (this.containsPoint(point))
+			this.emit('click');
+	}
 }
 
 class GridLayout {
@@ -128,13 +153,13 @@ class GridLayout {
 		this.nextRow();
 	}
 
-	add(ui: UiElement, size: Point) {
+	add(size: Point) {
 		if (this.x + size.x + this.margin > this.width)
 			this.nextRow();
-		ui.setPosition(new Point(this.x, this.y), size);
+		let position = new Point(this.x, this.y);
 		this.x += size.x + this.margin;
 		this.rowHeight = Math.max(this.rowHeight, size.y);
-		return ui;
+		return position;
 	}
 
 	nextRow(extraMargin = 0): void {
@@ -153,34 +178,39 @@ class GridLayout {
 }
 
 export default class UiPanel extends Emitter {
+	private readonly grid: GridLayout;
 	private readonly uis: UiElement[] = [];
 
 	constructor(width: number, input: Input) {
 		super();
 
 		let margin = 10, extraMargin = margin * 3;
-		let grid = new GridLayout(width, margin);
-		let smallButtonSize = new Point(32);
-		let fullRowSize = grid.divide(1);
+		this.grid = new GridLayout(width, margin);
+		let smallButtonSize = new Point(this.grid.divide(4));
+		let fullRowSize = this.grid.divide(1);
 
-		this.uis.push(grid.add(new UiButton(icons.SELECT, 'tool-select'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.MOVE, 'tool-move'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.LINE, 'tool-line'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.STRAIGHT_LINE, 'tool-straight-line'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.RECT, 'tool-rect'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.FILL_RECT, 'tool-fill-rect'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.CLEAR, 'tool-clear'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.TEXT, 'tool-text'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.COLOR_PICKER, 'tool-color-picker'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.BUCKET_FILL, 'tool-bucket-fill'), smallButtonSize));
 
-		grid.nextRow(extraMargin);
-		this.uis.push(grid.add(new UiColorCircle(), new Point(fullRowSize)));
+		([
+			[icons.SELECT, Tool.SELECT],
+			[icons.MOVE, Tool.MOVE],
+			[icons.LINE, Tool.LINE],
+			[icons.STRAIGHT_LINE, Tool.STRAIGHT_LINE],
+			[icons.RECT, Tool.RECT],
+			[icons.FILL_RECT, Tool.FILL_RECT],
+			[icons.CLEAR, Tool.CLEAR],
+			[icons.TEXT, Tool.TEXT],
+			[icons.COLOR_PICKER, Tool.COLOR_PICKER],
+			[icons.BUCKET_FILL, Tool.BUCKET_FILL],
+		] as [IconInstruction[], Tool][]).forEach(([icon, tool]) =>
+			this.add(new UiButton(icon), smallButtonSize).addListener('click', () => this.emit('tool', tool)));
 
-		grid.nextRow();
-		this.uis.push(grid.add(new UiRange(), new Point(fullRowSize, smallButtonSize.y)));
+		this.grid.nextRow(extraMargin);
+		this.add(new UiColorCircle(), new Point(fullRowSize));
 
-		grid.nextRow();
+		this.grid.nextRow();
+		this.add(new UiRange(), new Point(fullRowSize, smallButtonSize.y));
+
+		this.grid.nextRow();
 		([
 			[0, 0, 0, 255],
 			[85, 85, 85, 255],
@@ -247,26 +277,32 @@ export default class UiPanel extends Emitter {
 			[0, 0, 166, 255],    // Deep Blue (V=65%)
 			[166, 0, 166, 255],   // Dark Purple (V=65%)
 		] as [number, number, number, number][])
-			.forEach(rgba => this.uis.push(grid.add(new UiButton(colorIcon(Color.fromRgba(...rgba)), `color-${rgba}-${rgba.map(x => round(x / 255, .01))}`), smallButtonSize)));
+			.map(rgba => Color.fromRgba(...rgba))
+			.forEach(color => this.add(new UiButton(colorIcon(color)), smallButtonSize).addListener('click', () => this.emit('color', color)));
 
-		grid.nextRow(extraMargin);
-		this.uis.push(grid.add(new UiButton(icons.UNDO, 'undo'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.REDO, 'redo'), smallButtonSize));
+		// todo recent colors
+		// todo off-by-1 for edit coordinates
 
-		grid.nextRow(extraMargin);
-		this.uis.push(grid.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)));
+		this.grid.nextRow(extraMargin);
+		this.add(new UiButton(icons.UNDO), smallButtonSize).addListener('click', () => this.emit('undo'));
+		this.add(new UiButton(icons.REDO), smallButtonSize).addListener('click', () => this.emit('redo'));
 
-		grid.nextRow(extraMargin);
-		this.uis.push(grid.add(new UiButton(icons.SAVE, 'save'), smallButtonSize));
-		this.uis.push(grid.add(new UiButton(icons.START_NEW, 'start-new'), smallButtonSize));
+		this.grid.nextRow(extraMargin);
+		this.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)).addListener('click', () => this.emit('camera-reset'));
 
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
-			let ui = this.uis.find(ui => ui.containsPoint(input.mouseLastPosition));
-			if (ui && ui.event) {
-				console.log(ui.event);
-				this.emit(ui.event);
-			}
-		}));
+		this.grid.nextRow(extraMargin);
+		this.add(new UiButton(icons.SAVE), smallButtonSize).addListener('click', () => this.emit('save'));
+		this.add(new UiButton(icons.START_NEW), smallButtonSize).addListener('click', () => this.emit('start-new'));
+
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => this.uis.forEach(ui => ui.onClick(input.mouseLastPosition))));
+	}
+
+	private add(ui: UiElement, size: Point) {
+		let position = this.grid.add(size);
+		ui.setPosition(position);
+		ui.setSize(size);
+		this.uis.push(ui);
+		return ui;
 	}
 
 	draw(pixels: Pixels) {
