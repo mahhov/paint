@@ -280,7 +280,6 @@ export class BucketFill extends Edit {
 			if (x > 0) queue.push(index - 1);
 			if (y > 0) queue.push(index - pixels.width);
 		}
-		// todo optimize by batching horizontal lines
 	}
 }
 
@@ -295,10 +294,10 @@ export class Paste extends Edit {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let size = new Point(this.pasteData.width, this.pasteData.height);
 		let [min, max] = boundTransferRect(Point.P0, size, size, this.points[0], pixels.size);
-		for (let y = min.y; y < max.y; y++)
+		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(
 				getIndex(min.x + this.points[0].x, y + this.points[0].y, pixels.width, true),
-				this.pasteData.int8Array.subarray(getIndex(min.x, y, size.x, true), getIndex(max.x, y, size.x, true)));
+				this.pasteData.int8Array.subarray(getIndex(min.x, y, size.x, true), getIndex(max.x + 1, y, size.x, true)));
 	}
 }
 

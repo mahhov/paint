@@ -206,9 +206,7 @@ export default class Editor {
 	}
 
 	private async copy() {
-		let region =
-			(this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move) &&
-			!this.editCreator.pendingEdit.points[0].equals(this.editCreator.pendingEdit.points[1]);
+		let region = this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move;
 		let start = region ? this.editCreator.pendingEdit!.points[0] : Point.P0;
 		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
 		this.editCreator.startNewEdit(null);

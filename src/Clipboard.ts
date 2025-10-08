@@ -35,7 +35,7 @@ export default class Clipboard {
 
 	static async copyCanvasRegion(image: ImageBitmap, point1: Point, point2: Point) {
 		let [min, max] = boundRect(point1, point2, new Point(image.width, image.height));
-		let delta = max.subtract(min);
+		let delta = max.subtract(min).add(Point.P1);
 		let canvas = new OffscreenCanvas(delta.x, delta.y);
 		let ctx = canvas.getContext('2d');
 		if (!ctx) throw new Error('no canvas context');
