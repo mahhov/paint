@@ -112,8 +112,8 @@ class UiColorCircle extends UiElement {
 
 	protected get edits(): Edit[] {
 		let edits = [];
-		for (let x = this.position.x; x < this.position.add(this.size).x; x++)
-			for (let y = this.position.y; y < this.position.add(this.size).y; y++) {
+		for (let x = this.position.x; x <= this.position.add(this.size).x; x++)
+			for (let y = this.position.y; y <= this.position.add(this.size).y; y++) {
 				let point = new Point(x, y);
 				let color = this.getColor(point);
 				if (color)
@@ -148,15 +148,15 @@ class UiColorRange extends UiElement {
 	}
 
 	protected get edits(): Edit[] {
-		let edits = super.edits;
-		for (let x = this.position.x; x < this.position.add(this.size).x; x++)
-			for (let y = this.position.y; y < this.position.add(this.size).y; y++) {
+		let edits: Edit[] = [];
+		for (let x = this.position.x; x <= this.position.add(this.size).x; x++)
+			for (let y = this.position.y; y <= this.position.add(this.size).y; y++) {
 				let point = new Point(x, y);
 				let color = this.getPointColor(point);
 				if (color)
 					edits.push(new Line(point, point, color));
 			}
-		return edits;
+		return edits.concat(super.edits);
 		// todo optimize y
 	}
 
@@ -281,8 +281,6 @@ export default class UiPanel extends Emitter {
 			button.addListener('click', () => this.emit('color', button.color));
 			return button;
 		});
-
-		// todo off-by-1 for edit coordinates
 
 		this.grid.nextRow(extraMargin);
 		this.add(new UiButton(icons.UNDO), smallButtonSize).addListener('click', () => this.emit('undo'));

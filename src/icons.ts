@@ -164,7 +164,7 @@ export let icons: Record<string, IconInstruction[]> = {
 };
 
 export let colorIcon = (color: Color): IconInstruction[] =>
-	[{type: IconInstructionType.FILL_RECT, coords: [1, 1, 32, 32], color}];
+	[{type: IconInstructionType.FILL_RECT, coords: [1, 1, 31, 31], color}];
 
 let iconCoordinates = (point32: Point, position: Point, size: Point) => {
 	return point32.scale(1 / 32).multiply(size).add(position).round;
