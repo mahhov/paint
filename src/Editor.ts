@@ -62,15 +62,13 @@ export default class Editor {
 				return;
 			}
 			let controlPoint = this.editCreator.findControlPoint(point);
-			if (controlPoint === -1) {
+			if (controlPoint === -1)
 				this.editCreator.startNewEdit(this.createEdit(point));
-				if ('color' in this.editCreator.pendingEdit!)
-					this.panel.setColorUsed(this.color);
-			} else {
+			else {
 				this.editCreator.setControlPoint(controlPoint);
 				this.editCreator.moveControlPointTo(point, false);
-				this.panel.setStatus(this.status);
 			}
+			this.editModified();
 		}));
 
 		// todo ignore events that started off screen / missed the pressed event
@@ -83,7 +81,7 @@ export default class Editor {
 				return;
 			}
 			this.editCreator.moveControlPointTo(point, this.input.shiftDown);
-			this.panel.setStatus(this.status);
+			this.editModified();
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
@@ -138,8 +136,7 @@ export default class Editor {
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
 				this.editCreator.moveControlPointBy(delta.scale(scale));
-				if (this.editCreator.pendingEdit)
-					this.panel.setStatus(this.status);
+				this.editModified();
 			}));
 		}));
 
@@ -152,9 +149,11 @@ export default class Editor {
 					this.editCreator.pendingEdit.text = str.substring(0, str.lastIndexOf(' ') + 1);
 				} else
 					this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
+				this.editModified();
 				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
 			} else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
 				this.editCreator.pendingEdit.text += e.key;
+				this.editModified();
 				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
 			}
 		});
@@ -197,13 +196,6 @@ export default class Editor {
 			});
 
 		return new Editor(canvas, await editCreatorPromise);
-	}
-
-	get status() {
-		if (!this.editCreator.pendingEdit || this.editCreator.pendingEdit.points.length < 2)
-			return '';
-		let delta = this.editCreator.pendingEdit.points[1].subtract(this.editCreator.pendingEdit.points[0]);
-		return `[${Math.abs(delta.x) + 1}, ${Math.abs(delta.y) + 1}]`;
 	}
 
 	private save() {
@@ -292,6 +284,20 @@ export default class Editor {
 			this.camera.zoom(delta, canvasPosition);
 			this.panel.setZoom(this.camera.zoomPercent);
 		}
+	}
+
+	private editModified() {
+		if (!this.editCreator.pendingEdit) return;
+
+		let status = '';
+		if (this.editCreator.pendingEdit.points.length >= 2) {
+			let delta = this.editCreator.pendingEdit.points[1].subtract(this.editCreator.pendingEdit.points[0]);
+			status = `[${Math.abs(delta.x) + 1}, ${Math.abs(delta.y) + 1}]`;
+		}
+		this.panel.setStatus(status);
+
+		if ('color' in this.editCreator.pendingEdit!)
+			this.panel.setColorUsed(this.color);
 	}
 
 	private async loop() {
