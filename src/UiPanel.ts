@@ -412,7 +412,7 @@ export default class UiPanel extends Emitter {
 			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
 			let tooltipTextEdit = new TextEdit(Point.P0, Color.BLACK, this.tooltip, 15);
 			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure).add(new Point(6, 2));
-			let excessX = tooltipPoint2.x - this.pixels.width;
+			let excessX = tooltipPoint2.x - this.pixels.width + 1;
 			if (excessX > 0) {
 				tooltipPoint1 = tooltipPoint1.add(new Point(-excessX, 10));
 				tooltipPoint2 = tooltipPoint2.add(new Point(-excessX, 10));
