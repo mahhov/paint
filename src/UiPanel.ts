@@ -5,7 +5,7 @@ import Pixels from './Pixels.js';
 import Color from './util/Color.js';
 import Emitter from './util/Emitter.js';
 import Point from './util/Point.js';
-import {Tool} from './util/util.js';
+import {A, round, Tool} from './util/util.js';
 
 class UiElement extends Emitter {
 	protected position = new Point();
@@ -37,7 +37,7 @@ class UiElement extends Emitter {
 }
 
 class UiButton extends UiElement {
-	private readonly icon: IconInstruction[];
+	protected icon: IconInstruction[];
 
 	constructor(icon: IconInstruction[]) {
 		super();
@@ -85,6 +85,21 @@ class UiToolButton extends UiButton {
 			edits.push(new Rect(this.position.subtract(new Point(2)), this.position.add(this.size).add(new Point(2)), Color.fromRgba(0, 0, 0, 255)));
 		}
 		return edits;
+	}
+}
+
+// todo make selectable
+class UiColorButton extends UiButton {
+	color: Color;
+
+	constructor(color: Color) {
+		super(colorIcon(color));
+		this.color = color;
+	}
+
+	protected get edits(): Edit[] {
+		this.icon = colorIcon(this.color);
+		return super.edits;
 	}
 }
 
@@ -221,6 +236,7 @@ export default class UiPanel extends Emitter {
 	private readonly toolButtons: UiToolButton[];
 	private readonly colorCircle: UiColorCircle;
 	private readonly colorBrightness: UiColorRange;
+	private readonly recentColors: UiColorButton[];
 	private readonly zoomText: UiText;
 	private readonly pixels: Pixels;
 
@@ -245,78 +261,31 @@ export default class UiPanel extends Emitter {
 		[this.colorCircle, this.colorBrightness].forEach(ui => ui.addListener('click', () =>
 			this.emit('color', Color.fromFloat(this.colorCircle.float, this.colorBrightness.brightness))));
 
-		// todo reduce colors
 		this.grid.nextRow();
+
+		let d3 = .3, d1 = .1;
 		([
 			[0, 0, 0, 255],
-			[85, 85, 85, 255],
-			[170, 170, 170, 255],
+			[255 / 3, 255 / 3, 255 / 3, 255],
+			[255 * 2 / 3, 255 * 2 / 3, 255 * 2 / 3, 255],
 			[255, 255, 255, 255],
-
-			[255, 0, 0, 255],
-			[0, 255, 0, 255],
-			[0, 0, 255, 255],
-			[255, 255, 0, 255],
-			[0, 255, 255, 255],
-			[255, 0, 255, 255],
-			[255, 200, 150, 255],
-			[255, 170, 0, 255],
-			[0, 128, 0, 255],
-			[128, 64, 0, 255],
-			[0, 128, 255, 255],
-			[128, 0, 128, 255],
-
-			[255, 0, 0, 255],
-			[255, 85, 0, 255],
-			[255, 172, 0, 255],
-			[212, 255, 0, 255],
-			[128, 255, 0, 255],
-			[43, 255, 0, 255],
-			[0, 255, 85, 255],
-			[0, 255, 172, 255],
-			[0, 255, 255, 255],
-			[0, 212, 255, 255],
-			[0, 128, 255, 255],
-			[43, 0, 255, 255],
-			[128, 0, 255, 255],
-			[212, 0, 255, 255],
-			[255, 0, 172, 255],
-			[255, 0, 85, 255],
-
-			[255, 0, 0, 255],
-			[255, 255, 0, 255],
-			[0, 255, 0, 255],
-			[0, 255, 255, 255],
-			[0, 0, 255, 255],
-			[255, 0, 255, 255],
-			[128, 0, 0, 255],
-			[128, 128, 0, 255],
-			[0, 128, 0, 255],
-			[0, 128, 128, 255],
-			[0, 0, 128, 255],
-			[128, 0, 128, 255],
-
-			[255, 255, 255, 255], // Pure White
-			[191, 191, 191, 255], // Light Gray
-			[102, 102, 102, 255], // Dark Gray
-			[0, 0, 0, 255],      // Pure Black
-			[217, 0, 0, 255],    // Red (V=85%)
-			[217, 217, 0, 255],  // Yellow (V=85%)
-			[0, 217, 0, 255],    // Green (V=85%)
-			[0, 217, 217, 255],  // Cyan (V=85%)
-			[0, 0, 217, 255],    // Blue (V=85%)
-			[217, 0, 217, 255],  // Magenta (V=85%)
-			[166, 0, 0, 255],    // Deep Red (V=65%)
-			[166, 166, 0, 255],  // Dark Yellow (V=65%)
-			[0, 166, 0, 255],    // Dark Green (V=65%)
-			[0, 166, 166, 255],  // Dark Cyan (V=65%)
-			[0, 0, 166, 255],    // Deep Blue (V=65%)
-			[166, 0, 166, 255],   // Dark Purple (V=65%)
+			...A(10).map((_, i, a) => [
+				[...Color.hsvToRgb(round(i * 255 / a.length), 1, 1 - d3), 255],
+				[...Color.hsvToRgb(round(i * 255 / a.length), 1, 1 - d1), 255],
+				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d1, 1), 255],
+				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d3, 1), 255],
+			]).flat(),
 		] as [number, number, number, number][])
 			.map(rgba => Color.fromRgba(...rgba))
-			.forEach(color => this.add(new UiButton(colorIcon(color)), smallButtonSize).addListener('click', () => this.emit('color', color)));
+			.forEach(color => this.add(new UiColorButton(color), smallButtonSize).addListener('click', () => this.emit('color', color)));
 
-		// todo recent colors
+		this.grid.nextRow(extraMargin);
+		this.recentColors = A(16).map(() => {
+			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), smallButtonSize);
+			button.addListener('click', () => this.emit('color', button.color));
+			return button;
+		});
+
 		// todo off-by-1 for edit coordinates
 
 		this.grid.nextRow(extraMargin);
@@ -343,7 +312,6 @@ export default class UiPanel extends Emitter {
 	}
 
 	setTool(tool: Tool) {
-		console.log('panel set tool', tool);
 		this.toolButtons.forEach(button => button.selected = button.tool === tool);
 		this.draw();
 	}
@@ -354,6 +322,18 @@ export default class UiPanel extends Emitter {
 		this.colorCircle.brightness = brightness;
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
+		this.draw();
+	}
+
+	setColorUsed(color: Color) {
+		let recentColors = this.recentColors.map(button => button.color);
+		let index = recentColors.findIndex(recentColor => recentColor.int32 === color.int32);
+		if (index === -1) {
+			recentColors.unshift(color);
+			recentColors.pop();
+		} else
+			recentColors.unshift(recentColors.splice(index, 1)[0]);
+		this.recentColors.forEach((button, i) => button.color = recentColors[i]);
 		this.draw();
 	}
 

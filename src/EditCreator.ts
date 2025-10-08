@@ -1,4 +1,5 @@
 import {Edit} from './Edit.js';
+import Color from './util/Color.js';
 import Point from './util/Point.js';
 import {NEAR_RANGE} from './util/util.js';
 

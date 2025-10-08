@@ -21,7 +21,7 @@ export default class Editor {
 	private readonly panelPixels: Pixels;
 	private editCreator: EditCreator;
 	private tool = Tool.SELECT;
-	private color = Color.BLACK;
+	private color = Color.LIGHT_GRAY;
 	private input: Input;
 	private readonly panel;
 	private camera!: Camera;
@@ -244,7 +244,6 @@ export default class Editor {
 	}
 
 	private selectTool(tool: Tool) {
-		console.log('editor select tool', tool)
 		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 		this.tool = tool;
 		this.panel.setTool(tool);
@@ -259,6 +258,7 @@ export default class Editor {
 
 	private setColor(color: Color) {
 		this.color = color;
+		this.editCreator.setColor(color);
 		this.panel.setColor(color);
 	}
 

@@ -5,8 +5,8 @@ export default class Color {
 	static WHITE = Color.fromRgba(255, 255, 255, 255);
 	static BLACK = Color.fromRgba(0, 0, 0, 255);
 	static CLEAR = Color.fromRgba(0, 0, 0, 0);
-	static DARK_GRAY = Color.fromRgba(60, 60, 60, 255);
-	static LIGHT_GRAY = Color.fromRgba(180, 180, 180, 255);
+	static DARK_GRAY = Color.fromRgba(85, 85, 85, 255);
+	static LIGHT_GRAY = Color.fromRgba(170, 170, 170, 255);
 
 	readonly int32: number;
 
