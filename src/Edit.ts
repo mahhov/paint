@@ -15,7 +15,7 @@ export class Edit {
 		return this.points_;
 	}
 
-	setPoint(index: number, point: Point) {
+	setPoint(index: number, point: Point, shiftDown: boolean) {
 		this.points_[index] = point;
 	}
 
@@ -48,16 +48,16 @@ export class Select extends Edit {
 export class Move extends Edit {
 	private delta = new Point();
 
-	constructor(start: Point, end: Point) {
-		super([start, end, start, end, Move.center(start, end)]);
+	constructor(start: Point, end: Point, delta: Point) {
+		super([start, end, start.add(delta), end.add(delta), Move.center(start, end)]);
 	}
 
 	static center(p1: Point, p2: Point) {
 		return p1.add(p2).scale(.5).round;
 	}
 
-	setPoint(index: number, point: Point) {
-		super.setPoint(index, point);
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		super.setPoint(index, point, shiftDown);
 		let center = Move.center(this.points[0], this.points[1]);
 		switch (index) {
 			case 0:
@@ -72,6 +72,10 @@ export class Move extends Edit {
 				break;
 			case 4:
 				this.delta = this.points[4].subtract(center);
+				if (shiftDown) {
+					this.delta = Math.abs(this.delta.x) > Math.abs(this.delta.y) ? new Point(this.delta.x, 0) : new Point(0, this.delta.y);
+					this.points_[4] = center.add(this.delta);
+				}
 				this.points_[2] = this.points[0].add(this.delta);
 				this.points_[3] = this.points[1].add(this.delta);
 				break;
@@ -107,6 +111,14 @@ export class Line extends Edit {
 		this.color = color;
 	}
 
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		super.setPoint(index, point, shiftDown);
+		if (!shiftDown) return;
+		let delta = this.points_[index].subtract(this.points_[1 - index]);
+		delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
+		this.points_[index] = this.points_[1 - index].add(delta);
+	}
+
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let delta = this.points[1].subtract(this.points[0]);
 		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y)) + 1;
@@ -128,7 +140,7 @@ export class StraightLine extends Line {
 }
 
 export class Rect extends Edit {
-	private readonly color: Color;
+	protected readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
 		super([start, end]);
@@ -149,19 +161,20 @@ export class Rect extends Edit {
 			handler(new Point(max.x, y), i++);
 	}
 
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		super.setPoint(index, point, shiftDown);
+		if (!shiftDown) return;
+		let delta = this.points[index].subtract(this.points[1 - index]);
+		delta = new Point(Math.abs(delta.x) < Math.abs(delta.y) ? delta.x : delta.y);
+		this.points_[index] = this.points[1 - index].add(delta);
+	}
+
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		Rect.points(this.points[0], this.points[1], point => pixels.set(point, this.color));
 	}
 }
 
-export class FillRect extends Edit {
-	private readonly color: Color;
-
-	constructor(start: Point, end: Point, color: Color) {
-		super([start, end]);
-		this.color = color;
-	}
-
+export class FillRect extends Rect {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let [min, max] = boundRect(this.points[0], this.points[1], pixels.size);
 		let line = new Uint8ClampedArray(max.subtract(min).x * 4);
@@ -193,8 +206,8 @@ export class TextEdit extends Edit {
 		return Math.abs(this.points[1].subtract(this.points[0]).y);
 	}
 
-	setPoint(index: number, point: Point) {
-		super.setPoint(index, point);
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		super.setPoint(index, point, shiftDown);
 		if (index)
 			TextEdit.lastSize = this.size;
 		this.points_[1] = this.points[0].add(new Point(0, TextEdit.lastSize));

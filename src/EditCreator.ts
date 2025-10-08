@@ -41,15 +41,15 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
-	moveControlPointTo(point: Point) {
+	moveControlPointTo(point: Point, shiftDown: boolean) {
 		if (!this.pendingEdit) return;
-		this.pendingEdit.setPoint(this.controlPoint, point);
+		this.pendingEdit.setPoint(this.controlPoint, point, shiftDown);
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
 	moveControlPointBy(delta: Point) {
 		if (!this.pendingEdit) return;
-		this.pendingEdit.setPoint(this.controlPoint, this.pendingEdit.points[this.controlPoint].add(delta));
+		this.pendingEdit.setPoint(this.controlPoint, this.pendingEdit.points[this.controlPoint].add(delta), false);
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 

@@ -68,7 +68,7 @@ export default class Editor {
 					this.panel.setColorUsed(this.color);
 			} else {
 				this.editCreator.setControlPoint(controlPoint);
-				this.editCreator.moveControlPointTo(point);
+				this.editCreator.moveControlPointTo(point, false);
 			}
 		}));
 
@@ -81,7 +81,7 @@ export default class Editor {
 				this.setColor(this.pixels.get(point));
 				return;
 			}
-			this.editCreator.moveControlPointTo(point);
+			this.editCreator.moveControlPointTo(point, this.input.shiftDown);
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
@@ -99,18 +99,19 @@ export default class Editor {
 			this.editCreator.redoEdit();
 		}));
 
-		this.input.addBinding(new KeyBinding('Escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
-		this.input.addBinding(new KeyBinding('Enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
-		this.input.addBinding(new KeyBinding('Tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
+		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
+		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
+		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
+		this.input.addBinding(new KeyBinding(' ', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
-		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => this.selectTool(Tool.STRAIGHT_LINE)));
+		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => this.selectTool(Tool.GRID_LINE)));
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
 		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
-		this.input.addBinding(new KeyBinding('Delete', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
+		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
@@ -252,7 +253,7 @@ export default class Editor {
 		let edit = null;
 		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
 			if (tool === Tool.MOVE)
-				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1], new Point());
 			else if (tool === Tool.CLEAR)
 				edit = new Clear(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
 		this.editCreator.startNewEdit(edit);
@@ -301,7 +302,7 @@ export default class Editor {
 			case Tool.SELECT:
 				return new Select(point, point);
 			case Tool.MOVE:
-				return new Move(point, point);
+				return new Move(point, point, new Point());
 			case Tool.LINE:
 				return new Line(point, point, this.color);
 			case Tool.STRAIGHT_LINE:
