@@ -1,4 +1,4 @@
-import {Edit, Line, Paste, Rect, TextEdit} from './Edit.js';
+import {Edit, FillRect, Line, Paste, Rect, TextEdit} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
@@ -10,6 +10,7 @@ import {A, getIndex, round, Tool} from './util/util.js';
 class UiElement extends Emitter {
 	protected position = Point.P0;
 	protected size = Point.P0;
+	tooltip = '';
 
 	setPosition(position: Point) {
 		this.position = position;
@@ -18,6 +19,11 @@ class UiElement extends Emitter {
 
 	setSize(size: Point) {
 		this.size = size;
+		return this;
+	}
+
+	setTooltip(tooltip: string) {
+		this.tooltip = tooltip;
 		return this;
 	}
 
@@ -31,7 +37,7 @@ class UiElement extends Emitter {
 
 	onClick(point: Point) {}
 
-	protected containsPoint(point: Point) {
+	containsPoint(point: Point) {
 		return point.atLeast(this.position) && point.atMost(this.position.add(this.size));
 	}
 }
@@ -64,22 +70,22 @@ class UiToolButton extends UiButton {
 	readonly tool: Tool;
 
 	constructor(tool: Tool) {
-		super(UiToolButton.toolIcons[tool]![1]);
+		super(UiToolButton.toolUiInfo[tool]![1]);
 		this.tool = tool;
 	}
 
-	static get toolIcons(): Partial<Record<Tool, [Tool, IconInstruction[]]>> {
+	static get toolUiInfo(): Partial<Record<Tool, [Tool, IconInstruction[], string]>> {
 		return {
-			[Tool.SELECT]: [Tool.SELECT, icons.SELECT],
-			[Tool.MOVE]: [Tool.MOVE, icons.MOVE],
-			[Tool.LINE]: [Tool.LINE, icons.LINE],
-			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE],
-			[Tool.RECT]: [Tool.RECT, icons.RECT],
-			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT],
-			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR],
-			[Tool.TEXT]: [Tool.TEXT, icons.TEXT],
-			[Tool.COLOR_PICKER]: [Tool.COLOR_PICKER, icons.COLOR_PICKER],
-			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL],
+			[Tool.SELECT]: [Tool.SELECT, icons.SELECT, 'select (s)'],
+			[Tool.MOVE]: [Tool.MOVE, icons.MOVE, 'move (m or space)'],
+			[Tool.LINE]: [Tool.LINE, icons.LINE, 'line (l)'],
+			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE, 'grid_line (k)'],
+			[Tool.RECT]: [Tool.RECT, icons.RECT, 'rect (r)'],
+			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT, 'fill rect (f)'],
+			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR, 'clear (e or right click)'],
+			[Tool.TEXT]: [Tool.TEXT, icons.TEXT, 'text (t)'],
+			[Tool.COLOR_PICKER]: [Tool.COLOR_PICKER, icons.COLOR_PICKER, 'color picker (c)'],
+			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL, 'bucket fill (b)'],
 		};
 	}
 }
@@ -176,8 +182,7 @@ class UiText extends UiElement {
 	}
 
 	protected get edits(): Edit[] {
-		let textEdit = new TextEdit(this.position.add(new Point(4, 11)), Color.DARK_GRAY);
-		textEdit.text = this.text;
+		let textEdit = new TextEdit(this.position.add(new Point(4, 11)), Color.DARK_GRAY, this.text);
 		return super.edits.concat(textEdit);
 	}
 
@@ -234,6 +239,8 @@ export default class UiPanel extends Emitter {
 	private readonly recentColors: UiColorButton[];
 	private readonly zoomText: UiText;
 	private readonly pixels: Pixels;
+	private tooltip = '';
+	private tooltipPosition = Point.P0;
 
 	constructor(pixels: Pixels, input: Input) {
 		super();
@@ -244,8 +251,10 @@ export default class UiPanel extends Emitter {
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
 
-		this.toolButtons = Object.values(UiToolButton.toolIcons).map(([tool]) =>
-			this.add(new UiToolButton(tool), smallButtonSize).addListener('click', () => this.emit('tool', tool)));
+		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
+			this.add(new UiToolButton(uiInfo[0]), smallButtonSize)
+				.setTooltip(uiInfo[2])
+				.addListener('click', () => this.emit('tool', uiInfo[0])));
 
 		this.grid.nextRow(extraMargin);
 		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
@@ -293,7 +302,16 @@ export default class UiPanel extends Emitter {
 		this.add(new UiButton(icons.START_NEW), smallButtonSize).addListener('click', () => this.emit('start-new'));
 
 		// todo don't repeat on buttons like undo/redo
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED, InputState.DOWN], () => this.uis.forEach(ui => ui.onClick(input.mouseLastPosition))));
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED, InputState.DOWN], () =>
+			this.uis.forEach(ui => ui.onClick(input.mousePosition))));
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.UP], () => {
+			if (input.mousePosition.equals(input.mouseLastPosition)) return;
+			let tooltip = this.uis.find(ui => ui.containsPoint(input.mousePosition))?.tooltip || '';
+			if (!tooltip && !this.tooltip) return;
+			this.tooltip = tooltip;
+			this.tooltipPosition = input.mousePosition;
+			this.draw();
+		}));
 	}
 
 	private add<T extends UiElement>(ui: T, size: Point): T {
@@ -316,7 +334,7 @@ export default class UiPanel extends Emitter {
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
 		this.setSelectedColor(color);
-		this.draw(); // todo skip draw if unchanged. likewise below
+		this.draw();
 	}
 
 	setColorUsed(color: Color) {
@@ -350,6 +368,22 @@ export default class UiPanel extends Emitter {
 	draw() {
 		this.pixels.clear();
 		this.uis.forEach(ui => ui.draw(this.pixels));
+
+		if (this.tooltip) {
+			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
+			let tooltipTextEdit = new TextEdit(Point.P0, Color.BLACK, this.tooltip, 17);
+			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure).add(new Point(3, 0));
+			let excessX = tooltipPoint2.x - this.pixels.width;
+			if (excessX > 0) {
+				tooltipPoint1 = tooltipPoint1.add(new Point(-excessX, 10));
+				tooltipPoint2 = tooltipPoint2.add(new Point(-excessX, 10));
+			}
+
+			tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
+			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, true);
+			new Rect(tooltipPoint1, tooltipPoint2, Color.BLACK).draw(this.pixels, this.pixels, true);
+			tooltipTextEdit.draw(this.pixels, this.pixels, true);
+		}
 	}
 }
 

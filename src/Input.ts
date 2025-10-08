@@ -90,20 +90,6 @@ export class KeyBinding extends Binding {
 	}
 }
 
-export class TypeBinding extends Binding {
-	private key = '';
-
-	constructor(listener: () => void) {
-		super([InputState.PRESSED], listener);
-	}
-
-	keyDown(e: KeyboardEvent) {
-		this.key = e.key;
-		this.press();
-		return false;
-	}
-}
-
 export enum MouseButton {
 	LEFT, MIDDLE, RIGHT, BACK, FORWARD
 }
