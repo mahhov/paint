@@ -1,18 +1,23 @@
 import Point from './util/Point.js';
-import {clamp, round} from './util/util.js';
+import {clamp} from './util/util.js';
 
-// todo center around initial zoom
-let zoomDelta = .2;
-let minWidth = .2;
-let maxWidth = 1.4; // maxWidth-minWidth should be divisible by zoomDelta
-let padding = (maxWidth - 1) / 2;
+let zoomPercents = [25, 50, 100, 200, 400, 800];
 
 export default class Camera {
 	private leftTop: Point = Point.P0;
-	private width: number;
+	private initialWidth: number;
+	private zoomIndex = zoomPercents.indexOf(100);
 
 	constructor(initialWidth: number) {
-		this.width = initialWidth;
+		this.initialWidth = initialWidth;
+	}
+
+	get zoomPercent() {
+		return zoomPercents[this.zoomIndex];
+	}
+
+	private get width() {
+		return this.initialWidth / this.zoomPercent * 100;
 	}
 
 	move(delta: Point) {
@@ -22,13 +27,13 @@ export default class Camera {
 
 	zoom(delta: number, canvasPoint: Point) {
 		let worldPoint = this.canvasToWorld(canvasPoint);
-		this.width = round(clamp(this.width + delta * zoomDelta, minWidth, maxWidth), 1);
+		this.zoomIndex = clamp(this.zoomIndex + delta, 0, zoomPercents.length - 1);
 		this.leftTop = worldPoint.subtract(canvasPoint.scale(this.width));
 		this.clamp();
 	}
 
 	clamp() {
-		this.leftTop = this.leftTop.clamp(new Point(-padding), new Point(1 + padding).subtract(new Point(this.width)));
+		this.leftTop = this.leftTop.clamp(new Point(-.2), new Point(1.2).subtract(new Point(this.width)));
 	}
 
 	worldToCanvas(world: Point) {

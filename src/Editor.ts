@@ -51,8 +51,8 @@ export default class Editor {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
 			this.camera.move(delta.scale(1 / this.editorSize));
 		}));
-		this.input.addBinding(new MouseWheelBinding(false, () => this.zoom(-1)));
-		this.input.addBinding(new MouseWheelBinding(true, () => this.zoom(1)));
+		this.input.addBinding(new MouseWheelBinding(false, () => this.zoom(1)));
+		this.input.addBinding(new MouseWheelBinding(true, () => this.zoom(-1)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
 			let point = this.mousePositionToPixelsPosition();
@@ -166,7 +166,7 @@ export default class Editor {
 
 		this.panel.setTool(this.tool);
 		this.panel.setColor(this.color);
-		this.panel.setZoom(this.camera.width);
+		this.panel.setZoom(this.camera.zoomPercent);
 
 		this.loop();
 	}
@@ -245,7 +245,7 @@ export default class Editor {
 
 	private cameraReset() {
 		this.camera = new Camera(this.editorSize / PIXELS_SIZE);
-		this.panel.setZoom(this.camera.width);
+		this.panel.setZoom(this.camera.zoomPercent);
 	}
 
 	private selectTool(tool: Tool) {
@@ -271,7 +271,7 @@ export default class Editor {
 		let canvasPosition = this.mousePositionToCanvasPosition();
 		if (canvasPosition) {
 			this.camera.zoom(delta, canvasPosition);
-			this.panel.setZoom(this.camera.width);
+			this.panel.setZoom(this.camera.zoomPercent);
 		}
 	}
 
