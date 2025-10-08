@@ -254,10 +254,10 @@ export default class Editor {
 		this.panel.setTool(tool);
 		let edit = null;
 		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
-			if (tool === Tool.MOVE)
-				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1], Point.P0);
-			else if (tool === Tool.CLEAR)
-				edit = new Clear(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
+			if ([Tool.MOVE, Tool.GRID_LINE, Tool.CLEAR].includes(tool)) {
+				edit = this.createEdit(this.editCreator.pendingEdit.points[0]);
+				edit.setPoint(1, this.editCreator.pendingEdit.points[1], false);
+			}
 		this.editCreator.startNewEdit(edit);
 	}
 
