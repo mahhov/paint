@@ -327,17 +327,17 @@ export default class UiPanel extends Emitter {
 		this.grid.nextRow(extraMargin);
 		this.zoomText = this
 			.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y))
-			.setTooltip('click to reset view')
+			.setTooltip('reset zoom (ctrl+0)')
 			.addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(extraMargin);
 		this
 			.add(new UiButton(icons.SAVE), smallButtonSize)
-			.setTooltip('save')
+			.setTooltip('save (ctrl+s)')
 			.addListener('click', () => this.emit('save'));
 		this
 			.add(new UiButton(icons.START_NEW), smallButtonSize)
-			.setTooltip('start new')
+			.setTooltip('start new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
