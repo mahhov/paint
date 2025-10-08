@@ -92,6 +92,7 @@ class UiToolButton extends UiButton {
 			[Tool.TEXT]: [Tool.TEXT, icons.TEXT, 'text (t)'],
 			[Tool.COLOR_PICKER]: [Tool.COLOR_PICKER, icons.COLOR_PICKER, 'color picker (c)'],
 			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL, 'bucket fill (b)'],
+			[Tool.PEN]: [Tool.PEN, icons.PEN, 'pen (p)'],
 		};
 	}
 }

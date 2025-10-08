@@ -315,3 +315,27 @@ export class Paste extends Edit {
 	}
 }
 
+export class Pen extends Edit {
+	private readonly dots = [Point.P0];
+	private readonly color: Color;
+
+	constructor(point: Point, color: Color) {
+		super([point, point]);
+		this.color = color;
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		super.setPoint(index, point, shiftDown);
+		if (index)
+			this.points_[0] = point.add(this.dots.at(-1)!);
+		else
+			this.dots.push(point.subtract(this.points[1]));
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		this.dots.forEach((dot, i, dots) => {
+			if (i)
+				new Line(this.points[1].add(dot), this.points[1].add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending);
+		});
+	}
+}

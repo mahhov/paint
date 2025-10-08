@@ -5,4 +5,3 @@ import Editor from './Editor.js';
 // todo
 //   diff tool
 //   allow scaling move
-//   pencil tool

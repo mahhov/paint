@@ -102,6 +102,20 @@ export let icons: Record<string, IconInstruction[]> = {
 		// paint puddle
 		{type: IconInstructionType.FILL_RECT, coords: [23, 22, 27, 25], color: Color.DARK_GRAY},
 	],
+	PEN: [
+		// eraser
+		{type: IconInstructionType.LINE, coords: [27, 8, 23, 4], color: Color.DARK_GRAY}, // back
+		{type: IconInstructionType.LINE, coords: [23, 4, 20, 7], color: Color.DARK_GRAY}, // left
+		{type: IconInstructionType.LINE, coords: [27, 8, 24, 11], color: Color.DARK_GRAY}, // right
+		// shaft
+		{type: IconInstructionType.LINE, coords: [24, 11, 20, 7], color: Color.DARK_GRAY}, // back
+		{type: IconInstructionType.LINE, coords: [20, 7, 8, 19], color: Color.DARK_GRAY}, // left
+		{type: IconInstructionType.LINE, coords: [24, 11, 12, 23], color: Color.DARK_GRAY}, // right
+		// tip
+		{type: IconInstructionType.LINE, coords: [8, 19, 12, 23], color: Color.DARK_GRAY}, // back
+		{type: IconInstructionType.LINE, coords: [8, 19, 6, 25], color: Color.DARK_GRAY}, // left
+		{type: IconInstructionType.LINE, coords: [12, 23, 6, 25], color: Color.DARK_GRAY}, // right
+	],
 	PASTE: [
 		// back document
 		{type: IconInstructionType.RECT, coords: [7, 6, 29, 29], color: Color.DARK_GRAY},

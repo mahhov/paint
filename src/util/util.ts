@@ -14,6 +14,7 @@ export enum Tool {
 	COLOR_PICKER,
 	BUCKET_FILL,
 	PASTE,
+	PEN,
 }
 
 export let NEAR_RANGE = 15;

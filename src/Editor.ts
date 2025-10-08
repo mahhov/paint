@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Rect, Select, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Rect, Select, TextEdit} from './Edit.js';
 import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -115,6 +115,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
+		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.selectTool(Tool.PEN)));
 
 		// todo ctrl+1-9 to select colors
 
@@ -249,7 +250,7 @@ export default class Editor {
 	}
 
 	private selectTool(tool: Tool) {
-		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+		if ((this.editCreator.pendingEdit instanceof TextEdit)) return; // todo this is preventing mouse tool selection
 		this.tool = tool;
 		this.panel.setTool(tool);
 		let edit = null;
@@ -323,6 +324,8 @@ export default class Editor {
 				return new BucketFill(point, this.color);
 			case Tool.PASTE:
 				throw new Error('createEdit() should not handle PASTE');
+			case Tool.PEN:
+				return new Pen(point, this.color);
 		}
 	}
 
