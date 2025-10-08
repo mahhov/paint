@@ -35,7 +35,9 @@ class UiElement extends Emitter {
 		return [new Rect(this.position, this.position.add(this.size), Color.BLACK)];
 	}
 
-	onClick(point: Point) {}
+	onMousePress(point: Point) {}
+
+	onMouseDown(point: Point) {}
 
 	containsPoint(point: Point) {
 		return point.atLeast(this.position) && point.atMost(this.position.add(this.size));
@@ -64,7 +66,7 @@ class UiButton extends UiElement {
 		return edits;
 	}
 
-	onClick(point: Point) {
+	onMousePress(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('click');
 	}
@@ -136,7 +138,7 @@ class UiColorCircle extends UiElement {
 		return edits;
 	}
 
-	onClick(point: Point) {
+	onMouseDown(point: Point) {
 		let float = this.pointToFloat(point);
 		if (float) {
 			this.float = float;
@@ -172,7 +174,7 @@ class UiColorRange extends UiElement {
 		return edits.concat(super.edits);
 	}
 
-	onClick(point: Point) {
+	onMouseDown(point: Point) {
 		// todo difficult to drag to either end
 		if (this.containsPoint(point)) {
 			this.brightness = (point.x - this.position.x) / this.size.x;
@@ -198,7 +200,7 @@ class UiText extends UiElement {
 		return super.edits.concat(textEdit);
 	}
 
-	onClick(point: Point) {
+	onMousePress(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('click');
 	}
@@ -331,9 +333,10 @@ export default class UiPanel extends Emitter {
 			.setTooltip('start new')
 			.addListener('click', () => this.emit('start-new'));
 
-		// todo don't repeat on buttons like undo/redo
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED, InputState.DOWN], () =>
-			this.uis.forEach(ui => ui.onClick(input.mousePosition))));
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
+			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () =>
+			this.uis.forEach(ui => ui.onMouseDown(input.mousePosition))));
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.UP], () => {
 			if (input.mousePosition.equals(input.mouseLastPosition)) return;
 			let tooltip = this.uis.find(ui => ui.containsPoint(input.mousePosition))?.tooltip || '';
