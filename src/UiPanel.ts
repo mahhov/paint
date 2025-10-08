@@ -1,11 +1,11 @@
-import {Edit, Line, Rect, TextEdit} from './Edit.js';
+import {Edit, Line, Paste, Rect, TextEdit} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
 import Color from './util/Color.js';
 import Emitter from './util/Emitter.js';
 import Point from './util/Point.js';
-import {A, round, Tool} from './util/util.js';
+import {A, getIndex, round, Tool} from './util/util.js';
 
 class UiElement extends Emitter {
 	protected position = Point.P0;
@@ -140,29 +140,28 @@ class UiColorRange extends UiElement {
 	float = new Point(.5);
 	brightness = .5;
 
-	private getPointColor(point: Point): Color | null {
-		let x = point.subtract(this.position).divide(this.size).x;
-		if (Math.abs(x - this.brightness) < .03)
+	private getPointColor(xf: number): Color {
+		if (Math.abs(xf - this.brightness) < .03)
 			return Color.WHITE;
-		return Color.fromFloat(this.float, x);
+		return Color.fromFloat(this.float, xf);
 	}
 
 	protected get edits(): Edit[] {
 		let edits: Edit[] = [];
-		for (let x = this.position.x; x <= this.position.add(this.size).x; x++)
-			for (let y = this.position.y; y <= this.position.add(this.size).y; y++) {
-				let point = new Point(x, y);
-				let color = this.getPointColor(point);
-				if (color)
-					edits.push(new Line(point, point, color));
-			}
+		let rect = new Uint8ClampedArray((this.size.x + 1) * (this.size.y + 1) * 4);
+		let rect32 = new Uint32Array(rect.buffer);
+		for (let x = 0; x <= this.size.x; x++)
+			rect32[x] = this.getPointColor(x / this.size.x).int32;
+		for (let y = 0; y <= this.size.y; y++)
+			rect32.set(rect32.subarray(0, getIndex(this.size.x + 1, 0, this.size.x + 1, false)), getIndex(0, y, this.size.x + 1, false));
+		edits.push(new Paste(this.position, {width: this.size.x + 1, height: this.size.y + 1, int8Array: rect}));
 		return edits.concat(super.edits);
-		// todo optimize y
 	}
 
 	onClick(point: Point) {
+		// todo difficult to drag to either end
 		if (this.containsPoint(point)) {
-			this.brightness = point.x / this.size.x;
+			this.brightness = (point.x - this.position.x) / this.size.x;
 			this.emit('click');
 		}
 	}
