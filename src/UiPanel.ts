@@ -10,7 +10,7 @@ import {A, getIndex, round, Tool} from './util/util.js';
 class UiElement extends Emitter {
 	protected position = Point.P0;
 	protected size = Point.P0;
-	tooltip = '';
+	private defaultTooltip = '';
 
 	setPosition(position: Point) {
 		this.position = position;
@@ -23,7 +23,7 @@ class UiElement extends Emitter {
 	}
 
 	setTooltip(tooltip: string) {
-		this.tooltip = tooltip;
+		this.defaultTooltip = tooltip;
 		return this;
 	}
 
@@ -39,6 +39,10 @@ class UiElement extends Emitter {
 
 	containsPoint(point: Point) {
 		return point.atLeast(this.position) && point.atMost(this.position.add(this.size));
+	}
+
+	get tooltip(): string {
+		return this.defaultTooltip;
 	}
 }
 
@@ -101,6 +105,10 @@ class UiColorButton extends UiButton {
 	protected get edits(): Edit[] {
 		this.icon = colorIcon(this.color);
 		return super.edits;
+	}
+
+	get tooltip(): string {
+		return `rgb(${this.color.toRgba().slice(0, 3).join()})`;
 	}
 }
 
@@ -170,6 +178,10 @@ class UiColorRange extends UiElement {
 			this.brightness = (point.x - this.position.x) / this.size.x;
 			this.emit('click');
 		}
+	}
+
+	get tooltip(): string {
+		return `${round(this.brightness * 100)}%`;
 	}
 }
 
@@ -252,7 +264,8 @@ export default class UiPanel extends Emitter {
 		let fullRowSize = this.grid.divide(1);
 
 		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
-			this.add(new UiToolButton(uiInfo[0]), smallButtonSize)
+			this
+				.add(new UiToolButton(uiInfo[0]), smallButtonSize)
 				.setTooltip(uiInfo[2])
 				.addListener('click', () => this.emit('tool', uiInfo[0])));
 
@@ -279,13 +292,11 @@ export default class UiPanel extends Emitter {
 				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d1, 1), 255],
 				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d3, 1), 255],
 			]).flat(),
-		] as [number, number, number, number][]).map(rgba => {
-			let color = Color.fromRgba(...rgba);
-			return this
+		] as [number, number, number, number][])
+			.map(rgba => Color.fromRgba(...rgba))
+			.map(color => this
 				.add(new UiColorButton(color), smallButtonSize)
-				.setTooltip(`rgb(${rgba.slice(0, 3).join()})`)
-				.addListener('click', () => this.emit('color', color));
-		});
+				.addListener('click', () => this.emit('color', color)));
 
 		this.grid.nextRow(extraMargin);
 		this.recentColors = A(16).map(() => {
@@ -295,10 +306,12 @@ export default class UiPanel extends Emitter {
 		});
 
 		this.grid.nextRow(extraMargin);
-		this.add(new UiButton(icons.UNDO), smallButtonSize)
+		this
+			.add(new UiButton(icons.UNDO), smallButtonSize)
 			.setTooltip('undo (ctrl+z or mb-4)')
 			.addListener('click', () => this.emit('undo'));
-		this.add(new UiButton(icons.REDO), smallButtonSize)
+		this
+			.add(new UiButton(icons.REDO), smallButtonSize)
 			.setTooltip('redo (ctrl+shift+z or mb-5)')
 			.addListener('click', () => this.emit('redo'));
 
@@ -309,17 +322,19 @@ export default class UiPanel extends Emitter {
 			.addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(extraMargin);
-		this.add(new UiButton(icons.SAVE), smallButtonSize)
+		this
+			.add(new UiButton(icons.SAVE), smallButtonSize)
 			.setTooltip('save')
 			.addListener('click', () => this.emit('save'));
-		this.add(new UiButton(icons.START_NEW), smallButtonSize)
+		this
+			.add(new UiButton(icons.START_NEW), smallButtonSize)
 			.setTooltip('start new')
 			.addListener('click', () => this.emit('start-new'));
 
 		// todo don't repeat on buttons like undo/redo
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED, InputState.DOWN], () =>
 			this.uis.forEach(ui => ui.onClick(input.mousePosition))));
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.UP], () => {
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.UP], () => {
 			if (input.mousePosition.equals(input.mouseLastPosition)) return;
 			let tooltip = this.uis.find(ui => ui.containsPoint(input.mousePosition))?.tooltip || '';
 			if (!tooltip && !this.tooltip) return;
@@ -401,5 +416,3 @@ export default class UiPanel extends Emitter {
 		}
 	}
 }
-
-// todo show tooltips

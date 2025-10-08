@@ -35,7 +35,7 @@ export default class Editor {
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
-		this.panelPixels = new Pixels(PANEL_SIZE, 5000, this.ctx, Color.CLEAR);
+		this.panelPixels = new Pixels(PANEL_SIZE, 1500, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(this.panelPixels, this.input);
 
