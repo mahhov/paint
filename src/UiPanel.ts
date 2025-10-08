@@ -38,6 +38,7 @@ class UiElement extends Emitter {
 
 class UiButton extends UiElement {
 	protected icon: IconInstruction[];
+	selected = false;
 
 	constructor(icon: IconInstruction[]) {
 		super();
@@ -45,7 +46,12 @@ class UiButton extends UiElement {
 	}
 
 	protected get edits(): Edit[] {
-		return super.edits.concat(iconToEdits(this.icon, this.position, this.size));
+		let edits = super.edits.concat(iconToEdits(this.icon, this.position, this.size));
+		if (this.selected) {
+			edits.push(new Rect(this.position.subtract(new Point(1)), this.position.add(this.size).add(new Point(1)), Color.fromRgba(0, 0, 0, 255)));
+			edits.push(new Rect(this.position.subtract(new Point(2)), this.position.add(this.size).add(new Point(2)), Color.fromRgba(0, 0, 0, 255)));
+		}
+		return edits;
 	}
 
 	onClick(point: Point) {
@@ -56,7 +62,6 @@ class UiButton extends UiElement {
 
 class UiToolButton extends UiButton {
 	readonly tool: Tool;
-	selected = false;
 
 	constructor(tool: Tool) {
 		super(UiToolButton.toolIcons[tool]![1]);
@@ -77,18 +82,8 @@ class UiToolButton extends UiButton {
 			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL],
 		};
 	}
-
-	protected get edits(): Edit[] {
-		let edits = super.edits;
-		if (this.selected) {
-			edits.push(new Rect(this.position.subtract(new Point(1)), this.position.add(this.size).add(new Point(1)), Color.fromRgba(0, 0, 0, 255)));
-			edits.push(new Rect(this.position.subtract(new Point(2)), this.position.add(this.size).add(new Point(2)), Color.fromRgba(0, 0, 0, 255)));
-		}
-		return edits;
-	}
 }
 
-// todo make selectable
 class UiColorButton extends UiButton {
 	color: Color;
 
@@ -116,7 +111,7 @@ class UiColorCircle extends UiElement {
 	}
 
 	protected get edits(): Edit[] {
-		let edits = super.edits;
+		let edits = [];
 		for (let x = this.position.x; x < this.position.add(this.size).x; x++)
 			for (let y = this.position.y; y < this.position.add(this.size).y; y++) {
 				let point = new Point(x, y);
@@ -236,6 +231,7 @@ export default class UiPanel extends Emitter {
 	private readonly toolButtons: UiToolButton[];
 	private readonly colorCircle: UiColorCircle;
 	private readonly colorBrightness: UiColorRange;
+	private readonly presetColors: UiColorButton[];
 	private readonly recentColors: UiColorButton[];
 	private readonly zoomText: UiText;
 	private readonly pixels: Pixels;
@@ -264,7 +260,7 @@ export default class UiPanel extends Emitter {
 		this.grid.nextRow();
 
 		let d3 = .3, d1 = .1;
-		([
+		this.presetColors = ([
 			[0, 0, 0, 255],
 			[255 / 3, 255 / 3, 255 / 3, 255],
 			[255 * 2 / 3, 255 * 2 / 3, 255 * 2 / 3, 255],
@@ -277,7 +273,7 @@ export default class UiPanel extends Emitter {
 			]).flat(),
 		] as [number, number, number, number][])
 			.map(rgba => Color.fromRgba(...rgba))
-			.forEach(color => this.add(new UiColorButton(color), smallButtonSize).addListener('click', () => this.emit('color', color)));
+			.map(color => this.add(new UiColorButton(color), smallButtonSize).addListener('click', () => this.emit('color', color)));
 
 		this.grid.nextRow(extraMargin);
 		this.recentColors = A(16).map(() => {
@@ -322,6 +318,7 @@ export default class UiPanel extends Emitter {
 		this.colorCircle.brightness = brightness;
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
+		this.setSelectedColor(color);
 		this.draw();
 	}
 
@@ -334,7 +331,18 @@ export default class UiPanel extends Emitter {
 		} else
 			recentColors.unshift(recentColors.splice(index, 1)[0]);
 		this.recentColors.forEach((button, i) => button.color = recentColors[i]);
+		this.setSelectedColor(color);
 		this.draw();
+	}
+
+	private setSelectedColor(color: Color) {
+		this.presetColors.forEach(button => button.selected = button.color.int32 === color.int32);
+		let found = false;
+		this.recentColors.forEach(button => {
+			button.selected = button.color.int32 === color.int32 && !found;
+			if (button.selected)
+				found = true;
+		});
 	}
 
 	setZoom(zoom: number) {
