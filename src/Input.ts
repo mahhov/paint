@@ -151,6 +151,8 @@ export class Input {
 	mouseDownPosition = new Point();
 	mouseLastPosition = new Point();
 	mousePosition = new Point();
+	// todo track more key states
+	shiftDown = false;
 
 	constructor(mouseTarget: HTMLCanvasElement) {
 		window.addEventListener('blur', () =>
@@ -158,6 +160,8 @@ export class Input {
 
 		document.addEventListener('keydown', e => {
 			if (e.repeat) return;
+			if (e.key === 'Shift')
+				this.shiftDown = true;
 			if (Object.values(this.bindings)
 				.map(binding => binding.keyDown(e))
 				.some(v => v))
@@ -165,6 +169,8 @@ export class Input {
 		});
 		document.addEventListener('keyup', e => {
 			if (e.repeat) return;
+			if (e.key === 'Shift')
+				this.shiftDown = false;
 			Object.values(this.bindings).forEach(binding => binding.keyUp(e));
 		});
 
