@@ -82,7 +82,7 @@ class UiToolButton extends UiButton {
 			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE, 'grid_line (k)'],
 			[Tool.RECT]: [Tool.RECT, icons.RECT, 'rect (r)'],
 			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT, 'fill rect (f)'],
-			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR, 'clear (e or right click)'],
+			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR, 'clear (e or delete)'],
 			[Tool.TEXT]: [Tool.TEXT, icons.TEXT, 'text (t)'],
 			[Tool.COLOR_PICKER]: [Tool.COLOR_PICKER, icons.COLOR_PICKER, 'color picker (c)'],
 			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL, 'bucket fill (b)'],
@@ -279,9 +279,13 @@ export default class UiPanel extends Emitter {
 				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d1, 1), 255],
 				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d3, 1), 255],
 			]).flat(),
-		] as [number, number, number, number][])
-			.map(rgba => Color.fromRgba(...rgba))
-			.map(color => this.add(new UiColorButton(color), smallButtonSize).addListener('click', () => this.emit('color', color)));
+		] as [number, number, number, number][]).map(rgba => {
+			let color = Color.fromRgba(...rgba);
+			return this
+				.add(new UiColorButton(color), smallButtonSize)
+				.setTooltip(`rgb(${rgba.slice(0, 3).join()})`)
+				.addListener('click', () => this.emit('color', color));
+		});
 
 		this.grid.nextRow(extraMargin);
 		this.recentColors = A(16).map(() => {
@@ -291,15 +295,26 @@ export default class UiPanel extends Emitter {
 		});
 
 		this.grid.nextRow(extraMargin);
-		this.add(new UiButton(icons.UNDO), smallButtonSize).addListener('click', () => this.emit('undo'));
-		this.add(new UiButton(icons.REDO), smallButtonSize).addListener('click', () => this.emit('redo'));
+		this.add(new UiButton(icons.UNDO), smallButtonSize)
+			.setTooltip('undo (ctrl+z or mb-4)')
+			.addListener('click', () => this.emit('undo'));
+		this.add(new UiButton(icons.REDO), smallButtonSize)
+			.setTooltip('redo (ctrl+shift+z or mb-5)')
+			.addListener('click', () => this.emit('redo'));
 
 		this.grid.nextRow(extraMargin);
-		this.zoomText = this.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y)).addListener('click', () => this.emit('camera-reset'));
+		this.zoomText = this
+			.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y))
+			.setTooltip('click to reset view')
+			.addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(extraMargin);
-		this.add(new UiButton(icons.SAVE), smallButtonSize).addListener('click', () => this.emit('save'));
-		this.add(new UiButton(icons.START_NEW), smallButtonSize).addListener('click', () => this.emit('start-new'));
+		this.add(new UiButton(icons.SAVE), smallButtonSize)
+			.setTooltip('save')
+			.addListener('click', () => this.emit('save'));
+		this.add(new UiButton(icons.START_NEW), smallButtonSize)
+			.setTooltip('start new')
+			.addListener('click', () => this.emit('start-new'));
 
 		// todo don't repeat on buttons like undo/redo
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED, InputState.DOWN], () =>
@@ -371,8 +386,8 @@ export default class UiPanel extends Emitter {
 
 		if (this.tooltip) {
 			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
-			let tooltipTextEdit = new TextEdit(Point.P0, Color.BLACK, this.tooltip, 17);
-			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure).add(new Point(3, 0));
+			let tooltipTextEdit = new TextEdit(Point.P0, Color.BLACK, this.tooltip, 15);
+			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure).add(new Point(6, 2));
 			let excessX = tooltipPoint2.x - this.pixels.width;
 			if (excessX > 0) {
 				tooltipPoint1 = tooltipPoint1.add(new Point(-excessX, 10));
