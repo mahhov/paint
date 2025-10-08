@@ -7,7 +7,7 @@ export default class Point {
 	readonly x: number;
 	readonly y: number;
 
-	constructor(x: number = 0, y: number = x) {
+	constructor(x: number, y: number = x) {
 		this.x = x;
 		this.y = y;
 	}

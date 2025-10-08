@@ -221,7 +221,7 @@ export default class Editor {
 		let str = Clipboard.clipboardToText(e);
 		if (str) {
 			if (!(this.editCreator.pendingEdit instanceof TextEdit))
-				this.editCreator.startNewEdit(new TextEdit(point, this.color));
+				this.editCreator.startNewEdit(new TextEdit(point, this.color, ''));
 			(this.editCreator.pendingEdit as TextEdit).text += str;
 			this.tool = Tool.TEXT;
 			return;
@@ -314,7 +314,7 @@ export default class Editor {
 			case Tool.CLEAR:
 				return new Clear(point, point);
 			case Tool.TEXT:
-				return new TextEdit(point, this.color);
+				return new TextEdit(point, this.color, '');
 			case Tool.COLOR_PICKER:
 				throw new Error('createEdit() should not handle COLOR_PICKER');
 			case Tool.BUCKET_FILL:

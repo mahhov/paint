@@ -208,13 +208,16 @@ export class TextEdit extends Edit {
 	static lastSize: number = 12;
 	private readonly color: Color;
 	text = '';
+	private readonly fixedSize: number;
 
-	constructor(point: Point, color: Color) {
+	constructor(point: Point, color: Color, text: string, fixedSize = 0) {
 		super([point, point.add(new Point(0, TextEdit.lastSize))]);
 		this.color = color;
+		this.text = text;
+		this.fixedSize = fixedSize;
 	}
 
-	get size() {
+	private get size() {
 		return Math.abs(this.points[1].subtract(this.points[0]).y);
 	}
 
@@ -229,19 +232,11 @@ export class TextEdit extends Edit {
 		return !!this.text;
 	}
 
-	private updateContext() {
-		TextEdit.ctx.font = `${this.size}px Arial`;
-		TextEdit.ctx.imageSmoothingEnabled = false;
-		TextEdit.ctx.textBaseline = 'top';
-		TextEdit.ctx.globalAlpha = 1;
-	}
-
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		this.updateContext();
-		let metrics = TextEdit.ctx.measureText(this.text);
-		TextEdit.canvas.width = Math.ceil(metrics.width);
-		if (!TextEdit.canvas.width) return;
-		TextEdit.canvas.height = Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
+		let measureSize = this.measure;
+		if (!measureSize.x || !measureSize.y) return;
+		TextEdit.canvas.width = measureSize.x;
+		TextEdit.canvas.height = measureSize.y;
 		this.updateContext();
 		TextEdit.ctx.fillText(this.text, 0, 0);
 		let imageData = TextEdit.ctx.getImageData(0, 0, TextEdit.canvas.width, TextEdit.canvas.height);
@@ -253,6 +248,19 @@ export class TextEdit extends Edit {
 					pixels.set(this.points[0].add(new Point(x, y)), this.color);
 			}
 		}
+	}
+
+	get measure() {
+		this.updateContext();
+		let metrics = TextEdit.ctx.measureText(this.text);
+		return new Point(Math.ceil(metrics.width), Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent));
+	}
+
+	private updateContext() {
+		TextEdit.ctx.font = `${this.fixedSize || this.size}px Arial`;
+		TextEdit.ctx.imageSmoothingEnabled = false;
+		TextEdit.ctx.textBaseline = 'top';
+		TextEdit.ctx.globalAlpha = 1;
 	}
 }
 
