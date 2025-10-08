@@ -311,7 +311,7 @@ export default class UiPanel extends Emitter {
 				.addListener('click', () => this.emit('color', color)));
 
 		this.grid.nextRow(extraMargin);
-		this.recentColors = A(16).map(() => {
+		this.recentColors = A(12).map(() => {
 			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), smallButtonSize);
 			button.addListener('click', () => this.emit('color', button.color));
 			return button;

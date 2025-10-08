@@ -71,7 +71,6 @@ export default class Editor {
 			this.editModified();
 		}));
 
-		// todo ignore events that started off screen / missed the pressed event
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
 			let point = this.mousePositionToPixelsPosition();

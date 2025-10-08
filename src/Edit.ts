@@ -73,7 +73,6 @@ export class Move extends Edit {
 				this.points_[index - 2] = this.points[index].subtract(delta);
 				this.points_[4] = center.add(delta);
 				break;
-			// todo allow moving center of start/end
 			case 4:
 				delta = this.points[4].subtract(center);
 				if (shiftDown) {
