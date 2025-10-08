@@ -64,7 +64,7 @@ export class KeyBinding extends Binding {
 
 	constructor(key: string, modifiers: KeyModifier[], listenerStates: InputState[], listener: () => void) {
 		super(listenerStates, listener);
-		this.key = key;
+		this.key = key.toLowerCase();
 		this.modifiers = modifiers;
 	}
 
@@ -83,7 +83,7 @@ export class KeyBinding extends Binding {
 
 	private filter(e: KeyboardEvent) {
 		return [
-			this.key === e.key,
+			this.key === e.key.toLowerCase(),
 			this.modifiers.includes(KeyModifier.CONTROL) === e.ctrlKey,
 			this.modifiers.includes(KeyModifier.SHIFT) === e.shiftKey,
 			this.modifiers.includes(KeyModifier.ALT) === e.altKey];
@@ -147,7 +147,7 @@ export class MouseWheelBinding extends Binding {
 }
 
 export class Input {
-	private bindings: Binding[] = [];
+	private readonly bindings: Binding[] = [];
 	mouseDownPosition = new Point();
 	mouseLastPosition = new Point();
 	mousePosition = new Point();
