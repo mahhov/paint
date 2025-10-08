@@ -8,8 +8,8 @@ import Point from './util/Point.js';
 import {A, round, Tool} from './util/util.js';
 
 class UiElement extends Emitter {
-	protected position = new Point();
-	protected size = new Point();
+	protected position = Point.P0;
+	protected size = Point.P0;
 
 	setPosition(position: Point) {
 		this.position = position;
@@ -48,7 +48,7 @@ class UiButton extends UiElement {
 	protected get edits(): Edit[] {
 		let edits = super.edits.concat(iconToEdits(this.icon, this.position, this.size));
 		if (this.selected) {
-			edits.push(new Rect(this.position.subtract(new Point(1)), this.position.add(this.size).add(new Point(1)), Color.fromRgba(0, 0, 0, 255)));
+			edits.push(new Rect(this.position.subtract(Point.P1), this.position.add(this.size).add(Point.P1), Color.fromRgba(0, 0, 0, 255)));
 			edits.push(new Rect(this.position.subtract(new Point(2)), this.position.add(this.size).add(new Point(2)), Color.fromRgba(0, 0, 0, 255)));
 		}
 		return edits;
@@ -319,7 +319,7 @@ export default class UiPanel extends Emitter {
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
 		this.setSelectedColor(color);
-		this.draw();
+		this.draw(); // todo skip draw if unchanged. likewise below
 	}
 
 	setColorUsed(color: Color) {

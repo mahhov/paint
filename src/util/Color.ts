@@ -106,8 +106,8 @@ export default class Color {
 
 	// todo double check and clean up (ai generated)
 	static fromFloat(float: Point, brightness: number): Color {
-		const center = new Point(0.5, 0.5);
-		const maxRadius = 0.5;
+		const center = new Point(.5);
+		const maxRadius = .5;
 
 		// 1. Calculate relative coordinates from the center
 		const dx = float.x - center.x;
@@ -151,8 +151,8 @@ export default class Color {
 		const brightness = v;
 
 		// 3. Map H (Hue) and S (Saturation) back to 2D coordinates (x, y)
-		const maxRadius = 0.5;
-		const center = 0.5;
+		const maxRadius = .5;
+		const center = .5;
 
 		// Calculate radius and angle
 		const radius = s * maxRadius;

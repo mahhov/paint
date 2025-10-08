@@ -207,7 +207,7 @@ export default class Editor {
 		let region =
 			(this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move) &&
 			!this.editCreator.pendingEdit.points[0].equals(this.editCreator.pendingEdit.points[1]);
-		let start = region ? this.editCreator.pendingEdit!.points[0] : new Point();
+		let start = region ? this.editCreator.pendingEdit!.points[0] : Point.P0;
 		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
 		this.editCreator.startNewEdit(null);
 		this.flushEditCreatorToPixels();
@@ -253,7 +253,7 @@ export default class Editor {
 		let edit = null;
 		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
 			if (tool === Tool.MOVE)
-				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1], new Point());
+				edit = new Move(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1], Point.P0);
 			else if (tool === Tool.CLEAR)
 				edit = new Clear(this.editCreator.pendingEdit.points[0], this.editCreator.pendingEdit.points[1]);
 		this.editCreator.startNewEdit(edit);
@@ -294,7 +294,7 @@ export default class Editor {
 	private mousePositionToPixelsPosition(mousePosition = this.input.mousePosition) {
 		// return [0, PIXELS_SIZE) pixel position
 		let worldPosition = this.mousePositionToWorldPosition(mousePosition);
-		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(new Point(), new Point(PIXELS_SIZE - 1)).round : null;
+		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(Point.P0, new Point(PIXELS_SIZE - 1)).round : null;
 	}
 
 	private createEdit(point: Point): Edit {
@@ -302,11 +302,11 @@ export default class Editor {
 			case Tool.SELECT:
 				return new Select(point, point);
 			case Tool.MOVE:
-				return new Move(point, point, new Point());
+				return new Move(point, point, Point.P0);
 			case Tool.LINE:
 				return new Line(point, point, this.color);
 			case Tool.GRID_LINE:
-				return new GridLine(point, point, new Point(), this.color);
+				return new GridLine(point, point, Point.P0, this.color);
 			case Tool.RECT:
 				return new Rect(point, point, this.color);
 			case Tool.FILL_RECT:
@@ -354,7 +354,7 @@ export default class Editor {
 	private async drawLoop() {
 		this.flushEditCreatorToPixels();
 
-		let srcStart = this.camera.canvasToWorld(new Point()).scale(PIXELS_SIZE).round;
+		let srcStart = this.camera.canvasToWorld(Point.P0).scale(PIXELS_SIZE).round;
 		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE).round;
 		let srcSize = srcEnd.subtract(srcStart);
 		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, this.editorWidth, this.editorHeight] as [number, number, number, number, number, number, number, number];

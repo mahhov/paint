@@ -46,8 +46,6 @@ export class Select extends Edit {
 }
 
 export class Move extends Edit {
-	private delta = new Point();
-
 	constructor(start: Point, end: Point, delta: Point) {
 		super([start, end, start.add(delta), end.add(delta), Move.center(start, end)]);
 	}
@@ -56,29 +54,34 @@ export class Move extends Edit {
 		return p1.add(p2).scale(.5).round;
 	}
 
+	private get delta() {
+		return this.points[2].subtract(this.points[0]);
+	}
+
 	setPoint(index: number, point: Point, shiftDown: boolean) {
+		let delta = this.delta;
 		super.setPoint(index, point, shiftDown);
 		let center = Move.center(this.points[0], this.points[1]);
 		switch (index) {
 			case 0:
 			case 1:
-				this.points_[index + 2] = this.points[index].add(this.delta);
-				this.points_[4] = center.add(this.delta);
+				this.points_[index + 2] = this.points[index].add(delta);
+				this.points_[4] = center.add(delta);
 				break;
 			case 2:
 			case 3:
-				this.points_[index - 2] = this.points[index].subtract(this.delta);
-				this.points_[4] = center.add(this.delta);
+				this.points_[index - 2] = this.points[index].subtract(delta);
+				this.points_[4] = center.add(delta);
 				break;
 			// todo allow moving center of start/end
 			case 4:
-				this.delta = this.points[4].subtract(center);
+				delta = this.points[4].subtract(center);
 				if (shiftDown) {
-					this.delta = Math.abs(this.delta.x) > Math.abs(this.delta.y) ? new Point(this.delta.x, 0) : new Point(0, this.delta.y);
-					this.points_[4] = center.add(this.delta);
+					delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
+					this.points_[4] = center.add(delta);
 				}
-				this.points_[2] = this.points[0].add(this.delta);
-				this.points_[3] = this.points[1].add(this.delta);
+				this.points_[2] = this.points[0].add(delta);
+				this.points_[3] = this.points[1].add(delta);
 				break;
 		}
 	}
@@ -291,7 +294,7 @@ export class Paste extends Edit {
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let size = new Point(this.pasteData.width, this.pasteData.height);
-		let [min, max] = boundTransferRect(new Point(), size, size, this.points[0], pixels.size);
+		let [min, max] = boundTransferRect(Point.P0, size, size, this.points[0], pixels.size);
 		for (let y = min.y; y < max.y; y++)
 			pixels.setLine(
 				getIndex(min.x + this.points[0].x, y + this.points[0].y, pixels.width, true),

@@ -24,14 +24,14 @@ export let round = (v: number, precision: number = 0) => Math.round(v * 10 ** pr
 
 export let boundRect = (source1: Point, source2: Point, maxSize: Point): [Point, Point] => {
 	return [
-		source1.min(source2).max(new Point()),
-		source1.max(source2).min(maxSize.subtract(new Point(1))),
+		source1.min(source2).max(Point.P0),
+		source1.max(source2).min(maxSize.subtract(Point.P1)),
 	];
 };
 export let boundTransferRect = (source1: Point, source2: Point, sourceSize: Point, destDelta: Point, destSize: Point): [Point, Point] => {
 	return [
-		source1.min(source2).max(new Point()).max(destDelta.scale(-1)),
-		source1.max(source2).min(sourceSize.subtract(new Point(1))).min(destSize.subtract(destDelta).subtract(new Point(1))),
+		source1.min(source2).max(Point.P0).max(destDelta.scale(-1)),
+		source1.max(source2).min(sourceSize.subtract(Point.P1)).min(destSize.subtract(destDelta).subtract(Point.P1)),
 	];
 };
 

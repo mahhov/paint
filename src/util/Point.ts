@@ -1,6 +1,9 @@
 import {clamp, round} from './util.js';
 
 export default class Point {
+	static readonly P0 = new Point(0);
+	static readonly P1 = new Point(1);
+
 	readonly x: number;
 	readonly y: number;
 

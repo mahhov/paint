@@ -148,9 +148,9 @@ export class MouseWheelBinding extends Binding {
 
 export class Input {
 	private readonly bindings: Binding[] = [];
-	mouseDownPosition = new Point();
-	mouseLastPosition = new Point();
-	mousePosition = new Point();
+	mouseDownPosition = Point.P0;
+	mouseLastPosition = Point.P0;
+	mousePosition = Point.P0;
 	// todo track more key states
 	shiftDown = false;
 

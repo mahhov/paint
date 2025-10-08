@@ -8,7 +8,7 @@ let maxWidth = 1.4; // maxWidth-minWidth should be divisible by zoomDelta
 let padding = (maxWidth - 1) / 2;
 
 export default class Camera {
-	private leftTop: Point = new Point();
+	private leftTop: Point = Point.P0;
 	private width: number;
 
 	constructor(initialWidth: number) {
