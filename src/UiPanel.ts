@@ -85,7 +85,7 @@ class UiToolButton extends UiButton {
 			[Tool.SELECT]: [Tool.SELECT, icons.SELECT, 'select (s)'],
 			[Tool.MOVE]: [Tool.MOVE, icons.MOVE, 'move (m or space)'],
 			[Tool.LINE]: [Tool.LINE, icons.LINE, 'line (l)'],
-			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE, 'grid_line (k)'],
+			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE, 'grid line (g)'],
 			[Tool.RECT]: [Tool.RECT, icons.RECT, 'rect (r)'],
 			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT, 'fill rect (f)'],
 			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR, 'clear (e or delete)'],
