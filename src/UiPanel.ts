@@ -175,11 +175,17 @@ class UiColorRange extends UiElement {
 	}
 
 	onMouseDown(point: Point) {
-		// todo difficult to drag to either end
 		if (this.containsPoint(point)) {
 			this.brightness = (point.x - this.position.x) / this.size.x;
 			this.emit('click');
 		}
+	}
+
+	containsPoint(point: Point) {
+		let padding = new Point(10, 0);
+		let min = this.position.subtract(padding);
+		let max = this.position.add(this.size).add(padding);
+		return point.atLeast(min) && point.atMost(max);
 	}
 
 	get tooltip(): string {
