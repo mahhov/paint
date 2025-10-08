@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Rect, Select,  TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Rect, Select, TextEdit} from './Edit.js';
 import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -158,6 +158,8 @@ export default class Editor {
 		document.addEventListener('paste', e => this.paste(e));
 
 		window.addEventListener('resize', () => this.resizeCanvas());
+		window.addEventListener('wheel', e => e.preventDefault(), {passive: false});
+
 		this.resizeCanvas();
 
 		this.panel.setTool(this.tool);
