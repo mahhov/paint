@@ -73,7 +73,7 @@ export default class Editor {
 		}));
 
 		// todo ignore events that started off screen / missed the pressed event
-		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.RELEASED], () => {
+		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
@@ -130,8 +130,8 @@ export default class Editor {
 			['ArrowLeft', new Point(-1, 0)],
 		] as [string, Point][]).forEach(([key, delta]) => ([
 			[[], [InputState.PRESSED], 1],
-			[[KeyModifier.CONTROL], [InputState.PRESSED, InputState.DOWN], 10],
-			[[KeyModifier.SHIFT], [InputState.PRESSED, InputState.DOWN], 50],
+			[[KeyModifier.CONTROL], [InputState.DOWN], 10],
+			[[KeyModifier.SHIFT], [InputState.DOWN], 50],
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => this.editCreator.moveControlPointBy(delta.scale(scale))));
 		}));
