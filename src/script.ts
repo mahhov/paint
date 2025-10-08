@@ -4,7 +4,5 @@ import Editor from './Editor.js';
 
 // todo
 //   diff tool
-//   tool selector UI
-//   color selector UI
 //   allow scaling move
 //   pencil tool
