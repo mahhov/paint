@@ -69,6 +69,7 @@ export default class Editor {
 			} else {
 				this.editCreator.setControlPoint(controlPoint);
 				this.editCreator.moveControlPointTo(point, false);
+				this.panel.setStatus(this.status);
 			}
 		}));
 
@@ -82,6 +83,7 @@ export default class Editor {
 				return;
 			}
 			this.editCreator.moveControlPointTo(point, this.input.shiftDown);
+			this.panel.setStatus(this.status);
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
@@ -134,7 +136,10 @@ export default class Editor {
 			[[KeyModifier.CONTROL], [InputState.DOWN], 10],
 			[[KeyModifier.SHIFT], [InputState.DOWN], 50],
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
-			this.input.addBinding(new KeyBinding(key, modifiers, states, () => this.editCreator.moveControlPointBy(delta.scale(scale))));
+			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
+				this.editCreator.moveControlPointBy(delta.scale(scale));
+				this.panel.setStatus(this.status);
+			}));
 		}));
 
 		document.addEventListener('keydown', e => {
@@ -191,6 +196,13 @@ export default class Editor {
 			});
 
 		return new Editor(canvas, await editCreatorPromise);
+	}
+
+	get status() {
+		if (!this.editCreator.pendingEdit || this.editCreator.pendingEdit.points.length < 2)
+			return '';
+		let delta = this.editCreator.pendingEdit.points[1].subtract(this.editCreator.pendingEdit.points[0]);
+		return `[${Math.abs(delta.x) + 1}, ${Math.abs(delta.y) + 1}]`;
 	}
 
 	private save() {

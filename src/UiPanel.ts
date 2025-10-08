@@ -203,7 +203,7 @@ class UiText extends UiElement {
 	}
 
 	protected get edits(): Edit[] {
-		let textEdit = new TextEdit(this.position.add(new Point(4, 11)), Color.DARK_GRAY, this.text, 15);
+		let textEdit = new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15);
 		return super.edits.concat(textEdit);
 	}
 
@@ -258,7 +258,7 @@ export default class UiPanel extends Emitter {
 	private readonly colorBrightness: UiColorRange;
 	private readonly presetColors: UiColorButton[];
 	private readonly recentColors: UiColorButton[];
-	private readonly zoomText: UiText;
+	private readonly viewText: UiText;
 	private readonly pixels: Pixels;
 	private tooltip = '';
 	private tooltipPosition = Point.P0;
@@ -282,7 +282,7 @@ export default class UiPanel extends Emitter {
 		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
 
 		this.grid.nextRow();
-		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, smallButtonSize.y));
+		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, smallButtonSize.y / 2));
 
 		[this.colorCircle, this.colorBrightness].forEach(ui => ui.addListener('click', () =>
 			this.emit('color', Color.fromFloat(this.colorCircle.float, this.colorBrightness.brightness))));
@@ -323,14 +323,6 @@ export default class UiPanel extends Emitter {
 			.add(new UiButton(icons.REDO), smallButtonSize)
 			.setTooltip('redo (ctrl+shift+z or mb-5)')
 			.addListener('click', () => this.emit('redo'));
-
-		this.grid.nextRow(extraMargin);
-		this.zoomText = this
-			.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y))
-			.setTooltip('reset zoom (ctrl+0)')
-			.addListener('click', () => this.emit('camera-reset'));
-
-		this.grid.nextRow(extraMargin);
 		this
 			.add(new UiButton(icons.SAVE), smallButtonSize)
 			.setTooltip('save (ctrl+s)')
@@ -339,6 +331,12 @@ export default class UiPanel extends Emitter {
 			.add(new UiButton(icons.START_NEW), smallButtonSize)
 			.setTooltip('start new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
+
+		this.grid.nextRow(extraMargin);
+		this.viewText = this
+			.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y / 2))
+			.setTooltip('reset zoom (ctrl+0)')
+			.addListener('click', () => this.emit('camera-reset'));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
@@ -401,7 +399,12 @@ export default class UiPanel extends Emitter {
 	}
 
 	setZoom(zoom: number) {
-		this.zoomText.text = `${zoom}%`;
+		this.viewText.text = `${zoom}%`;
+		this.draw();
+	}
+
+	setStatus(status: string) {
+		this.viewText.text = status;
 		this.draw();
 	}
 
