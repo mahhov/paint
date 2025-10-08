@@ -140,7 +140,7 @@ export default class Editor {
 			if (!(this.editCreator.pendingEdit instanceof TextEdit)) return;
 			// todo ctrl delete/backspace to remove word
 			// todo text cursor & selection & undo/redo typing
-			if (e.ctrlKey || e.shiftKey || e.altKey) return;
+			if (e.ctrlKey || e.altKey) return;
 			if (e.key === 'Delete' || e.key === 'Backspace') {
 				this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
 				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
