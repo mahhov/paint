@@ -6,8 +6,8 @@
   "author": "",
   "main": "src/script.ts",
   "scripts": {
-    "build": "cp src/index.html out/index.html && tsc -w",
-    "build-win": "copy src\\index.html out\\index.html && tsc -w"
+    "build": "mkdir out && cp src/index.html out/index.html && tsc -w",
+    "build-win": "mkdir out && copy src\\index.html out\\index.html && tsc -w"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
