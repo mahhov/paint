@@ -289,20 +289,23 @@ export default class UiPanel extends Emitter {
 
 		this.grid.nextRow();
 
-		let d3 = .3, d1 = .1;
 		this.presetColors = ([
-			[0, 0, 0, 255],
-			[255 / 3, 255 / 3, 255 / 3, 255],
-			[255 * 2 / 3, 255 * 2 / 3, 255 * 2 / 3, 255],
-			[255, 255, 255, 255],
-			...A(10).map((_, i, a) => [
-				[...Color.hsvToRgb(round(i * 255 / a.length), 1, 1 - d3), 255],
-				[...Color.hsvToRgb(round(i * 255 / a.length), 1, 1 - d1), 255],
-				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d1, 1), 255],
-				[...Color.hsvToRgb(round(i * 255 / a.length), 1 - d3, 1), 255],
-			]).flat(),
-		] as [number, number, number, number][])
-			.map(rgba => Color.fromRgba(...rgba))
+			// gray
+			[0, 0, 0], // black
+			[111, 111, 111], // dark gray
+			[170, 170, 170], // light gray
+			[255, 255, 255], // white
+			// light
+			[0, 191, 255], // blue
+			[217, 255, 25], // yellow
+			[255, 170, 50], // orange
+			[245, 100, 245],  // pink
+			// dark
+			[10, 115, 255], // blue
+			[0, 174, 17], // green
+			[250, 90, 90], // red
+		] as [number, number, number][])
+			.map(rgb => Color.fromRgba(...rgb, 255))
 			.map(color => this
 				.add(new UiColorButton(color), smallButtonSize)
 				.addListener('click', () => this.emit('color', color)));
