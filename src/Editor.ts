@@ -90,15 +90,12 @@ export default class Editor {
 		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editCreator.undoEdit()));
 		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editCreator.redoEdit()));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 			this.editCreator.undoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
-			if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 			this.editCreator.redoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
 			this.editCreator.redoEdit();
 		}));
 
@@ -140,6 +137,9 @@ export default class Editor {
 
 		document.addEventListener('keydown', e => {
 			if (!(this.editCreator.pendingEdit instanceof TextEdit)) return;
+			// todo ctrl delete/backspace to remove word
+			// todo text cursor & selection & undo/redo typing
+			if (e.ctrlKey || e.shiftKey || e.altKey) return;
 			if (e.key === 'Delete' || e.key === 'Backspace') {
 				this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
 				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
