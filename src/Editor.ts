@@ -62,9 +62,11 @@ export default class Editor {
 				return;
 			}
 			let controlPoint = this.editCreator.findControlPoint(point);
-			if (controlPoint === -1)
+			if (controlPoint === -1) {
 				this.editCreator.startNewEdit(this.createEdit(point));
-			else {
+				if ('color' in this.editCreator.pendingEdit!)
+					this.panel.setColorUsed(this.color);
+			} else {
 				this.editCreator.setControlPoint(controlPoint);
 				this.editCreator.moveControlPointTo(point);
 			}

@@ -53,6 +53,13 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
+	setColor(color: Color) {
+		if (!this.pendingEdit) return;
+		if ('color' in this.pendingEdit)
+			this.pendingEdit.color = color;
+		this.maxDirty = DirtyMode.PENDING_EDIT;
+	}
+
 	private commitPendingEdit() {
 		if (this.pendingEdit?.validCommit()) {
 			this.edits.push(this.pendingEdit);
