@@ -68,7 +68,7 @@ class UiToolButton extends UiButton {
 			[Tool.SELECT]: [Tool.SELECT, icons.SELECT],
 			[Tool.MOVE]: [Tool.MOVE, icons.MOVE],
 			[Tool.LINE]: [Tool.LINE, icons.LINE],
-			[Tool.STRAIGHT_LINE]: [Tool.STRAIGHT_LINE, icons.STRAIGHT_LINE],
+			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE],
 			[Tool.RECT]: [Tool.RECT, icons.RECT],
 			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT],
 			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR],
@@ -347,3 +347,5 @@ export default class UiPanel extends Emitter {
 		this.uis.forEach(ui => ui.draw(this.pixels));
 	}
 }
+
+// todo show tooltips

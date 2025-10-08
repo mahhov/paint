@@ -70,6 +70,7 @@ export class Move extends Edit {
 				this.points_[index - 2] = this.points[index].subtract(this.delta);
 				this.points_[4] = center.add(this.delta);
 				break;
+			// todo allow moving center of start/end
 			case 4:
 				this.delta = this.points[4].subtract(center);
 				if (shiftDown) {
@@ -127,15 +128,23 @@ export class Line extends Edit {
 	}
 }
 
-export class StraightLine extends Line {
-	setPoint(index: number, point: Point) {
-		let delta = this.points_[0].subtract(this.points_[1]);
-		super.setPoint(index, point);
-		if (!index) {
-			delta = this.points_[0].subtract(this.points_[1]);
-			delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
+export class GridLine extends Move {
+	private readonly color: Color;
+
+	constructor(start: Point, end: Point, delta: Point, color: Color) {
+		super(start, end, delta);
+		this.color = color;
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		for (let i = 0; i < 4; i++) {
+			for (let x = 0; x <= pixels.width; x++)
+				pixels.set(new Point(x, this.points[i].y), this.color);
+			for (let y = 0; y <= pixels.height; y++)
+				pixels.set(new Point(this.points[i].x, y), this.color);
 		}
-		this.points_[0] = this.points_[1].add(delta);
+		new Rect(this.points[0], this.points[1], this.color).draw(pixels, sourcePixels, pending);
+		new Rect(this.points[2], this.points[3], this.color).draw(pixels, sourcePixels, pending);
 	}
 }
 

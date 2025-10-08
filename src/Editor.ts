@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, Edit, FillRect, Line, Move, Paste, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Rect, Select,  TextEdit} from './Edit.js';
 import EditCreator, {DirtyMode} from './EditCreator.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -305,8 +305,8 @@ export default class Editor {
 				return new Move(point, point, new Point());
 			case Tool.LINE:
 				return new Line(point, point, this.color);
-			case Tool.STRAIGHT_LINE:
-				return new StraightLine(point, point, this.color);
+			case Tool.GRID_LINE:
+				return new GridLine(point, point, new Point(), this.color);
 			case Tool.RECT:
 				return new Rect(point, point, this.color);
 			case Tool.FILL_RECT:
