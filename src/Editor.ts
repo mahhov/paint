@@ -175,22 +175,22 @@ export default class Editor {
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
 		console.time('load read');
-		let editorCreatorPromise: Promise<EditCreator> = Storage.read('save')
+		let editCreatorPromise: Promise<EditCreator> = Storage.read('save')
 			.then(saveObj => {
 				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
 				console.time('load deserialize');
-				let editorCreator = Serializer.deserialize(saveObj);
+				let editCreator = Serializer.deserialize(saveObj);
 				console.timeEnd('load deserialize');
-				editorCreator.maxDirty = DirtyMode.ALL_EDITS;
-				return editorCreator;
+				editCreator.maxDirty = DirtyMode.ALL_EDITS;
+				return editCreator;
 			})
 			.catch(e => {
 				console.warn('Failed to restore save', e);
 				return new EditCreator();
 			});
 
-		return new Editor(canvas, await editorCreatorPromise);
+		return new Editor(canvas, await editCreatorPromise);
 	}
 
 	private save() {
