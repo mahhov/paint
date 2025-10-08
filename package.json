@@ -6,8 +6,9 @@
   "author": "",
   "main": "src/script.ts",
   "scripts": {
-    "build": "mkdir out && cp src/index.html out/index.html && tsc",
-    "dev": "cp src/index.html out/index.html && tsc -w"
+    "copy": "cp src/index.html out/index.html && cp media/favicon.png out/favicon.png",
+    "build": "mkdir out && npm run copy && tsc",
+    "dev": "npm run copy && tsc -w"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
