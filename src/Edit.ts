@@ -186,9 +186,9 @@ export class Rect extends Edit {
 export class FillRect extends Rect {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let [min, max] = boundRect(this.points[0], this.points[1], pixels.size);
-		let line = new Uint8ClampedArray(max.subtract(min).x * 4);
+		let line = new Uint8ClampedArray((max.subtract(min).x + 1) * 4);
 		new Uint32Array(line.buffer).fill(this.color.int32);
-		for (let y = min.y; y < max.y; y++)
+		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x, y, pixels.width, true), line);
 	}
 }
