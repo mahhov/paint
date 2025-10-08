@@ -161,6 +161,7 @@ export default class Editor {
 		document.addEventListener('paste', e => this.paste(e));
 
 		window.addEventListener('resize', () => this.resizeCanvas());
+		window.addEventListener('mouseup', e => e.preventDefault());
 		window.addEventListener('wheel', e => e.preventDefault(), {passive: false});
 
 		this.resizeCanvas();
