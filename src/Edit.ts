@@ -181,8 +181,8 @@ export class Rect extends Edit {
 		super.setPoint(index, point, shiftDown);
 		if (!shiftDown) return;
 		let delta = this.points[index].subtract(this.points[1 - index]);
-		delta = new Point(Math.abs(delta.x) < Math.abs(delta.y) ? delta.x : delta.y);
-		this.points_[index] = this.points[1 - index].add(delta);
+		let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
+		this.points_[index] = this.points[1 - index].add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
