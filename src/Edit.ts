@@ -93,13 +93,13 @@ export class Move extends Edit {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
 		let move = this.points[2].subtract(this.points[0]);
 		let [min, max] = boundTransferRect(this.points[0], this.points[1], pixels.size, move, pixels.size);
-		let clearLine = new Uint8ClampedArray(max.subtract(min).x * 4).fill(255);
+		let clearLine = new Uint8ClampedArray((max.subtract(min).x + 1) * 4).fill(255);
 		let copyLines = [];
-		for (let y = min.y; y < max.y; y++)
-			copyLines[y] = sourcePixels.getLine(getIndex(min.x, y, pixels.width, true), getIndex(max.x, y, pixels.width, true));
-		for (let y = min.y; y < max.y; y++)
+		for (let y = min.y; y <= max.y; y++)
+			copyLines[y] = sourcePixels.getLine(getIndex(min.x, y, pixels.width, true), getIndex(max.x + 1, y, pixels.width, true));
+		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x, y, pixels.width, true), clearLine);
-		for (let y = min.y; y < max.y; y++)
+		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x + move.x, y + move.y, pixels.width, true), copyLines[y]);
 
 		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
