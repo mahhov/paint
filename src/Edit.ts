@@ -54,7 +54,7 @@ export class Move extends Edit {
 		return p1.add(p2).scale(.5).round;
 	}
 
-	private get delta() {
+	protected get delta() {
 		return this.points[2].subtract(this.points[0]);
 	}
 
@@ -140,14 +140,18 @@ export class GridLine extends Move {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		for (let i = 0; i < 4; i++) {
-			for (let x = 0; x <= pixels.width; x++)
-				pixels.set(new Point(x, this.points[i].y), this.color);
-			for (let y = 0; y <= pixels.height; y++)
-				pixels.set(new Point(this.points[i].x, y), this.color);
+		let delta = this.delta;
+		for (let i = 0; i < 2; i++) {
+			if (!delta.y)
+				for (let x = 0; x <= pixels.width; x += 2)
+					pixels.set(new Point(x, this.points[i].y), this.color);
+			if (!delta.x)
+				for (let y = 0; y <= pixels.height; y += 2)
+					pixels.set(new Point(this.points[i].x, y), this.color);
 		}
 		new Rect(this.points[0], this.points[1], this.color).draw(pixels, sourcePixels, pending);
-		new Rect(this.points[2], this.points[3], this.color).draw(pixels, sourcePixels, pending);
+		if (delta.x || delta.y)
+			new Rect(this.points[2], this.points[3], this.color).draw(pixels, sourcePixels, pending);
 	}
 }
 
