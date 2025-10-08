@@ -42,8 +42,11 @@ export let icons: Record<string, IconInstruction[]> = {
 		{type: IconInstructionType.FILL_RECT, coords: [28, 0, 32, 4], color: Color.DARK_GRAY},
 	],
 	GRID_LINE: [
-		{type: IconInstructionType.LINE, coords: [2, 16, 30, 16], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [16, 2, 16, 30], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [2, 11, 30, 11], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.LINE, coords: [2, 21, 30, 21], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.LINE, coords: [11, 2, 11, 30], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.LINE, coords: [21, 2, 21, 30], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.RECT, coords: [11, 11, 21, 21], color: Color.DARK_GRAY},
 	],
 	RECT: [
 		{type: IconInstructionType.RECT, coords: [2, 2, 30, 30], color: Color.DARK_GRAY},
