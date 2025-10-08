@@ -138,13 +138,15 @@ export default class Editor {
 
 		document.addEventListener('keydown', e => {
 			if (!(this.editCreator.pendingEdit instanceof TextEdit)) return;
-			// todo ctrl delete/backspace to remove word
 			// todo text cursor & selection & undo/redo typing
-			if (e.ctrlKey || e.altKey) return;
 			if (e.key === 'Delete' || e.key === 'Backspace') {
-				this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
+				if (e.ctrlKey) {
+					let str = this.editCreator.pendingEdit.text.trim();
+					this.editCreator.pendingEdit.text = str.substring(0, str.lastIndexOf(' ') + 1);
+				} else
+					this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
 				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
-			} else if (e.key.length === 1) {
+			} else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
 				this.editCreator.pendingEdit.text += e.key;
 				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
 			}
