@@ -103,19 +103,19 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
 
-		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.selectTool(Tool.SELECT)));
-		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
-		this.input.addBinding(new KeyBinding(' ', [], [InputState.PRESSED], () => this.selectTool(Tool.MOVE)));
-		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.selectTool(Tool.LINE)));
-		this.input.addBinding(new KeyBinding('g', [], [InputState.PRESSED], () => this.selectTool(Tool.GRID_LINE)));
-		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.selectTool(Tool.RECT)));
-		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.selectTool(Tool.FILL_RECT)));
-		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
-		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => this.selectTool(Tool.CLEAR)));
-		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.selectTool(Tool.TEXT)));
-		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.selectTool(Tool.COLOR_PICKER)));
-		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.selectTool(Tool.BUCKET_FILL)));
-		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.selectTool(Tool.PEN)));
+		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
+		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
+		this.input.addBinding(new KeyBinding(' ', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
+		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.keySelectTool(Tool.LINE)));
+		this.input.addBinding(new KeyBinding('g', [], [InputState.PRESSED], () => this.keySelectTool(Tool.GRID_LINE)));
+		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.keySelectTool(Tool.RECT)));
+		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.keySelectTool(Tool.FILL_RECT)));
+		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.keySelectTool(Tool.CLEAR)));
+		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => this.keySelectTool(Tool.CLEAR)));
+		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.keySelectTool(Tool.TEXT)));
+		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.keySelectTool(Tool.COLOR_PICKER)));
+		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.keySelectTool(Tool.BUCKET_FILL)));
+		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.keySelectTool(Tool.PEN)));
 
 		// todo ctrl+1-9 to select colors
 
@@ -249,8 +249,12 @@ export default class Editor {
 		this.panel.setZoom(this.camera.zoomPercent);
 	}
 
+	private keySelectTool(tool: Tool) {
+		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+		this.selectTool(tool);
+	}
+
 	private selectTool(tool: Tool) {
-		if ((this.editCreator.pendingEdit instanceof TextEdit)) return; // todo this is preventing mouse tool selection
 		this.tool = tool;
 		this.panel.setTool(tool);
 		let edit = null;
