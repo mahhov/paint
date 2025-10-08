@@ -138,7 +138,8 @@ export default class Editor {
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
 				this.editCreator.moveControlPointBy(delta.scale(scale));
-				this.panel.setStatus(this.status);
+				if (this.editCreator.pendingEdit)
+					this.panel.setStatus(this.status);
 			}));
 		}));
 
