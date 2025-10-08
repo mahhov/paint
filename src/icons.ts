@@ -12,7 +12,7 @@ export interface IconInstruction {
 
 export let icons: Record<string, IconInstruction[]> = {
 	SELECT: [
-		{type: IconInstructionType.SELECT, coords: [3, 3, 30, 30], color: Color.DARK_GRAY},
+		{type: IconInstructionType.RECT, coords: [3, 3, 30, 30], color: Color.LIGHT_GRAY},
 		{type: IconInstructionType.LINE, coords: [5, 5, 13, 13], color: Color.DARK_GRAY},
 		{type: IconInstructionType.LINE, coords: [5, 5, 5, 13], color: Color.DARK_GRAY},
 		{type: IconInstructionType.LINE, coords: [5, 5, 13, 5], color: Color.DARK_GRAY},

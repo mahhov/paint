@@ -248,6 +248,8 @@ export class TextEdit extends Edit {
 					pixels.set(this.points[0].add(new Point(x, y)), this.color);
 			}
 		}
+		if (pending)
+			new Line(this.points[0].add(new Point(imageData.width, 0)), this.points[0].add(new Point(imageData.width, imageData.height)), this.color).draw(pixels, sourcePixels, pending);
 	}
 
 	get measure() {

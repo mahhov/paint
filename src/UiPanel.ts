@@ -28,7 +28,7 @@ class UiElement extends Emitter {
 	}
 
 	draw(pixels: Pixels) {
-		this.edits.forEach(edit => edit.draw(pixels, pixels, true));
+		this.edits.forEach(edit => edit.draw(pixels, pixels, false));
 	}
 
 	protected get edits(): Edit[] {
@@ -202,7 +202,7 @@ class UiText extends UiElement {
 	}
 
 	protected get edits(): Edit[] {
-		let textEdit = new TextEdit(this.position.add(new Point(4, 11)), Color.DARK_GRAY, this.text);
+		let textEdit = new TextEdit(this.position.add(new Point(4, 11)), Color.DARK_GRAY, this.text, 15);
 		return super.edits.concat(textEdit);
 	}
 
@@ -419,9 +419,9 @@ export default class UiPanel extends Emitter {
 			}
 
 			tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
-			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, true);
-			new Rect(tooltipPoint1, tooltipPoint2, Color.BLACK).draw(this.pixels, this.pixels, true);
-			tooltipTextEdit.draw(this.pixels, this.pixels, true);
+			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, false);
+			new Rect(tooltipPoint1, tooltipPoint2, Color.BLACK).draw(this.pixels, this.pixels, false);
+			tooltipTextEdit.draw(this.pixels, this.pixels, false);
 		}
 	}
 }

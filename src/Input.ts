@@ -137,7 +137,6 @@ export class Input {
 	mouseDownPosition = Point.P0;
 	mouseLastPosition = Point.P0;
 	mousePosition = Point.P0;
-	// todo track more key states
 	shiftDown = false;
 
 	constructor(mouseTarget: HTMLCanvasElement) {
