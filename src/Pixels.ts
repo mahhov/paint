@@ -24,6 +24,7 @@ export default class Pixels {
 		new Uint32Array(this.cachedClearedImageDataData.buffer).fill(this.defaultColor.int32);
 		this.canvas = new OffscreenCanvas(width, height);
 		this.ctx = this.canvas.getContext('2d')!;
+		this.ctx.fillStyle = `rgba(${this.defaultColor.toRgba().join(',')})`;
 		this.clear();
 	}
 
@@ -70,17 +71,19 @@ export default class Pixels {
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 		this.dirtyMin = this.size;
 		this.dirtyMax = Point.P0;
 	}
 
 	// todo rename
 	async getImage(s: string): Promise<OffscreenCanvas> {
-		if (this.dirtyMax.x || this.dirtyMax.y) {
-			let dirtyDelta = this.dirtyMax.subtract(this.dirtyMin);
+		if (this.dirtyMax.x >= this.dirtyMin.x) {
+			let dirtyDelta = this.dirtyMax.subtract(this.dirtyMin).add(Point.P1);
 			let dest: [number, number, number, number] = [this.dirtyMin.x, this.dirtyMin.y, dirtyDelta.x, dirtyDelta.y];
 			let image = await createImageBitmap(this.imageData, ...dest); // todo try avoiding createImageBitmap
 			this.ctx.clearRect(...dest);
+			this.ctx.fillRect(...dest);
 			this.ctx.drawImage(image, ...dest);
 			if (s) console.log(s, this.dirtyMin, this.dirtyMax); // todo remove after done debugging
 			this.dirtyMin = this.size;
@@ -93,3 +96,4 @@ export default class Pixels {
 		return p.x >= 0 && p.x < this.width && p.y >= 0 && p.y < this.height;
 	}
 }
+

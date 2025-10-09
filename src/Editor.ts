@@ -247,6 +247,7 @@ export default class Editor {
 		this.editorSize = Math.min(this.editorWidth, this.editorHeight);
 		this.ctx.canvas.width = this.editorWidth + PANEL_SIZE;
 		this.ctx.canvas.height = this.editorHeight;
+		this.ctx.fillStyle = '#f0f0f0';
 		this.cameraReset();
 	}
 
@@ -391,7 +392,6 @@ export default class Editor {
 		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, this.editorWidth, this.editorHeight] as [number, number, number, number, number, number, number, number];
 
 		this.ctx.imageSmoothingEnabled = srcSize.x > this.editorSize;
-		this.ctx.fillStyle = '#f0f0f0';
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
 		this.ctx.drawImage(await this.pixels.getImage('pixels'), ...srcDestCoordinates);
 		this.ctx.drawImage(await this.pendingPixels.getImage('pendingPixels'), ...srcDestCoordinates);
