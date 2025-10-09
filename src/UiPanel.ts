@@ -256,8 +256,8 @@ export default class UiPanel extends Emitter {
 	private readonly toolButtons: UiToolButton[];
 	private readonly colorCircle: UiColorCircle;
 	private readonly colorBrightness: UiColorRange;
-	private readonly presetColors: UiColorButton[];
-	private readonly recentColors: UiColorButton[];
+	private readonly presetColorButtons: UiColorButton[];
+	private readonly recentColorButtons: UiColorButton[];
 	private readonly viewText: UiText;
 	private readonly pixels: Pixels;
 	private tooltip = '';
@@ -290,7 +290,7 @@ export default class UiPanel extends Emitter {
 
 		this.grid.nextRow();
 
-		this.presetColors = ([
+		this.presetColorButtons = ([
 			// gray
 			[0, 0, 0], // black
 			[111, 111, 111], // dark gray
@@ -312,7 +312,7 @@ export default class UiPanel extends Emitter {
 				.addListener('click', () => this.emit('color', color)));
 
 		this.grid.nextRow(margin);
-		this.recentColors = A(12).map(() => {
+		this.recentColorButtons = A(12).map(() => {
 			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), smallButtonSize);
 			button.addListener('click', () => this.emit('color', button.color));
 			return button;
@@ -360,6 +360,14 @@ export default class UiPanel extends Emitter {
 		return ui;
 	}
 
+	get presetColors(): Color[] {
+		return this.presetColorButtons.map(button => button.color);
+	}
+
+	get recentColors(): Color[] {
+		return this.recentColorButtons.map(button => button.color);
+	}
+
 	setTool(tool: Tool) {
 		this.toolButtons.forEach(button => button.selected = button.tool === tool);
 		this.drawDirty = true;
@@ -376,22 +384,22 @@ export default class UiPanel extends Emitter {
 	}
 
 	setColorUsed(colorUsed: Color) {
-		let recentColors = this.recentColors.map(button => button.color);
+		let recentColors = this.recentColorButtons.map(button => button.color);
 		let index = recentColors.findIndex(recentColor => recentColor.int32 === colorUsed.int32);
 		if (index === -1) {
 			recentColors.unshift(colorUsed);
 			recentColors.pop();
 		} else
 			recentColors.unshift(recentColors.splice(index, 1)[0]);
-		this.recentColors.forEach((button, i) => button.color = recentColors[i]);
+		this.recentColorButtons.forEach((button, i) => button.color = recentColors[i]);
 		this.setSelectedColor(colorUsed);
 		this.drawDirty = true;
 	}
 
 	private setSelectedColor(color: Color) {
-		this.presetColors.forEach(button => button.selected = button.color.int32 === color.int32);
+		this.presetColorButtons.forEach(button => button.selected = button.color.int32 === color.int32);
 		let found = false;
-		this.recentColors.forEach(button => {
+		this.recentColorButtons.forEach(button => {
 			button.selected = button.color.int32 === color.int32 && !found;
 			if (button.selected)
 				found = true;

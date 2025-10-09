@@ -119,7 +119,14 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.keySelectTool(Tool.BUCKET_FILL)));
 		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.keySelectTool(Tool.PEN)));
 
-		// todo ctrl+1-9 to select colors
+		for (let i = 0; i <= 9; i++) {
+			let colorIndex = (i + 9) % 10;
+			this.input.addBinding(new KeyBinding(String(i), [], [InputState.PRESSED], () => {
+				if (this.editCreator.pendingEdit instanceof TextEdit) return;
+				this.setColor(this.panel.presetColors[colorIndex]);
+			}));
+			this.input.addBinding(new KeyBinding(String(i), [KeyModifier.CONTROL], [InputState.PRESSED], () => this.setColor(this.panel.recentColors[colorIndex])));
+		}
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
 
@@ -253,7 +260,7 @@ export default class Editor {
 	}
 
 	private keySelectTool(tool: Tool) {
-		if ((this.editCreator.pendingEdit instanceof TextEdit)) return;
+		if (this.editCreator.pendingEdit instanceof TextEdit) return;
 		this.selectTool(tool);
 	}
 

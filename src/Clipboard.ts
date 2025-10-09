@@ -15,7 +15,7 @@ export default class Clipboard {
 				.find(item => item.type.startsWith('image/'));
 			if (!clipboardItem) return reject('no clipboard image data');
 			let blob = clipboardItem.getAsFile();
-			if (!blob) return reject(('no clipboard image blob data'));
+			if (!blob) return reject('no clipboard image blob data');
 			let reader = new FileReader();
 			reader.onload = e => {
 				let img = document.createElement('img');
