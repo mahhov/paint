@@ -353,6 +353,8 @@ export default class Editor {
 	}
 
 	private flushEditCreatorToPixels() {
+		this.panel.draw();
+
 		if (this.editCreator.dirty === DirtyMode.NONE)
 			return;
 

@@ -262,6 +262,7 @@ export default class UiPanel extends Emitter {
 	private readonly pixels: Pixels;
 	private tooltip = '';
 	private tooltipPosition = Point.P0;
+	private drawDirty = true;
 
 	constructor(pixels: Pixels, input: Input) {
 		super();
@@ -347,11 +348,7 @@ export default class UiPanel extends Emitter {
 			this.uis.forEach(ui => ui.onMouseDown(input.mousePosition))));
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.UP], () => {
 			if (input.mousePosition.equals(input.mouseLastPosition)) return;
-			let tooltip = this.uis.find(ui => ui.containsPoint(input.mousePosition))?.tooltip || '';
-			if (!tooltip && !this.tooltip) return;
-			this.tooltip = tooltip;
-			this.tooltipPosition = input.mousePosition;
-			this.draw();
+			this.setTooltip(input.mousePosition);
 		}));
 	}
 
@@ -365,7 +362,7 @@ export default class UiPanel extends Emitter {
 
 	setTool(tool: Tool) {
 		this.toolButtons.forEach(button => button.selected = button.tool === tool);
-		this.draw();
+		this.drawDirty = true;
 	}
 
 	setColor(color: Color) {
@@ -375,20 +372,20 @@ export default class UiPanel extends Emitter {
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
 		this.setSelectedColor(color);
-		this.draw();
+		this.drawDirty = true;
 	}
 
-	setColorUsed(color: Color) {
+	setColorUsed(colorUsed: Color) {
 		let recentColors = this.recentColors.map(button => button.color);
-		let index = recentColors.findIndex(recentColor => recentColor.int32 === color.int32);
+		let index = recentColors.findIndex(recentColor => recentColor.int32 === colorUsed.int32);
 		if (index === -1) {
-			recentColors.unshift(color);
+			recentColors.unshift(colorUsed);
 			recentColors.pop();
 		} else
 			recentColors.unshift(recentColors.splice(index, 1)[0]);
 		this.recentColors.forEach((button, i) => button.color = recentColors[i]);
-		this.setSelectedColor(color);
-		this.draw();
+		this.setSelectedColor(colorUsed);
+		this.drawDirty = true;
 	}
 
 	private setSelectedColor(color: Color) {
@@ -403,15 +400,26 @@ export default class UiPanel extends Emitter {
 
 	setZoom(zoom: number) {
 		this.viewText.text = `${zoom}%`;
-		this.draw();
+		this.drawDirty = true;
 	}
 
 	setStatus(status: string) {
 		this.viewText.text = status;
-		this.draw();
+		this.drawDirty = true;
+	}
+
+	private setTooltip(mousePosition: Point) {
+		let tooltip = this.uis.find(ui => ui.containsPoint(mousePosition))?.tooltip || '';
+		if (!tooltip && !this.tooltip) return;
+		this.tooltip = tooltip;
+		this.tooltipPosition = mousePosition;
+		this.drawDirty = true;
 	}
 
 	draw() {
+		if (!this.drawDirty) return;
+		this.drawDirty = false;
+
 		this.pixels.clear();
 		this.uis.forEach(ui => ui.draw(this.pixels));
 
