@@ -333,7 +333,7 @@ export default class UiPanel extends Emitter {
 			.addListener('click', () => this.emit('save'));
 		this
 			.add(new UiButton(icons.START_NEW), smallButtonSize)
-			.setTooltip('start new (ctrl+e)')
+			.setTooltip('new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
 
 		this.grid.nextRow(margin);

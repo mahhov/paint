@@ -8,6 +8,7 @@ import Serializer from './Serializer.js';
 import Storage from './Storage.js';
 import UiPanel from './UiPanel.js';
 import Color from './util/Color.js';
+import Debouncer from './util/Debouncer.js';
 import Point from './util/Point.js';
 import {NEAR_RANGE, Tool} from './util/util.js';
 
@@ -25,9 +26,10 @@ export default class Editor {
 	private input: Input;
 	private readonly panel;
 	private camera!: Camera;
-	editorWidth!: number;
-	editorHeight!: number;
-	editorSize!: number;
+	private editorWidth!: number;
+	private editorHeight!: number;
+	private editorSize!: number;
+	private readonly saveDebouncer: Debouncer;
 
 	constructor(canvas: HTMLCanvasElement, editCreator: EditCreator) {
 		this.editCreator = editCreator;
@@ -44,7 +46,7 @@ export default class Editor {
 		this.panel.addListener('undo', () => this.editCreator.undoEdit());
 		this.panel.addListener('redo', () => this.editCreator.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
-		this.panel.addListener('save', () => this.save());
+		this.panel.addListener('save', () => this.saveDebouncer.invoke());
 		this.panel.addListener('start-new', () => this.startNew());
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
@@ -121,7 +123,7 @@ export default class Editor {
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
 
-		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.save()));
+		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.saveDebouncer.invoke()));
 		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.startNew()));
 
 		([
@@ -175,6 +177,11 @@ export default class Editor {
 		this.panel.setColor(this.color);
 		this.panel.setZoom(this.camera.zoomPercent);
 
+		this.saveDebouncer = new Debouncer(() => {
+			return Storage.write('save', Serializer.serialize(this.editCreator))
+				.catch(e => console.warn('Failed to save:', e));
+		});
+
 		this.loop();
 	}
 
@@ -196,16 +203,6 @@ export default class Editor {
 			});
 
 		return new Editor(canvas, await editCreatorPromise);
-	}
-
-	private save() {
-		console.time('save serialize');
-		let serialized = Serializer.serialize(this.editCreator);
-		console.timeEnd('save serialize');
-		console.time('save storage');
-		Storage.write('save', serialized)
-			.then(() => console.timeEnd('save storage'))
-			.catch(e => console.warn('Failed to save:', e));
 	}
 
 	private startNew() {
@@ -358,6 +355,8 @@ export default class Editor {
 
 		if (this.editCreator.dirty === DirtyMode.NONE)
 			return;
+
+		this.saveDebouncer.invoke();
 
 		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
 			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
