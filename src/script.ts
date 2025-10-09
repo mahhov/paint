@@ -1,5 +1,6 @@
 import Editor from './Editor.js';
 
+console.info('version', (await (await fetch('./version.txt')).text()).trim());
 (window as any).editor = Editor.load(document.querySelector('canvas')!);
 
 // todo diff tool

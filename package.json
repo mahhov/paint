@@ -7,8 +7,9 @@
   "main": "src/script.ts",
   "scripts": {
     "copy": "cp src/index.html out/index.html && cp media/favicon.png out/favicon.png",
-    "build": "mkdir out && npm run copy && tsc",
-    "dev": "npm run copy && tsc -w"
+    "version": "git log -1 --format=\"%h %ad\" --date=format:\"%m-%d-%Y %I:%M %p\" > out/version.txt",
+    "build": "mkdir out && npm run copy && npm run version && tsc",
+    "dev-win": "(if not exist out mkdir out) & npm run copy & npm run version & tsc -w"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
