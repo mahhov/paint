@@ -200,8 +200,13 @@ export default class Editor {
 				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
 				console.time('load deserialize');
-				let editCreator = Serializer.deserialize(saveObj);
+				let editCreator: EditCreator = Serializer.deserialize(saveObj);
 				console.timeEnd('load deserialize');
+				let badEdits = [editCreator.edits, editCreator.pendingEdit, editCreator.redoEdits]
+					.flat()
+					.filter(edit => !(edit instanceof Edit));
+				if (badEdits.length)
+					throw new Error('Deserialized a non-edit when expecting an edit ' + JSON.stringify(badEdits));
 				editCreator.maxDirty = DirtyMode.ALL_EDITS;
 				return editCreator;
 			})

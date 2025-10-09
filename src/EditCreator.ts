@@ -13,7 +13,7 @@ export default class EditCreator {
 	readonly edits: Edit[] = [];
 	pendingEdit: Edit | null = null;
 	controlPoint = 0;
-	private readonly redoEdits: Edit[] = [];
+	readonly redoEdits: Edit[] = [];
 	dirty = DirtyMode.NONE;
 
 	set maxDirty(dirtyMode: DirtyMode) {
