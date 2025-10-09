@@ -10,7 +10,7 @@ import {A, getIndex, round, Tool} from './util/util.js';
 class UiElement extends Emitter {
 	protected position = Point.P0;
 	protected size = Point.P0;
-	private defaultTooltip = '';
+	protected defaultTooltip = '';
 
 	setPosition(position: Point) {
 		this.position = position;
@@ -111,7 +111,7 @@ class UiColorButton extends UiButton {
 	}
 
 	get tooltip(): string {
-		return `rgb(${this.color.toRgba().slice(0, 3).join()})`;
+		return `rgb(${this.color.toRgba().slice(0, 3).join()}) ${this.defaultTooltip}`.trim();
 	}
 }
 
@@ -307,14 +307,20 @@ export default class UiPanel extends Emitter {
 			[250, 90, 90], // red
 		] as [number, number, number][])
 			.map(rgb => Color.fromRgba(...rgb, 255))
-			.map(color => this
-				.add(new UiColorButton(color), smallButtonSize)
-				.addListener('click', () => this.emit('color', color)));
+			.map((color, i) => {
+				let button = this.add(new UiColorButton(color), smallButtonSize);
+				if (i < 10)
+					button.setTooltip(`(${(i + 1) % 10})`);
+				button.addListener('click', () => this.emit('color', color));
+				return button;
+			});
 
 		this.grid.nextRow(margin);
-		this.recentColorButtons = A(12).map(() => {
+		this.recentColorButtons = A(12).map((_, i) => {
 			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), smallButtonSize);
 			button.addListener('click', () => this.emit('color', button.color));
+			if (i < 10)
+				button.setTooltip(`(ctrl+${(i + 1) % 10})`);
 			return button;
 		});
 
