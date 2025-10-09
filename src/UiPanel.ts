@@ -235,9 +235,9 @@ class GridLayout {
 		return position;
 	}
 
-	nextRow(extraMargin = 0): void {
+	nextRow(margin = 0): void {
 		this.x = this.margin;
-		this.y = this.height + extraMargin;
+		this.y = this.height + margin;
 		this.rowHeight = 0;
 	}
 
@@ -268,7 +268,7 @@ export default class UiPanel extends Emitter {
 		super();
 
 		this.pixels = pixels;
-		let margin = 10, extraMargin = margin * 3;
+		let margin = 10;
 		this.grid = new GridLayout(pixels.width, margin);
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
@@ -279,7 +279,7 @@ export default class UiPanel extends Emitter {
 				.setTooltip(uiInfo[2])
 				.addListener('click', () => this.emit('tool', uiInfo[0])));
 
-		this.grid.nextRow(extraMargin);
+		this.grid.nextRow(margin);
 		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
 
 		this.grid.nextRow();
@@ -311,14 +311,14 @@ export default class UiPanel extends Emitter {
 				.add(new UiColorButton(color), smallButtonSize)
 				.addListener('click', () => this.emit('color', color)));
 
-		this.grid.nextRow(extraMargin);
+		this.grid.nextRow(margin);
 		this.recentColors = A(12).map(() => {
 			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), smallButtonSize);
 			button.addListener('click', () => this.emit('color', button.color));
 			return button;
 		});
 
-		this.grid.nextRow(extraMargin);
+		this.grid.nextRow(margin);
 		this
 			.add(new UiButton(icons.UNDO), smallButtonSize)
 			.setTooltip('undo (ctrl+z or mb-4)')
@@ -336,7 +336,7 @@ export default class UiPanel extends Emitter {
 			.setTooltip('start new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
 
-		this.grid.nextRow(extraMargin);
+		this.grid.nextRow(margin);
 		this.viewText = this
 			.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y / 2))
 			.setTooltip('reset zoom (ctrl+0)')
