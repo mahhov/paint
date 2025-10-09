@@ -131,6 +131,40 @@ export class Line extends Edit {
 	}
 }
 
+export class StraightLine extends Edit {
+	private readonly color: Color;
+
+	constructor(start: Point, end: Point, color: Color) {
+		super([start, end]);
+		this.color = color;
+	}
+
+	get delta() {
+		return this.points[0].subtract(this.points[1]);
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		let delta = this.delta;
+		super.setPoint(index, point, shiftDown);
+		if (index)
+			this.points_[0] = this.points[1].add(delta);
+		else {
+			delta = this.delta;
+			delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
+			this.points_[0] = this.points_[1].add(delta);
+		}
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
+		if (this.delta.x)
+			for (let x = 0; x < pixels.size.x; x++)
+				pixels.set(new Point(x, this.points[0].y), this.color);
+		else
+			for (let y = 0; y < pixels.size.y; y++)
+				pixels.set(new Point(this.points[0].x, y), this.color);
+	}
+}
+
 export class GridLine extends Move {
 	private readonly color: Color;
 

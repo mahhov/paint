@@ -6,6 +6,7 @@ export enum Tool {
 	SELECT, // copy, paste, move, delete
 	MOVE,
 	LINE,
+	STRAIGHT_LINE,
 	GRID_LINE,
 	RECT,
 	FILL_RECT,
