@@ -290,7 +290,7 @@ export class BucketFill extends Edit {
 			if (pixels.get32(index) === this.color.int32) continue;
 			if (sourcePixels.get32(index) !== targetColor.int32) continue;
 			pixels.setIndex(index, this.color);
-			pixels.setDirty(new Point(x, y)); // todo since we're creating point anyways, use points in queue
+			pixels.setDirty(new Point(x, y));
 			if (x < pixels.width - 1) queue.push(index + 1);
 			if (y < pixels.height - 1) queue.push(index + pixels.width);
 			if (x > 0) queue.push(index - 1);

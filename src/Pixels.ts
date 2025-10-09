@@ -6,7 +6,7 @@ export default class Pixels {
 	readonly width: number;
 	readonly height: number;
 	private readonly defaultColor: Color;
-	private readonly imageData: ImageData; // todo is it faster to just directly manipulate canvas?
+	private readonly imageData: ImageData;
 	private readonly imageData32View: Uint32Array;
 	private readonly cachedClearedImageDataData: Uint8ClampedArray;
 	private readonly ctx: OffscreenCanvasRenderingContext2D;
