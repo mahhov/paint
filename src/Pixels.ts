@@ -9,10 +9,9 @@ export default class Pixels {
 	private readonly imageData: ImageData; // todo is it faster to just directly manipulate canvas?
 	private readonly imageData32View: Uint32Array;
 	private readonly cachedClearedImageDataData: Uint8ClampedArray;
-	private readonly canvas: OffscreenCanvas; // todo do we need to keep this variable
 	private readonly ctx: OffscreenCanvasRenderingContext2D;
-	private dirtyMin: Point;
-	private dirtyMax: Point;
+	private dirtyMin!: Point;
+	private dirtyMax!: Point;
 
 	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
 		this.width = width;
@@ -22,8 +21,8 @@ export default class Pixels {
 		this.imageData32View = new Uint32Array(this.imageData.data.buffer);
 		this.cachedClearedImageDataData = new Uint8ClampedArray(width * height * 4);
 		new Uint32Array(this.cachedClearedImageDataData.buffer).fill(this.defaultColor.int32);
-		this.canvas = new OffscreenCanvas(width, height);
-		this.ctx = this.canvas.getContext('2d')!;
+		let canvas = new OffscreenCanvas(width, height);
+		this.ctx = canvas.getContext('2d')!;
 		this.ctx.fillStyle = `rgba(${this.defaultColor.toRgba().join(',')})`;
 		this.clear();
 	}
@@ -70,14 +69,13 @@ export default class Pixels {
 
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+		this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		this.dirtyMin = this.size;
 		this.dirtyMax = Point.P0;
 	}
 
-	// todo rename
-	async getImage(s: string): Promise<OffscreenCanvas> {
+	async getImage(): Promise<OffscreenCanvas> {
 		if (this.dirtyMax.x >= this.dirtyMin.x) {
 			let dirtyDelta = this.dirtyMax.subtract(this.dirtyMin).add(Point.P1);
 			let dest: [number, number, number, number] = [this.dirtyMin.x, this.dirtyMin.y, dirtyDelta.x, dirtyDelta.y];
@@ -85,11 +83,10 @@ export default class Pixels {
 			this.ctx.clearRect(...dest);
 			this.ctx.fillRect(...dest);
 			this.ctx.drawImage(image, ...dest);
-			if (s) console.log(s, this.dirtyMin, this.dirtyMax); // todo remove after done debugging
 			this.dirtyMin = this.size;
 			this.dirtyMax = Point.P0;
 		}
-		return this.canvas;
+		return this.ctx.canvas;
 	}
 
 	private isInBounds(p: Point) {

@@ -220,7 +220,7 @@ export default class Editor {
 		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
 		this.editCreator.startNewEdit(null);
 		this.flushEditCreatorToPixels();
-		Clipboard.copyCanvasRegion(await this.pixels.getImage('clipboard'), start, end);
+		Clipboard.copyCanvasRegion(await this.pixels.getImage(), start, end);
 	}
 
 	private paste(e: ClipboardEvent) {
@@ -393,9 +393,9 @@ export default class Editor {
 
 		this.ctx.imageSmoothingEnabled = srcSize.x > this.editorSize;
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
-		this.ctx.drawImage(await this.pixels.getImage('pixels'), ...srcDestCoordinates);
-		this.ctx.drawImage(await this.pendingPixels.getImage('pendingPixels'), ...srcDestCoordinates);
-		this.ctx.drawImage(await this.panelPixels.getImage(''), 0, 0);
+		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(await this.panelPixels.getImage(), 0, 0);
 	}
 }
 
