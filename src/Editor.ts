@@ -11,7 +11,7 @@ import Color from './util/Color.js';
 import Point from './util/Point.js';
 import {NEAR_RANGE, Tool} from './util/util.js';
 
-const PIXELS_SIZE = 3000;
+const PIXELS_SIZE = 5000;
 const PANEL_SIZE = 178;
 
 export default class Editor {
@@ -199,11 +199,12 @@ export default class Editor {
 
 	private save() {
 		console.time('save serialize');
-		Serializer.serialize(this.editCreator);
+		let serialized = Serializer.serialize(this.editCreator);
+		console.log(JSON.stringify(serialized).length);
 		console.timeEnd('save serialize');
 
 		console.time('save storage');
-		Storage.write('save', Serializer.serialize(this.editCreator))
+		Storage.write('save', serialized)
 			.then(() => console.timeEnd('save storage'))
 			.catch(e => console.warn('Failed to save:', e));
 	}
@@ -219,7 +220,7 @@ export default class Editor {
 		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
 		this.editCreator.startNewEdit(null);
 		this.flushEditCreatorToPixels();
-		Clipboard.copyCanvasRegion(await this.pixels.getImage(), start, end);
+		Clipboard.copyCanvasRegion(await this.pixels.getImage('clipboard'), start, end);
 	}
 
 	private paste(e: ClipboardEvent) {
@@ -392,9 +393,9 @@ export default class Editor {
 		this.ctx.imageSmoothingEnabled = srcSize.x > this.editorSize;
 		this.ctx.fillStyle = '#f0f0f0';
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
-		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
-		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
-		this.ctx.drawImage(await this.panelPixels.getImage(), 0, 0);
+		this.ctx.drawImage(await this.pixels.getImage('pixels'), ...srcDestCoordinates);
+		this.ctx.drawImage(await this.pendingPixels.getImage('pendingPixels'), ...srcDestCoordinates);
+		this.ctx.drawImage(await this.panelPixels.getImage(''), 0, 0);
 	}
 }
 

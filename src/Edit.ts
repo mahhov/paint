@@ -100,7 +100,8 @@ export class Move extends Edit {
 			pixels.setLine(getIndex(min.x, y, pixels.width, true), clearLine);
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x + move.x, y + move.y, pixels.width, true), copyLines[y]);
-
+		pixels.setDirty(min, max);
+		pixels.setDirty(min.add(move), max.add(move));
 		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
 		new Select(this.points[2], this.points[3]).draw(pixels, sourcePixels, pending);
 	}
@@ -196,6 +197,7 @@ export class FillRect extends Rect {
 		new Uint32Array(line.buffer).fill(this.color.int32);
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x, y, pixels.width, true), line);
+		pixels.setDirty(min, max);
 	}
 }
 
@@ -288,6 +290,7 @@ export class BucketFill extends Edit {
 			if (pixels.get32(index) === this.color.int32) continue;
 			if (sourcePixels.get32(index) !== targetColor.int32) continue;
 			pixels.setIndex(index, this.color);
+			pixels.setDirty(new Point(x, y)); // todo since we're creating point anyways, use points in queue
 			if (x < pixels.width - 1) queue.push(index + 1);
 			if (y < pixels.height - 1) queue.push(index + pixels.width);
 			if (x > 0) queue.push(index - 1);
@@ -311,6 +314,7 @@ export class Paste extends Edit {
 			pixels.setLine(
 				getIndex(min.x + this.points[0].x, y + this.points[0].y, pixels.width, true),
 				this.pasteData.int8Array.subarray(getIndex(min.x, y, size.x, true), getIndex(max.x + 1, y, size.x, true)));
+		pixels.setDirty(min, max);
 	}
 }
 

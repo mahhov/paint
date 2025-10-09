@@ -6,10 +6,13 @@ export default class Pixels {
 	readonly width: number;
 	readonly height: number;
 	private readonly defaultColor: Color;
-	private readonly imageData: ImageData;
+	private readonly imageData: ImageData; // todo is it faster to just directly manipulate canvas?
 	private readonly imageData32View: Uint32Array;
 	private readonly cachedClearedImageDataData: Uint8ClampedArray;
-	private cachedImage: Promise<ImageBitmap> | undefined;
+	private readonly canvas: OffscreenCanvas; // todo do we need to keep this variable
+	private readonly ctx: OffscreenCanvasRenderingContext2D;
+	private dirtyMin: Point;
+	private dirtyMax: Point;
 
 	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
 		this.width = width;
@@ -19,6 +22,8 @@ export default class Pixels {
 		this.imageData32View = new Uint32Array(this.imageData.data.buffer);
 		this.cachedClearedImageDataData = new Uint8ClampedArray(width * height * 4);
 		new Uint32Array(this.cachedClearedImageDataData.buffer).fill(this.defaultColor.int32);
+		this.canvas = new OffscreenCanvas(width, height);
+		this.ctx = this.canvas.getContext('2d')!;
 		this.clear();
 	}
 
@@ -46,26 +51,42 @@ export default class Pixels {
 			let index = getPIndex(p, this.width);
 			this.imageData32View[index] = c.int32;
 		}
-		this.cachedImage = undefined;
+		this.setDirty(p);
 	}
 
 	setIndex(index: number, c: Color) {
 		this.imageData32View[index] = c.int32;
-		this.cachedImage = undefined;
 	}
 
 	setLine(index4: number, line: Uint8ClampedArray) {
 		this.imageData.data.set(line, index4);
-		this.cachedImage = undefined;
+	}
+
+	setDirty(min: Point, max: Point = min) {
+		this.dirtyMin = this.dirtyMin.min(min);
+		this.dirtyMax = this.dirtyMax.max(max);
 	}
 
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
-		this.cachedImage = undefined;
+		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.dirtyMin = this.size;
+		this.dirtyMax = Point.P0;
 	}
 
-	getImage(): Promise<ImageBitmap> {
-		return this.cachedImage ||= createImageBitmap(this.imageData);
+	// todo rename
+	async getImage(s: string): Promise<OffscreenCanvas> {
+		if (this.dirtyMax.x || this.dirtyMax.y) {
+			let dirtyDelta = this.dirtyMax.subtract(this.dirtyMin);
+			let dest: [number, number, number, number] = [this.dirtyMin.x, this.dirtyMin.y, dirtyDelta.x, dirtyDelta.y];
+			let image = await createImageBitmap(this.imageData, ...dest); // todo try avoiding createImageBitmap
+			this.ctx.clearRect(...dest);
+			this.ctx.drawImage(image, ...dest);
+			if (s) console.log(s, this.dirtyMin, this.dirtyMax); // todo remove after done debugging
+			this.dirtyMin = this.size;
+			this.dirtyMax = Point.P0;
+		}
+		return this.canvas;
 	}
 
 	private isInBounds(p: Point) {

@@ -33,13 +33,13 @@ export default class Clipboard {
 		});
 	}
 
-	static async copyCanvasRegion(image: ImageBitmap, point1: Point, point2: Point) {
-		let [min, max] = boundRect(point1, point2, new Point(image.width, image.height));
+	static async copyCanvasRegion(source: ImageBitmap | OffscreenCanvas, point1: Point, point2: Point) {
+		let [min, max] = boundRect(point1, point2, new Point(source.width, source.height));
 		let delta = max.subtract(min).add(Point.P1);
 		let canvas = new OffscreenCanvas(delta.x, delta.y);
 		let ctx = canvas.getContext('2d');
 		if (!ctx) throw new Error('no canvas context');
-		ctx.drawImage(image, min.x, min.y, delta.x, delta.y, 0, 0, delta.x, delta.y);
+		ctx.drawImage(source, min.x, min.y, delta.x, delta.y, 0, 0, delta.x, delta.y);
 		let blob: Blob = await canvas.convertToBlob({type: 'image/png'});
 		navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})])
 			.catch(e => console.warn('Copy failed to write to clipboard', e));
