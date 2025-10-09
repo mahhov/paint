@@ -103,6 +103,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
 		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
+		this.input.addBinding(new KeyBinding('a', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editCreator.startNewEdit(new Select(Point.P0, this.pixels.size))));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
@@ -118,7 +119,6 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.keySelectTool(Tool.BUCKET_FILL)));
 		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.keySelectTool(Tool.PEN)));
 
-		// todo ctrl+a to select all
 		// todo ctrl+1-9 to select colors
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
