@@ -5,7 +5,7 @@ import Pixels from './Pixels.js';
 import Color from './util/Color.js';
 import Emitter from './util/Emitter.js';
 import Point from './util/Point.js';
-import {A, getIndex, round, Tool} from './util/util.js';
+import {A, clamp, getIndex, round, Tool} from './util/util.js';
 
 class UiElement extends Emitter {
 	protected position = Point.P0;
@@ -177,7 +177,7 @@ class UiColorRange extends UiElement {
 
 	onMouseDown(point: Point) {
 		if (this.containsPoint(point)) {
-			this.brightness = (point.x - this.position.x) / this.size.x;
+			this.brightness = clamp((point.x - this.position.x) / this.size.x, 0, 1);
 			this.emit('click');
 		}
 	}

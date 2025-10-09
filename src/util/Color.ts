@@ -1,5 +1,5 @@
 import Point from './Point.js';
-import {clamp, round} from './util.js';
+import {round} from './util.js';
 
 export default class Color {
 	static WHITE = Color.fromRgba(255, 255, 255, 255);
@@ -18,118 +18,71 @@ export default class Color {
 		return new Color(((a << 24) | (b << 16) | (g << 8) | r) >>> 0);
 	}
 
-	// todo double check and clean up (ai generated)
-	static hsvToRgb(h: number, s: number, v: number): [number, number, number] {
-		h /= 60;
-		const i = Math.floor(h);
-		const f = h - i;
-		const p = v * (1 - s);
-		const q = v * (1 - f * s);
-		const t = v * (1 - (1 - f) * s);
-
+	static hslToRgb(h: number, s: number, l: number): [number, number, number] {
 		let r: number, g: number, b: number;
-		switch (i % 6) {
-			case 0:
-				r = v;
-				g = t;
-				b = p;
-				break;
-			case 1:
-				r = q;
-				g = v;
-				b = p;
-				break;
-			case 2:
-				r = p;
-				g = v;
-				b = t;
-				break;
-			case 3:
-				r = p;
-				g = q;
-				b = v;
-				break;
-			case 4:
-				r = t;
-				g = p;
-				b = v;
-				break;
-			case 5:
-				r = v;
-				g = p;
-				b = q;
-				break;
-			default:
-				r = 0;
-				g = 0;
-				b = 0;
-				break;
-		}
 
-		return [r, g, b].map(v => round(v * 255)) as [number, number, number];
+		if (s === 0)
+			r = g = b = l;
+
+		else {
+			let hue2rgb = (p: number, q: number, t: number) => {
+				if (t < 0) t += 1;
+				if (t > 1) t -= 1;
+				if (t < 1 / 6) return p + (q - p) * 6 * t;
+				if (t < 1 / 2) return q;
+				if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+				return p;
+			};
+
+			let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			let p = 2 * l - q;
+
+			r = hue2rgb(p, q, h / 360 + 1 / 3);
+			g = hue2rgb(p, q, h / 360);
+			b = hue2rgb(p, q, h / 360 - 1 / 3);
+		}
+		return [round(r * 255), round(g * 255), round(b * 255)];
 	}
 
-	// todo double check and clean up (ai generated)
-	static rgbToHsv(r: number, g: number, b: number): [number, number, number] {
-		const normR = r / 255;
-		const normG = g / 255;
-		const normB = b / 255;
+	static rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+		r /= 255;
+		g /= 255;
+		b /= 255;
 
-		const max = Math.max(normR, normG, normB);
-		const min = Math.min(normR, normG, normB);
-		const delta = max - min;
+		let max = Math.max(r, g, b);
+		let min = Math.min(r, g, b);
+		let delta = max - min;
 
 		let h = 0;
-		let s = (max === 0) ? 0 : delta / max;
-		let v = max;
+		let s = 0;
+		let l = (max + min) / 2;
 
-		if (delta !== 0) {
+		if (delta) {
+			s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
 			switch (max) {
-				case normR:
-					h = (normG - normB) / delta + (normG < normB ? 6 : 0);
+				case r:
+					h = (g - b) / delta + (g < b ? 6 : 0);
 					break;
-				case normG:
-					h = (normB - normR) / delta + 2;
+				case g:
+					h = (b - r) / delta + 2;
 					break;
-				case normB:
-					h = (normR - normG) / delta + 4;
+				case b:
+					h = (r - g) / delta + 4;
 					break;
 			}
 			h *= 60;
 		}
-
-		// Ensure H is 0-360
-		h = (h + 360) % 360;
-
-		return [h, s, v];
+		return [round(h), s, l];
 	}
 
-	// todo double check and clean up (ai generated)
 	static fromFloat(float: Point, brightness: number): Color {
-		const center = new Point(.5);
-		const maxRadius = .5;
-
-		// 1. Calculate relative coordinates from the center
-		const dx = float.x - center.x;
-		const dy = float.y - center.y;
-
-		// 2. Map Polar Coordinates to Hue (H) and Saturation (S)
-		const angleRad = Math.atan2(dy, dx);
-		const radius = Math.sqrt(dx * dx + dy * dy);
-
-		// Saturation (S): normalized distance from center (0 = center, 1 = edge)
-		const s = clamp(radius / maxRadius, 0, 1);
-
-		// Hue (H): angle in degrees (0-360)
-		const h = (angleRad * 180 / Math.PI + 360) % 360;
-
-		// Value (V) is the input brightness
-		const v = clamp(brightness, 0, 1);
-
-		// 3. Convert H/S/V to R/G/B (0-255)
-		const [r, g, b] = Color.hsvToRgb(h, s, v);
-
-		return Color.fromRgba(r, g, b, 255);
+		float = float.subtract(new Point(.5));
+		let angle = Math.atan2(float.y, float.x);
+		let radius = float.magnitude2 ** .5;
+		let s = radius / .5;
+		let h = (angle * 180 / Math.PI + 360) % 360;
+		let rgb = Color.hslToRgb(h, s, brightness);
+		return Color.fromRgba(...rgb, 255);
 	}
 
 	toRgba(): [number, number, number, number] {
@@ -140,31 +93,13 @@ export default class Color {
 		return [r, g, b, a];
 	}
 
-	// todo double check and clean up (ai generated)
 	toFloat(): [Point, number] {
-		const [r, g, b] = this.toRgba();
-
-		// 1. Convert R/G/B (0-255) to H/S/V (0-360, 0-1, 0-1)
-		const [h, s, v] = Color.rgbToHsv(r, g, b);
-
-		// 2. Map V (Value) back to brightness
-		const brightness = v;
-
-		// 3. Map H (Hue) and S (Saturation) back to 2D coordinates (x, y)
-		const maxRadius = .5;
-		const center = .5;
-
-		// Calculate radius and angle
-		const radius = s * maxRadius;
-		const angleRad = h * Math.PI / 180;
-
-		// Calculate Cartesian coordinates
-		const x = center + radius * Math.cos(angleRad);
-		const y = center + radius * Math.sin(angleRad);
-
-		// The coordinates are perfectly clamped by the logic, but we include clamp for safety.
-		const finalPoint = new Point(clamp(x, 0, 1), clamp(y, 0, 1));
-
-		return [finalPoint, brightness];
+		let rgba = this.toRgba();
+		let [h, s, l] = Color.rgbToHsl(rgba[0], rgba[1], rgba[2]);
+		let radius = s * .5;
+		let angle = h * Math.PI / 180;
+		let x = .5 + radius * Math.cos(angle);
+		let y = .5 + radius * Math.sin(angle);
+		return [new Point(x, y), l];
 	}
 }
