@@ -314,7 +314,7 @@ export class Paste extends Edit {
 			pixels.setLine(
 				getIndex(min.x + this.points[0].x, y + this.points[0].y, pixels.width, true),
 				this.pasteData.int8Array.subarray(getIndex(min.x, y, size.x, true), getIndex(max.x + 1, y, size.x, true)));
-		pixels.setDirty(min, max);
+		pixels.setDirty(min.add(this.points[0]), max.add(this.points[0]));
 	}
 }
 
