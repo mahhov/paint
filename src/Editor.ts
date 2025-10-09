@@ -116,6 +116,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.keySelectTool(Tool.BUCKET_FILL)));
 		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.keySelectTool(Tool.PEN)));
 
+		// todo ctrl+a to select all
 		// todo ctrl+1-9 to select colors
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));

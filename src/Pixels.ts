@@ -69,20 +69,15 @@ export default class Pixels {
 
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
-		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-		this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-		this.dirtyMin = this.size;
-		this.dirtyMax = Point.P0;
+		this.dirtyMin = Point.P0;
+		this.dirtyMax = this.size;
 	}
 
 	async getImage(): Promise<OffscreenCanvas> {
 		if (this.dirtyMax.x >= this.dirtyMin.x) {
 			let dirtyDelta = this.dirtyMax.subtract(this.dirtyMin).add(Point.P1);
 			let dest: [number, number, number, number] = [this.dirtyMin.x, this.dirtyMin.y, dirtyDelta.x, dirtyDelta.y];
-			let image = await createImageBitmap(this.imageData, ...dest); // todo try avoiding createImageBitmap
-			this.ctx.clearRect(...dest);
-			this.ctx.fillRect(...dest);
-			this.ctx.drawImage(image, ...dest);
+			this.ctx.putImageData(this.imageData, 0, 0, ...dest);
 			this.dirtyMin = this.size;
 			this.dirtyMax = Point.P0;
 		}
