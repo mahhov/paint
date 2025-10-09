@@ -1,7 +1,6 @@
 import {Edit} from './Edit.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {NEAR_RANGE} from './util/util.js';
 
 export enum DirtyMode {
 	NONE,
@@ -21,12 +20,12 @@ export default class EditCreator {
 		this.dirty = Math.max(this.dirty, dirtyMode);
 	}
 
-	findControlPoint(point: Point) {
+	findControlPoint(point: Point, controlSize: number) {
 		if (!this.pendingEdit) return -1;
 		let deltas = this.pendingEdit.points.map(p => p.subtract(point));
 		let magnitudes = deltas.map(delta => delta.magnitude2);
 		let minIndex = magnitudes.indexOf(Math.min(...magnitudes));
-		return deltas[minIndex].atMost(new Point(NEAR_RANGE)) && deltas[minIndex].atLeast(new Point(-NEAR_RANGE)) ? minIndex : -1;
+		return deltas[minIndex].atMost(new Point(controlSize)) && deltas[minIndex].atLeast(new Point(-controlSize)) ? minIndex : -1;
 	}
 
 	setControlPoint(index: number) {

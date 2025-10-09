@@ -17,8 +17,6 @@ export enum Tool {
 	PEN,
 }
 
-export let NEAR_RANGE = 15;
-
 export let clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 
 export let round = (v: number, precision: number = 0) => Math.round(v * 10 ** precision) / 10 ** precision;

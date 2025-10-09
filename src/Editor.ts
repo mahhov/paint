@@ -10,7 +10,7 @@ import UiPanel from './UiPanel.js';
 import Color from './util/Color.js';
 import Debouncer from './util/Debouncer.js';
 import Point from './util/Point.js';
-import {NEAR_RANGE, Tool} from './util/util.js';
+import {Tool} from './util/util.js';
 
 const PIXELS_SIZE = 5000;
 const PANEL_SIZE = 178;
@@ -63,7 +63,7 @@ export default class Editor {
 				this.setColor(this.pixels.get(point));
 				return;
 			}
-			let controlPoint = this.editCreator.findControlPoint(point);
+			let controlPoint = this.editCreator.findControlPoint(point, this.editCreatorControlSize);
 			if (controlPoint === -1)
 				this.editCreator.startNewEdit(this.createEdit(point));
 			else {
@@ -279,6 +279,7 @@ export default class Editor {
 		let canvasPosition = this.mousePositionToCanvasPosition();
 		if (canvasPosition) {
 			this.camera.zoom(delta, canvasPosition);
+			this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
 			this.panel.setZoom(this.camera.zoomPercent);
 		}
 	}
@@ -370,8 +371,8 @@ export default class Editor {
 		if (this.editCreator.pendingEdit) {
 			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
 			([
-				...this.editCreator.pendingEdit.points.map(p => [p, NEAR_RANGE / 2]),
-				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], NEAR_RANGE / 4],
+				...this.editCreator.pendingEdit.points.map(p => [p, this.editCreatorControlSize / 2]),
+				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], this.editCreatorControlSize / 4],
 			] as [Point, number][]).forEach(([p, r]) => {
 				let rp = new Point(r).round;
 				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
@@ -394,6 +395,10 @@ export default class Editor {
 		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(await this.panelPixels.getImage(), 0, 0);
+	}
+
+	private get editCreatorControlSize() {
+		return 2000 / this.camera.zoomPercent;
 	}
 }
 
