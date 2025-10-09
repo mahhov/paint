@@ -201,9 +201,7 @@ export default class Editor {
 	private save() {
 		console.time('save serialize');
 		let serialized = Serializer.serialize(this.editCreator);
-		console.log(JSON.stringify(serialized).length);
 		console.timeEnd('save serialize');
-
 		console.time('save storage');
 		Storage.write('save', serialized)
 			.then(() => console.timeEnd('save storage'))

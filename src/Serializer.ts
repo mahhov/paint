@@ -28,9 +28,9 @@ let typeMap: TypeMap = {
 	Point,
 	Color,
 	Uint8ClampedArray: {
-		serialize: (int8: Uint8ClampedArray): { data: number[] } => ({data: Array.from(int8)}),
-		deserialize: (obj: { data: number[] }): Uint8ClampedArray => new Uint8ClampedArray(obj.data),
-	} as CustomSerializerType<Uint8ClampedArray, { data: number[] }>,
+		serialize: (int8: Uint8ClampedArray): Uint8ClampedArray => int8,
+		deserialize: (int8: Uint8ClampedArray): Uint8ClampedArray => int8,
+	} as CustomSerializerType<Uint8ClampedArray, Uint8ClampedArray>,
 };
 
 export default class Serializer {
@@ -65,10 +65,15 @@ export default class Serializer {
 		if (Type === null)
 			return null;
 
-		// Type custom serializer or class
-		let x = typeof Type === 'object' ?
-			(Type as CustomSerializerType<any, any>).serialize(obj) : // Type custom serializer
-			Serializer.mapEntries(obj, value => Serializer.serialize(value)); // Type class
+		// Type custom serializer
+		if (typeof Type === 'object') {
+			let x = (Type as CustomSerializerType<any, any>).serialize(obj);
+			x.type__ = obj.constructor.name;
+			return {type__: obj.constructor.name, wrapped: x};
+		}
+
+		// Type class
+		let x = Serializer.mapEntries(obj, value => Serializer.serialize(value));
 		x.type__ = obj.constructor.name;
 		return x;
 	}
@@ -86,7 +91,6 @@ export default class Serializer {
 		if (!obj.type__)
 			return Serializer.mapEntries(obj, value => Serializer.deserialize(value));
 
-		let x = Serializer.mapEntries(obj, value => Serializer.deserialize(value));
 		let Type: TypeMapValue | undefined = typeMap[obj.type__];
 
 		// unmapped class instance
@@ -101,9 +105,10 @@ export default class Serializer {
 
 		// Type custom serializer
 		if (typeof Type === 'object')
-			return (Type as CustomSerializerType<any, any>).deserialize(x);
+			return (Type as CustomSerializerType<any, any>).deserialize(obj.wrapped);
 
 		// Type class
+		let x = Serializer.mapEntries(obj, value => Serializer.deserialize(value));
 		return Object.assign(Object.create((Type as Class).prototype), x);
 	}
 }
