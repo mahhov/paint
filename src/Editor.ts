@@ -46,7 +46,6 @@ export default class Editor {
 		this.panel.addListener('undo', () => this.editCreator.undoEdit());
 		this.panel.addListener('redo', () => this.editCreator.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
-		this.panel.addListener('save', () => this.saveDebouncer.invoke());
 		this.panel.addListener('start-new', () => this.startNew());
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
@@ -131,7 +130,6 @@ export default class Editor {
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
 
-		this.input.addBinding(new KeyBinding('s', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.saveDebouncer.invoke()));
 		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.startNew()));
 
 		([

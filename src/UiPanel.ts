@@ -335,10 +335,6 @@ export default class UiPanel extends Emitter {
 			.setTooltip('redo (ctrl+shift+z or mb-5)')
 			.addListener('click', () => this.emit('redo'));
 		this
-			.add(new UiButton(icons.SAVE), smallButtonSize)
-			.setTooltip('save (ctrl+s)')
-			.addListener('click', () => this.emit('save'));
-		this
 			.add(new UiButton(icons.START_NEW), smallButtonSize)
 			.setTooltip('new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
