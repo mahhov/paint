@@ -138,9 +138,9 @@ export default class Editor {
 			['ArrowDown', new Point(0, 1)],
 			['ArrowLeft', new Point(-1, 0)],
 		] as [string, Point][]).forEach(([key, delta]) => ([
-			[[], [InputState.PRESSED], 1],
-			[[KeyModifier.CONTROL], [InputState.DOWN], 10],
-			[[KeyModifier.SHIFT], [InputState.DOWN], 50],
+			[[], [InputState.DOWN], 1],
+			[[KeyModifier.CONTROL], [InputState.PRESSED], 1],
+			[[KeyModifier.SHIFT], [InputState.DOWN], 25],
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
 				this.editCreator.moveControlPointBy(delta.scale(scale));
