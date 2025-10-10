@@ -410,9 +410,9 @@ export default class Editor {
 
 		this.ctx.imageSmoothingEnabled = srcSize.x > this.editorSize;
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
-		this.ctx.drawImage(await this.pixels.getImage(), ...srcDestCoordinates);
-		this.ctx.drawImage(await this.pendingPixels.getImage(), ...srcDestCoordinates);
-		this.ctx.drawImage(await this.panelPixels.getImage(), 0, 0);
+		this.ctx.drawImage(this.pixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(this.pendingPixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(this.panelPixels.getImage(), 0, 0);
 	}
 
 	private get editCreatorControlSize() {

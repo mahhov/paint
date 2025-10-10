@@ -69,11 +69,17 @@ export default class Pixels {
 
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
-		this.dirtyMin = Point.P0;
-		this.dirtyMax = this.size;
+		if (this.defaultColor.toRgba()[3] < 255)
+			this.ctx.clearRect(0, 0, this.width, this.height);
+		if (this.defaultColor.toRgba()[3] > 0) {
+			this.ctx.fillStyle = `rgba(${this.defaultColor.toRgba().join(',')})`;
+			this.ctx.fillRect(0, 0, this.width, this.height);
+		}
+		this.dirtyMin = this.size;
+		this.dirtyMax = Point.P0;
 	}
 
-	async getImage(): Promise<OffscreenCanvas> {
+	getImage(): OffscreenCanvas {
 		if (this.dirtyMax.x >= this.dirtyMin.x) {
 			let dirtyDelta = this.dirtyMax.subtract(this.dirtyMin).add(Point.P1);
 			let dest: [number, number, number, number] = [this.dirtyMin.x, this.dirtyMin.y, dirtyDelta.x, dirtyDelta.y];
