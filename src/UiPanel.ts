@@ -127,6 +127,7 @@ class UiColorButton extends UiIconButton {
 
 class UiTextButton extends UiButton {
 	text: string;
+	color?: Color;
 
 	constructor(text: string) {
 		super();
@@ -134,8 +135,11 @@ class UiTextButton extends UiButton {
 	}
 
 	protected get edits(): Edit[] {
-		let textEdit = new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15);
-		return super.edits.concat(textEdit);
+		return [
+			new FillRect(this.position, this.position.add(this.size), this.color || Color.fromRgba(220, 220, 220, 255)),
+			new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
+			...super.edits,
+		];
 	}
 }
 
@@ -278,7 +282,7 @@ export default class UiPanel extends Emitter {
 		this.grid = new GridLayout(pixels.width, margin);
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
-		let editListWidth = this.grid.divide(3);
+		let editListWidth = this.grid.divide(2);
 
 		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
 			this
@@ -352,7 +356,7 @@ export default class UiPanel extends Emitter {
 			.addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(margin);
-		this.editList = A(27).map((_, i) => this
+		this.editList = A(30).map((_, i) => this
 			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
 			.addListener('click', () => this.emit('select-edit', i))
 			.addListener('right-click', () => this.emit('remove-edit', i)));
@@ -433,10 +437,13 @@ export default class UiPanel extends Emitter {
 		this.drawDirty = true;
 	}
 
-	setEditList(edits: string[], selected: number) {
+	setEditList(names: [string, 0 | 1 | 2][]) {
+		let colors = [undefined, Color.WHITE, undefined];
 		this.editList.forEach((edit, i) => {
-			edit.text = (edits[i] || '').slice(0, 5);
-			edit.setTooltip(edits[i] || '');
+			let [text, colorIndex] = names[i] || ['', 0];
+			edit.text = text.slice(0, 10);
+			edit.color = colors[colorIndex];
+			edit.setTooltip(text);
 		});
 		this.drawDirty = true;
 	}

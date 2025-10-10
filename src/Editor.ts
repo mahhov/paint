@@ -187,7 +187,7 @@ export default class Editor {
 		this.panel.setTool(this.tool);
 		this.panel.setColor(this.color);
 		this.panel.setZoom(this.camera.zoomPercent);
-		this.panel.setEditList(...this.editList);
+		this.panel.setEditList(this.editList);
 
 		this.saveDebouncer = new Debouncer(() =>
 			Storage.write('save', Serializer.serialize(this.editCreator))
@@ -297,15 +297,12 @@ export default class Editor {
 		return 2000 / this.camera.zoomPercent;
 	}
 
-	private get editList(): [string[], number] {
+	private get editList(): [string, 0 | 1 | 2][] {
 		return [
-			([this.editCreator.edits, this.editCreator.pendingEdit, this.editCreator.postEdits]
-				.flat()
-				.filter(v => v)
-				.slice(-27) as Edit[])
-				.map(edit => edit.constructor.name),
-			this.editCreator.edits.length,
-		];
+			this.editCreator.edits.map(edit => [edit.constructor.name, 0] as [string, 0 | 1 | 2]),
+			this.editCreator.pendingEdit ? [([this.editCreator.pendingEdit.constructor.name, 1] as [string, 0 | 1 | 2])] : [],
+			this.editCreator.postEdits.map(edit => [edit.constructor.name, 2] as [string, 0 | 1 | 2]),
+		].flat();
 	}
 
 	private zoom(delta: number) {
@@ -388,7 +385,7 @@ export default class Editor {
 
 	private flushEditCreatorToPixels() {
 		// todo only update on edit list change
-		this.panel.setEditList(...this.editList);
+		this.panel.setEditList(this.editList);
 		this.panel.draw();
 
 		if (this.editCreator.dirty === DirtyMode.NONE) {
