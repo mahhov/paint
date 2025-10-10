@@ -8,7 +8,7 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 // todo layers
 
 // todo post edits
-//   pick edits with id canvas
-//   delete edits with keyboard & right click
+//   delete edits with keyboard
 //   traverse edits with keyboard
 //   drag/drop to reorder edits
+//   when deleting pending edit, select previous edit

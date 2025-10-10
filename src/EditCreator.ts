@@ -110,6 +110,15 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
+	selectLastEdit() {
+		this.commitPendingEdit();
+		this.edits = this.edits.concat(this.postEdits);
+		this.postEdits = [];
+		this.pendingEdit = this.edits.pop() || null;
+		this.controlPoint = 0;
+		this.maxDirty = DirtyMode.ALL_EDITS;
+	}
+
 	removeEdit(index: number) {
 		if (this.edits.length > index) {
 			this.edits.splice(index, 1);

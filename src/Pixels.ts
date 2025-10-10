@@ -12,8 +12,9 @@ export default class Pixels {
 	private readonly ctx: OffscreenCanvasRenderingContext2D;
 	private dirtyMin!: Point;
 	private dirtyMax!: Point;
+	private readonly owners?: Uint8ClampedArray;
 
-	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color) {
+	constructor(width: number, height: number, ctx: CanvasRenderingContext2D, defaultColor: Color, trackOwners: boolean) {
 		this.width = width;
 		this.height = height;
 		this.defaultColor = defaultColor;
@@ -24,6 +25,8 @@ export default class Pixels {
 		let canvas = new OffscreenCanvas(width, height);
 		this.ctx = canvas.getContext('2d')!;
 		this.ctx.fillStyle = `rgba(${this.defaultColor.toRgba().join(',')})`;
+		if (trackOwners)
+			this.owners = new Uint8ClampedArray(this.width * this.height);
 		this.clear();
 	}
 
@@ -46,20 +49,25 @@ export default class Pixels {
 		return this.imageData.data.slice(start4, end4);
 	}
 
-	set(p: Point, c: Color) {
+	set(p: Point, c: Color, owner: number) {
 		if (this.isInBounds(p)) {
 			let index = getPIndex(p, this.width);
 			this.imageData32View[index] = c.int32;
+			if (this.owners)
+				this.owners[index] = owner;
 		}
 		this.setDirty(p);
 	}
 
-	setIndex(index: number, c: Color) {
+	setIndex(index: number, c: Color, owner: number) {
 		this.imageData32View[index] = c.int32;
+		if (this.owners)
+			this.owners[index] = owner;
 	}
 
-	setLine(index4: number, line: Uint8ClampedArray) {
+	setLine(index4: number, line: Uint8ClampedArray, owner: number) {
 		this.imageData.data.set(line, index4);
+		this.owners?.subarray(index4 / 4, (index4 + line.length) / 4).fill(owner);
 	}
 
 	setDirty(min: Point, max: Point = min) {
@@ -67,16 +75,19 @@ export default class Pixels {
 		this.dirtyMax = this.dirtyMax.max(max);
 	}
 
+	getOwner(p: Point): number {
+		return this.owners?.[getPIndex(p, this.width)] ?? 255;
+	}
+
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
 		if (this.defaultColor.toRgba()[3] < 255)
 			this.ctx.clearRect(0, 0, this.width, this.height);
-		if (this.defaultColor.toRgba()[3] > 0) {
-			this.ctx.fillStyle = `rgba(${this.defaultColor.toRgba().join(',')})`;
+		if (this.defaultColor.toRgba()[3] > 0)
 			this.ctx.fillRect(0, 0, this.width, this.height);
-		}
 		this.dirtyMin = this.size;
 		this.dirtyMax = Point.P0;
+		this.owners?.fill(255);
 	}
 
 	getImage(): OffscreenCanvas {

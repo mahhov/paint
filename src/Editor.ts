@@ -35,9 +35,9 @@ export default class Editor {
 		this.editCreator = editCreator;
 
 		this.ctx = canvas.getContext('2d')!;
-		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
-		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
-		this.panelPixels = new Pixels(PANEL_SIZE, 1500, this.ctx, Color.CLEAR);
+		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE, true);
+		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR, false);
+		this.panelPixels = new Pixels(PANEL_SIZE, 1500, this.ctx, Color.CLEAR, false);
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(this.panelPixels, this.input);
 
@@ -86,8 +86,15 @@ export default class Editor {
 			this.editModified();
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
-			this.editCreator.startNewEdit(null)));
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => {
+			let point = this.mousePositionToPixelsPosition();
+			if (!point) return;
+			let owner = this.pixels.getOwner(point);
+			if (owner !== 255)
+				this.editCreator.selectEdit(owner);
+			else
+				this.editCreator.selectLastEdit();
+		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editCreator.undoEdit()));
 		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editCreator.redoEdit()));
@@ -397,23 +404,25 @@ export default class Editor {
 
 		if (this.editCreator.dirty === DirtyMode.ALL_EDITS) {
 			this.pixels.clear();
-			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
+			this.editCreator.edits.forEach((edit, i) => edit.draw(this.pixels, this.pixels, false, i));
 		}
 
 		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
-			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
+			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false, this.editCreator.edits.length - 1);
 
+		console.time('draw');
 		this.pendingPixels.clear();
 		if (this.editCreator.pendingEdit) {
-			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true);
+			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true, 0);
 			([
 				...this.editCreator.pendingEdit.points.map(p => [p, this.editCreatorControlSize / 2]),
 				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], this.editCreatorControlSize / 4],
 			] as [Point, number][]).forEach(([p, r]) => {
 				let rp = new Point(r).round;
-				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
+				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true, 0);
 			});
 		}
+		console.timeEnd('draw');
 
 		this.editCreator.dirty = DirtyMode.NONE;
 	}

@@ -28,7 +28,7 @@ class UiElement extends Emitter {
 	}
 
 	draw(pixels: Pixels) {
-		this.edits.forEach(edit => edit.draw(pixels, pixels, false));
+		this.edits.forEach(edit => edit.draw(pixels, pixels, false, 0));
 	}
 
 	protected get edits(): Edit[] {
@@ -474,9 +474,9 @@ export default class UiPanel extends Emitter {
 			}
 
 			tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
-			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, false);
-			new Rect(tooltipPoint1, tooltipPoint2, Color.BLACK).draw(this.pixels, this.pixels, false);
-			tooltipTextEdit.draw(this.pixels, this.pixels, false);
+			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, false, 0);
+			new Rect(tooltipPoint1, tooltipPoint2, Color.BLACK).draw(this.pixels, this.pixels, false, 0);
+			tooltipTextEdit.draw(this.pixels, this.pixels, false, 0);
 		}
 	}
 }
