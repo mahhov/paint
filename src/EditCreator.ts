@@ -13,6 +13,7 @@ export default class EditCreator {
 	edits: Edit[] = [];
 	pendingEdit: Edit | null = null;
 	controlPoint = 0;
+	postEdits: Edit[] = [];
 	redoEdits: Edit[] = [];
 	dirty = DirtyMode.NONE;
 

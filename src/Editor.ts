@@ -19,6 +19,7 @@ export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
+	private readonly postPixels: Pixels;
 	private readonly panelPixels: Pixels;
 	private editCreator: EditCreator;
 	private tool = Tool.SELECT;
@@ -37,6 +38,7 @@ export default class Editor {
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
+		this.postPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
 		this.panelPixels = new Pixels(PANEL_SIZE, 1500, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(this.panelPixels, this.input);
@@ -203,6 +205,7 @@ export default class Editor {
 				let editCreator: EditCreator = Serializer.deserialize(saveObj);
 				console.timeEnd('load deserialize');
 				editCreator.edits = editCreator.edits.filter(edit => edit instanceof Edit);
+				editCreator.postEdits = editCreator.postEdits.filter(edit => edit instanceof Edit);
 				editCreator.redoEdits = editCreator.redoEdits.filter(edit => edit instanceof Edit);
 				if (!(editCreator.pendingEdit instanceof Edit)) editCreator.pendingEdit = null;
 				editCreator.maxDirty = DirtyMode.ALL_EDITS;
@@ -377,13 +380,13 @@ export default class Editor {
 
 		this.saveDebouncer.queue();
 
-		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
-			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
-
 		if (this.editCreator.dirty === DirtyMode.ALL_EDITS) {
 			this.pixels.clear();
 			this.editCreator.edits.forEach(edit => edit.draw(this.pixels, this.pixels, false));
 		}
+
+		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
+			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
 
 		this.pendingPixels.clear();
 		if (this.editCreator.pendingEdit) {
@@ -396,6 +399,9 @@ export default class Editor {
 				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true);
 			});
 		}
+
+		this.postPixels.clear();
+		this.editCreator.postEdits.forEach(edit => edit.draw(this.postPixels, this.postPixels, false));
 
 		this.editCreator.dirty = DirtyMode.NONE;
 	}
@@ -412,6 +418,7 @@ export default class Editor {
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
 		this.ctx.drawImage(this.pixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(this.pendingPixels.getImage(), ...srcDestCoordinates);
+		this.ctx.drawImage(this.postPixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(this.panelPixels.getImage(), 0, 0);
 	}
 
