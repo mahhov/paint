@@ -13,7 +13,7 @@ import Point from './util/Point.js';
 import {Tool} from './util/util.js';
 
 const PIXELS_SIZE = 5000;
-const PANEL_SIZE = 178;
+const PANEL_SIZE = 153;
 
 export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
@@ -187,6 +187,7 @@ export default class Editor {
 		this.panel.setTool(this.tool);
 		this.panel.setColor(this.color);
 		this.panel.setZoom(this.camera.zoomPercent);
+		this.panel.setEditList(...this.editList);
 
 		this.saveDebouncer = new Debouncer(() =>
 			Storage.write('save', Serializer.serialize(this.editCreator))
@@ -292,6 +293,21 @@ export default class Editor {
 		this.panel.setColor(color);
 	}
 
+	private get editCreatorControlSize() {
+		return 2000 / this.camera.zoomPercent;
+	}
+
+	private get editList(): [string[], number] {
+		return [
+			([this.editCreator.edits, this.editCreator.pendingEdit, this.editCreator.postEdits]
+				.flat()
+				.filter(v => v)
+				.slice(-27) as Edit[])
+				.map(edit => edit.constructor.name),
+			this.editCreator.edits.length,
+		];
+	}
+
 	private zoom(delta: number) {
 		let canvasPosition = this.mousePositionToCanvasPosition();
 		if (canvasPosition) {
@@ -371,6 +387,8 @@ export default class Editor {
 	}
 
 	private flushEditCreatorToPixels() {
+		// todo only update on edit list change
+		this.panel.setEditList(...this.editList);
 		this.panel.draw();
 
 		if (this.editCreator.dirty === DirtyMode.NONE) {
@@ -420,10 +438,6 @@ export default class Editor {
 		this.ctx.drawImage(this.pendingPixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(this.postPixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(this.panelPixels.getImage(), 0, 0);
-	}
-
-	private get editCreatorControlSize() {
-		return 2000 / this.camera.zoomPercent;
 	}
 }
 

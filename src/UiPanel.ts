@@ -49,6 +49,13 @@ class UiElement extends Emitter {
 }
 
 class UiButton extends UiElement {
+	onMousePress(point: Point) {
+		if (this.containsPoint(point))
+			this.emit('click');
+	}
+}
+
+class UiIconButton extends UiButton {
 	protected icon: IconInstruction[];
 	selected = false;
 
@@ -65,14 +72,9 @@ class UiButton extends UiElement {
 		}
 		return edits;
 	}
-
-	onMousePress(point: Point) {
-		if (this.containsPoint(point))
-			this.emit('click');
-	}
 }
 
-class UiToolButton extends UiButton {
+class UiToolButton extends UiIconButton {
 	readonly tool: Tool;
 
 	constructor(tool: Tool) {
@@ -98,7 +100,7 @@ class UiToolButton extends UiButton {
 	}
 }
 
-class UiColorButton extends UiButton {
+class UiColorButton extends UiIconButton {
 	color: Color;
 
 	constructor(color: Color) {
@@ -113,6 +115,20 @@ class UiColorButton extends UiButton {
 
 	get tooltip(): string {
 		return `rgb(${this.color.toRgba().slice(0, 3).join()}) ${this.defaultTooltip}`.trim();
+	}
+}
+
+class UiTextButton extends UiButton {
+	text: string;
+
+	constructor(text: string) {
+		super();
+		this.text = text;
+	}
+
+	protected get edits(): Edit[] {
+		let textEdit = new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15);
+		return super.edits.concat(textEdit);
 	}
 }
 
@@ -195,25 +211,6 @@ class UiColorRange extends UiElement {
 	}
 }
 
-class UiText extends UiElement {
-	text: string;
-
-	constructor(text: string) {
-		super();
-		this.text = text;
-	}
-
-	protected get edits(): Edit[] {
-		let textEdit = new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15);
-		return super.edits.concat(textEdit);
-	}
-
-	onMousePress(point: Point) {
-		if (this.containsPoint(point))
-			this.emit('click');
-	}
-}
-
 class GridLayout {
 	private readonly width: number;
 	private readonly margin: number;
@@ -259,7 +256,8 @@ export default class UiPanel extends Emitter {
 	private readonly colorBrightness: UiColorRange;
 	private readonly presetColorButtons: UiColorButton[];
 	private readonly recentColorButtons: UiColorButton[];
-	private readonly viewText: UiText;
+	private readonly viewText: UiTextButton;
+	private readonly editList: UiTextButton[];
 	private readonly pixels: Pixels;
 	private tooltip = '';
 	private tooltipPosition = Point.P0;
@@ -269,10 +267,11 @@ export default class UiPanel extends Emitter {
 		super();
 
 		this.pixels = pixels;
-		let margin = 10;
+		let margin = 5;
 		this.grid = new GridLayout(pixels.width, margin);
 		let smallButtonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
+		let editListWidth = this.grid.divide(3);
 
 		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
 			this
@@ -327,23 +326,28 @@ export default class UiPanel extends Emitter {
 
 		this.grid.nextRow(margin);
 		this
-			.add(new UiButton(icons.UNDO), smallButtonSize)
+			.add(new UiIconButton(icons.UNDO), smallButtonSize)
 			.setTooltip('undo (ctrl+z or mb-4)')
 			.addListener('click', () => this.emit('undo'));
 		this
-			.add(new UiButton(icons.REDO), smallButtonSize)
+			.add(new UiIconButton(icons.REDO), smallButtonSize)
 			.setTooltip('redo (ctrl+shift+z or mb-5)')
 			.addListener('click', () => this.emit('redo'));
 		this
-			.add(new UiButton(icons.START_NEW), smallButtonSize)
+			.add(new UiIconButton(icons.START_NEW), smallButtonSize)
 			.setTooltip('new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
 
 		this.grid.nextRow(margin);
 		this.viewText = this
-			.add(new UiText('100%'), new Point(fullRowSize, smallButtonSize.y / 2))
+			.add(new UiTextButton('100%'), new Point(fullRowSize, smallButtonSize.y / 2))
 			.setTooltip('reset zoom (ctrl+0)')
 			.addListener('click', () => this.emit('camera-reset'));
+
+		this.grid.nextRow(margin);
+		this.editList = A(27).map((_, i) => this
+			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
+			.addListener('click', () => this.emit('edit', i)));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
@@ -416,6 +420,14 @@ export default class UiPanel extends Emitter {
 
 	setStatus(status: string) {
 		this.viewText.text = status;
+		this.drawDirty = true;
+	}
+
+	setEditList(edits: string[], selected: number) {
+		this.editList.forEach((edit, i) => {
+			edit.text = (edits[i] || '').slice(0, 5);
+			edit.setTooltip(edits[i] || '');
+		});
 		this.drawDirty = true;
 	}
 
