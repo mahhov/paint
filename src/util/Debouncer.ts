@@ -1,3 +1,5 @@
+import {sleep} from './util.js';
+
 export default class Debouncer {
 	private readonly handler: () => Promise<void>;
 	private inProgress: boolean = false;
@@ -7,17 +9,21 @@ export default class Debouncer {
 		this.handler = handler;
 	}
 
-	public async invoke() {
-		if (this.inProgress) {
-			this.hasQueuedCall = true;
-			return;
-		}
+	public queue() {
+		this.hasQueuedCall = true;
+	}
+
+	public allow() {
+		if (this.hasQueuedCall && !this.inProgress)
+			this.invoke();
+	}
+
+	private async invoke() {
 		this.inProgress = true;
 		try {
-			do {
-				this.hasQueuedCall = false;
-				await this.handler();
-			} while (this.hasQueuedCall);
+			this.hasQueuedCall = false;
+			await this.handler();
+			await sleep(300);
 		} catch (error) {
 			console.warn('Debouncer failed', error);
 		} finally {

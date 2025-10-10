@@ -183,10 +183,9 @@ export default class Editor {
 		this.panel.setColor(this.color);
 		this.panel.setZoom(this.camera.zoomPercent);
 
-		this.saveDebouncer = new Debouncer(() => {
-			return Storage.write('save', Serializer.serialize(this.editCreator))
-				.catch(e => console.warn('Failed to save:', e));
-		});
+		this.saveDebouncer = new Debouncer(() =>
+			Storage.write('save', Serializer.serialize(this.editCreator))
+				.catch(e => console.warn('Failed to save:', e)));
 
 		this.loop();
 	}
@@ -365,10 +364,12 @@ export default class Editor {
 	private flushEditCreatorToPixels() {
 		this.panel.draw();
 
-		if (this.editCreator.dirty === DirtyMode.NONE)
+		if (this.editCreator.dirty === DirtyMode.NONE) {
+			this.saveDebouncer.allow();
 			return;
+		}
 
-		this.saveDebouncer.invoke();
+		this.saveDebouncer.queue();
 
 		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
 			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false);
