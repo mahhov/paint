@@ -47,7 +47,7 @@ export class Select extends Edit {
 
 export class Move extends Edit {
 	constructor(start: Point, end: Point, delta: Point) {
-		super([start, end, start.add(delta), end.add(delta), Move.center(start, end)]);
+		super([start, end, Move.center(start, end), start.add(delta), end.add(delta)]);
 	}
 
 	static center(p1: Point, p2: Point) {
@@ -55,7 +55,7 @@ export class Move extends Edit {
 	}
 
 	protected get delta() {
-		return this.points[2].subtract(this.points[0]);
+		return this.points[3].subtract(this.points[0]);
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -65,22 +65,22 @@ export class Move extends Edit {
 		switch (index) {
 			case 0:
 			case 1:
-				this.points_[index + 2] = this.points[index].add(delta);
-				this.points_[4] = center.add(delta);
+				this.points_[index + 3] = this.points[index].add(delta);
+				this.points_[2] = center.add(delta);
+				break;
+			case 3:
+			case 4:
+				this.points_[index - 3] = this.points[index].subtract(delta);
+				this.points_[2] = center.add(delta);
 				break;
 			case 2:
-			case 3:
-				this.points_[index - 2] = this.points[index].subtract(delta);
-				this.points_[4] = center.add(delta);
-				break;
-			case 4:
-				delta = this.points[4].subtract(center);
+				delta = this.points[2].subtract(center);
 				if (shiftDown) {
 					delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
-					this.points_[4] = center.add(delta);
+					this.points_[2] = center.add(delta);
 				}
-				this.points_[2] = this.points[0].add(delta);
-				this.points_[3] = this.points[1].add(delta);
+				this.points_[3] = this.points[0].add(delta);
+				this.points_[4] = this.points[1].add(delta);
 				break;
 		}
 	}
@@ -90,7 +90,7 @@ export class Move extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean) {
-		let move = this.points[2].subtract(this.points[0]);
+		let move = this.delta;
 		let [min, max] = boundTransferRect(this.points[0], this.points[1], pixels.size, move, pixels.size);
 		let clearLine = new Uint8ClampedArray((max.subtract(min).x + 1) * 4).fill(255);
 		let copyLines = [];
@@ -103,7 +103,7 @@ export class Move extends Edit {
 		pixels.setDirty(min, max);
 		pixels.setDirty(min.add(move), max.add(move));
 		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending);
-		new Select(this.points[2], this.points[3]).draw(pixels, sourcePixels, pending);
+		new Select(this.points[3], this.points[4]).draw(pixels, sourcePixels, pending);
 	}
 }
 
