@@ -99,4 +99,25 @@ export default class EditCreator {
 		this.controlPoint = 0;
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
+
+	selectEdit(index: number) {
+		this.commitPendingEdit();
+		let combined = this.edits.concat(this.postEdits);
+		this.edits = combined.slice(0, index);
+		this.postEdits = combined.slice(index);
+		this.pendingEdit = this.postEdits.shift() || null;
+		this.controlPoint = 0;
+		this.maxDirty = DirtyMode.ALL_EDITS;
+	}
+
+	removeEdit(index: number) {
+		if (this.edits.length > index) {
+			this.edits.splice(index, 1);
+			this.maxDirty = DirtyMode.ALL_EDITS;
+		} else if (this.pendingEdit && this.edits.length === index) {
+			this.pendingEdit = null;
+			this.maxDirty = DirtyMode.PENDING_EDIT;
+		} else
+			this.postEdits.splice(index - this.edits.length - (this.pendingEdit ? 1 : 0), 1);
+	}
 }

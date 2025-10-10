@@ -37,6 +37,8 @@ class UiElement extends Emitter {
 
 	onMousePress(point: Point) {}
 
+	onRightMousePress(point: Point) {}
+
 	onMouseDown(point: Point) {}
 
 	containsPoint(point: Point) {
@@ -52,6 +54,11 @@ class UiButton extends UiElement {
 	onMousePress(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('click');
+	}
+
+	onRightMousePress(point: Point) {
+		if (this.containsPoint(point))
+			this.emit('right-click');
 	}
 }
 
@@ -347,10 +354,13 @@ export default class UiPanel extends Emitter {
 		this.grid.nextRow(margin);
 		this.editList = A(27).map((_, i) => this
 			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
-			.addListener('click', () => this.emit('edit', i)));
+			.addListener('click', () => this.emit('select-edit', i))
+			.addListener('right-click', () => this.emit('remove-edit', i)));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
+		input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
+			this.uis.forEach(ui => ui.onRightMousePress(input.mousePosition))));
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () =>
 			this.uis.forEach(ui => ui.onMouseDown(input.mousePosition))));
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.UP], () => {

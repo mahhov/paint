@@ -19,7 +19,6 @@ export default class Editor {
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
-	private readonly postPixels: Pixels;
 	private readonly panelPixels: Pixels;
 	private editCreator: EditCreator;
 	private tool = Tool.SELECT;
@@ -38,7 +37,6 @@ export default class Editor {
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE);
 		this.pendingPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
-		this.postPixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.CLEAR);
 		this.panelPixels = new Pixels(PANEL_SIZE, 1500, this.ctx, Color.CLEAR);
 		this.input = new Input(canvas);
 		this.panel = new UiPanel(this.panelPixels, this.input);
@@ -49,6 +47,8 @@ export default class Editor {
 		this.panel.addListener('redo', () => this.editCreator.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
 		this.panel.addListener('start-new', () => this.startNew());
+		this.panel.addListener('select-edit', i => this.editCreator.selectEdit(i));
+		this.panel.addListener('remove-edit', i => this.editCreator.removeEdit(i));
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
@@ -418,9 +418,6 @@ export default class Editor {
 			});
 		}
 
-		this.postPixels.clear();
-		this.editCreator.postEdits.forEach(edit => edit.draw(this.postPixels, this.postPixels, false));
-
 		this.editCreator.dirty = DirtyMode.NONE;
 	}
 
@@ -436,7 +433,6 @@ export default class Editor {
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
 		this.ctx.drawImage(this.pixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(this.pendingPixels.getImage(), ...srcDestCoordinates);
-		this.ctx.drawImage(this.postPixels.getImage(), ...srcDestCoordinates);
 		this.ctx.drawImage(this.panelPixels.getImage(), 0, 0);
 	}
 }
