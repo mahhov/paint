@@ -10,10 +10,10 @@ export enum DirtyMode {
 }
 
 export default class EditCreator {
-	readonly edits: Edit[] = [];
+	edits: Edit[] = [];
 	pendingEdit: Edit | null = null;
 	controlPoint = 0;
-	readonly redoEdits: Edit[] = [];
+	redoEdits: Edit[] = [];
 	dirty = DirtyMode.NONE;
 
 	set maxDirty(dirtyMode: DirtyMode) {

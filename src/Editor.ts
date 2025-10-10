@@ -200,11 +200,9 @@ export default class Editor {
 				console.time('load deserialize');
 				let editCreator: EditCreator = Serializer.deserialize(saveObj);
 				console.timeEnd('load deserialize');
-				let badEdits = [editCreator.edits, editCreator.pendingEdit, editCreator.redoEdits]
-					.flat()
-					.filter(edit => !(edit instanceof Edit));
-				if (badEdits.length)
-					throw new Error('Deserialized a non-edit when expecting an edit ' + JSON.stringify(badEdits));
+				editCreator.edits = editCreator.edits.filter(edit => edit instanceof Edit);
+				editCreator.redoEdits = editCreator.redoEdits.filter(edit => edit instanceof Edit);
+				if (!(editCreator.pendingEdit instanceof Edit)) editCreator.pendingEdit = null;
 				editCreator.maxDirty = DirtyMode.ALL_EDITS;
 				return editCreator;
 			})
