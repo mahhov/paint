@@ -21,6 +21,7 @@ export default class Editor {
 	private readonly pendingPixels: Pixels;
 	private readonly panelPixels: Pixels;
 	private editStack: EditStack;
+	private editSelecting: Point | null = null;
 	private tool = Tool.SELECT;
 	private color = Color.LIGHT_GRAY;
 	private input: Input;
@@ -92,11 +93,21 @@ export default class Editor {
 			this.editModified();
 		}));
 
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => this.editSelecting = this.mousePositionToPixelsPosition()));
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => {
+			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
+			if (!this.editSelecting) return;
+			let point = this.mousePositionToPixelsPosition();
+			if (!point) return;
+			this.editSelecting = point;
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.RELEASED], () => {
-			// todo preview rectangle while dragging
 			// todo preview potential selected edit while dragging
-			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition);
-			if (!downPoint) return;
+			if (!this.editSelecting) return;
+			this.editSelecting = null;
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
 			let owner = this.pixels.getOwner(downPoint, point);
@@ -441,6 +452,8 @@ export default class Editor {
 				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true, 0);
 			});
 		}
+		if (this.editSelecting)
+			new Select(this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!, this.editSelecting).draw(this.pendingPixels, this.pixels, true, 0);
 
 		this.editStack.dirty = DirtyMode.NONE;
 	}
