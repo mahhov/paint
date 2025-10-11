@@ -124,7 +124,7 @@ export default class EditCreator {
 			this.edits.splice(index, 1);
 			this.maxDirty = DirtyMode.ALL_EDITS;
 		} else if (this.pendingEdit && this.edits.length === index) {
-			this.pendingEdit = null;
+			this.pendingEdit = this.postEdits.shift() || null;
 			this.maxDirty = DirtyMode.PENDING_EDIT;
 		} else
 			this.postEdits.splice(index - this.edits.length - (this.pendingEdit ? 1 : 0), 1);
