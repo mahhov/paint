@@ -101,20 +101,22 @@ export default class EditCreator {
 	}
 
 	selectEdit(index: number) {
+		if (index === this.edits.length) return;
 		this.commitPendingEdit();
 		let combined = this.edits.concat(this.postEdits);
 		this.edits = combined.slice(0, index);
 		this.postEdits = combined.slice(index);
-		this.pendingEdit = this.postEdits.shift() || null;
+		this.pendingEdit = this.postEdits.shift()!;
 		this.controlPoint = 0;
 		this.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
 	selectLastEdit() {
+		if (!this.postEdits.length) return;
 		this.commitPendingEdit();
 		this.edits = this.edits.concat(this.postEdits);
 		this.postEdits = [];
-		this.pendingEdit = this.edits.pop() || null;
+		this.pendingEdit = this.edits.pop()!;
 		this.controlPoint = 0;
 		this.maxDirty = DirtyMode.ALL_EDITS;
 	}

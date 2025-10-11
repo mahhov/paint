@@ -117,7 +117,8 @@ export default class Editor {
 			this.editCreator.redoEdit();
 		}));
 
-		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
+		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editCreator.undoEdit()));
+		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editCreator.undoEdit()));
 		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint(false)));
 		this.input.addBinding(new KeyBinding('tab', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editCreator.setNextControlPoint(true)));
@@ -125,7 +126,6 @@ export default class Editor {
 			this.selectTool(Tool.SELECT);
 			this.editCreator.startNewEdit(new Select(Point.P0, this.pixels.size));
 		}));
-		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editCreator.undoEdit()));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
