@@ -25,7 +25,7 @@ export default class Editor {
 	private preview: Preview | null = null;
 	private tool = Tool.SELECT;
 	private color = Color.LIGHT_GRAY;
-	private input: Input;
+	private readonly input: Input;
 	private readonly panel;
 	private camera!: Camera;
 	private editorWidth!: number;
@@ -272,13 +272,13 @@ export default class Editor {
 		this.editStack.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
-	private async copy() {
+	private copy() {
 		let region = this.editStack.pendingEdit instanceof Select || this.editStack.pendingEdit instanceof Move;
 		let start = region ? this.editStack.pendingEdit!.points[0] : Point.P0;
 		let end = region ? this.editStack.pendingEdit!.points[1] : this.pixels.size;
 		this.editStack.startNewEdit(null);
 		this.flushEditStackToPixels();
-		Clipboard.copyCanvasRegion(await this.pixels.getImage(), start, end);
+		Clipboard.copyCanvasRegion(this.pixels.getImage(), start, end);
 	}
 
 	private paste(e: ClipboardEvent) {

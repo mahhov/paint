@@ -318,7 +318,6 @@ export default class UiPanel extends Emitter {
 		this.grid = new GridLayout(pixels.width, margin);
 		let buttonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
-		let editListWidth = this.grid.divide(2);
 
 		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
 			this
