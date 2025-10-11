@@ -337,12 +337,24 @@ export class Paste extends Edit {
 	private readonly pasteData: PasteData;
 
 	constructor(point: Point, pasteData: PasteData) {
-		super([point]);
+		super([point, point.add(new Point(pasteData.width, pasteData.height))]);
 		this.pasteData = pasteData;
 	}
 
+	private get size() {
+		return new Point(this.pasteData.width, this.pasteData.height);
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		super.setPoint(index, point, shiftDown);
+		if (index)
+			this.points_[0] = point.subtract(this.size);
+		else
+			this.points_[1] = point.add(this.size);
+	}
+
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let size = new Point(this.pasteData.width, this.pasteData.height);
+		let size = this.size;
 		let [min, max] = boundTransferRect(Point.P0, size, size, this.points[0], pixels.size);
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(
