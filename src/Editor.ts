@@ -137,7 +137,13 @@ export default class Editor {
 		}));
 
 		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editStack.undoEdit()));
-		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editStack.undoEdit()));
+		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
+			if (([Select, Move] as any[]).includes(this.editStack.pendingEdit?.constructor))
+				this.selectTool(Tool.CLEAR);
+			else
+				this.editStack.undoEdit();
+		}));
 		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editStack.startNewEdit(null)));
 		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editStack.setNextControlPoint(false)));
 		this.input.addBinding(new KeyBinding('tab', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editStack.setNextControlPoint(true)));
@@ -157,7 +163,6 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.keySelectTool(Tool.RECT)));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.keySelectTool(Tool.FILL_RECT)));
 		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.keySelectTool(Tool.CLEAR)));
-		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => this.keySelectTool(Tool.CLEAR)));
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.keySelectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.keySelectTool(Tool.COLOR_PICKER)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.keySelectTool(Tool.BUCKET_FILL)));
