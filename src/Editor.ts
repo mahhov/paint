@@ -116,7 +116,8 @@ export default class Editor {
 
 		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editCreator.undoPendingEdit()));
 		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
-		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint()));
+		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint(false)));
+		this.input.addBinding(new KeyBinding('tab', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editCreator.setNextControlPoint(true)));
 		this.input.addBinding(new KeyBinding('a', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
 			this.selectTool(Tool.SELECT);
 			this.editCreator.startNewEdit(new Select(Point.P0, this.pixels.size));

@@ -35,9 +35,9 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
-	setNextControlPoint() {
+	setNextControlPoint(previous: boolean) {
 		if (!this.pendingEdit) return;
-		this.controlPoint = (this.controlPoint + 1) % this.pendingEdit.points.length;
+		this.controlPoint = (this.controlPoint + (previous ? -1 : 1) + this.pendingEdit.points.length) % this.pendingEdit.points.length;
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
