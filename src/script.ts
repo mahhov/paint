@@ -11,4 +11,3 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 //   delete edits with keyboard
 //   traverse edits with keyboard
 //   drag/drop to reorder edits
-//   when deleting pending edit, select previous edit

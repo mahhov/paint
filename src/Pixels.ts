@@ -1,6 +1,6 @@
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {getPIndex} from './util/util.js';
+import {getIndex, getPIndex} from './util/util.js';
 
 export default class Pixels {
 	readonly width: number;
@@ -75,8 +75,18 @@ export default class Pixels {
 		this.dirtyMax = this.dirtyMax.max(max);
 	}
 
-	getOwner(p: Point): number {
-		return this.owners?.[getPIndex(p, this.width)] ?? 255;
+	getOwner(p1: Point, p2: Point): number {
+		if (!this.owners) return -1;
+		let min = p1.min(p2);
+		let max = p1.max(p2);
+		let maxOwner = -1;
+		for (let y = min.y; y <= max.y; y++)
+			for (let x = min.x; x <= max.x; x++) {
+				let owner = this.owners[getIndex(x, y, this.width)];
+				if (owner !== 255 && owner > maxOwner)
+					maxOwner = owner;
+			}
+		return maxOwner;
 	}
 
 	clear() {

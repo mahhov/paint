@@ -35,7 +35,7 @@ export let boundTransferRect = (source1: Point, source2: Point, sourceSize: Poin
 	];
 };
 
-export let getIndex = (x: number, y: number, width: number, int8: boolean = false): number => (x + y * width) * (int8 ? 4 : 1);
-export let getPIndex = (p: Point, width: number, int8: boolean = false): number => getIndex(p.x, p.y, width, int8);
+export let getIndex = (x: number, y: number, width: number, four: boolean = false): number => (x + y * width) * (four ? 4 : 1);
+export let getPIndex = (p: Point, width: number, four: boolean = false): number => getIndex(p.x, p.y, width, four);
 
 export let sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

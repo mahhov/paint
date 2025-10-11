@@ -88,11 +88,13 @@ export default class Editor {
 			this.editModified();
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => {
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.RELEASED], () => {
+			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition);
+			if (!downPoint) return;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
-			let owner = this.pixels.getOwner(point);
-			if (owner !== 255)
+			let owner = this.pixels.getOwner(downPoint, point);
+			if (owner >= 0)
 				this.editCreator.selectEdit(owner);
 			else
 				this.editCreator.selectLastEdit();
