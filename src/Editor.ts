@@ -89,6 +89,8 @@ export default class Editor {
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.RELEASED], () => {
+			// todo preview rectangle while dragging
+			// todo preview potential selected edit while dragging
 			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition);
 			if (!downPoint) return;
 			let point = this.mousePositionToPixelsPosition();
@@ -119,6 +121,8 @@ export default class Editor {
 			this.selectTool(Tool.SELECT);
 			this.editCreator.startNewEdit(new Select(Point.P0, this.pixels.size));
 		}));
+		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () =>
+			this.editCreator.removeEdit(this.editCreator.edits.length)));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
