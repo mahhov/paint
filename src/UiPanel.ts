@@ -105,6 +105,7 @@ class UiToolButton extends UiIconButton {
 			[Tool.PEN]: [Tool.PEN, icons.PEN, 'pen (p)'],
 		};
 	}
+	// todo try showing icons for stacks
 }
 
 class UiColorButton extends UiIconButton {
@@ -219,6 +220,23 @@ class UiColorRange extends UiElement {
 
 	get tooltip(): string {
 		return `${round(this.brightness * 100)}%`;
+	}
+}
+
+class UiTextLabel extends UiElement {
+	text: string;
+
+	constructor(text: string) {
+		super();
+		this.text = text;
+	}
+
+	protected get edits(): Edit[] {
+		return [
+			new FillRect(this.position, this.position.add(this.size), Color.fromRgba(220, 220, 220, 255)),
+			new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
+			// don't draw super's outline rect
+		];
 	}
 }
 
@@ -358,6 +376,9 @@ export default class UiPanel extends Emitter {
 
 		// todo preview edit on hover
 		this.grid.nextRow(margin);
+		this
+			.add(new UiTextLabel('edit stack'), new Point(fullRowSize, smallButtonSize.y / 2))
+			.setTooltip('`');
 		this.postEditList = A(30).map((_, i) => this
 			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
 			.addListener('click', () => this.emit('select-edit', i))
@@ -365,6 +386,7 @@ export default class UiPanel extends Emitter {
 
 		// todo preview edit on hover
 		this.grid.nextRow(margin);
+		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, smallButtonSize.y / 2));
 		this.redoEditList = A(30).map((_, i) => this
 			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
 			.addListener('click', () => this.emit('redo-edit', i)));
