@@ -118,7 +118,7 @@ export default class EditStack {
 	}
 
 	selectLastEdit() {
-		if (!this.postEdits.length) return;
+		if (!this.postEdits.length && (this.pendingEdit || !this.edits.length)) return;
 		this.commitPendingEdit();
 		this.edits = this.edits.concat(this.postEdits);
 		this.postEdits = [];

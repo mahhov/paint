@@ -119,7 +119,9 @@ export default class Editor {
 			else if (this.preview) {
 				this.editStack.selectEdit(this.preview.owner);
 				this.preview = null;
-			} else
+			} else if (this.editStack.pendingEdit && !this.editStack.postEdits.length)
+				this.editStack.startNewEdit(null);
+			else
 				this.editStack.selectLastEdit();
 			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 		}));
