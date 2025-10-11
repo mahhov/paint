@@ -76,6 +76,8 @@ export default class Editor {
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
+			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition);
+			if (!downPoint) return;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
 			if (this.tool === Tool.COLOR_PICKER) {
