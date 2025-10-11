@@ -64,7 +64,7 @@ export let icons: Record<string, IconInstruction[]> = {
 		{type: IconInstructionType.RECT, coords: [5, 8, 27, 23], color: Color.DARK_GRAY},
 		{type: IconInstructionType.RECT, coords: [5, 23, 27, 25], color: Color.DARK_GRAY},
 	],
-	TEXT: [
+	TEXT_EDIT: [
 		// character 'a'
 		{type: IconInstructionType.LINE, coords: [11, 25, 11, 18], color: Color.DARK_GRAY},
 		{type: IconInstructionType.LINE, coords: [6, 25, 11, 25], color: Color.DARK_GRAY},

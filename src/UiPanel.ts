@@ -99,7 +99,7 @@ class UiToolButton extends UiIconButton {
 			[Tool.RECT]: [Tool.RECT, icons.RECT, 'rect (r)'],
 			[Tool.FILL_RECT]: [Tool.FILL_RECT, icons.FILL_RECT, 'fill rect (f)'],
 			[Tool.CLEAR]: [Tool.CLEAR, icons.CLEAR, 'clear (e or delete)'],
-			[Tool.TEXT]: [Tool.TEXT, icons.TEXT, 'text (t)'],
+			[Tool.TEXT]: [Tool.TEXT, icons.TEXT_EDIT, 'text (t)'],
 			[Tool.COLOR_PICKER]: [Tool.COLOR_PICKER, icons.COLOR_PICKER, 'color picker (c)'],
 			[Tool.BUCKET_FILL]: [Tool.BUCKET_FILL, icons.BUCKET_FILL, 'bucket fill (b)'],
 			[Tool.PEN]: [Tool.PEN, icons.PEN, 'pen (p)'],
