@@ -111,6 +111,12 @@ export default class EditCreator {
 		this.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
+	selectNextEdit(previous: boolean) {
+		if (previous && !this.edits.length) return;
+		if (!previous && !this.postEdits.length) return;
+		this.selectEdit(this.edits.length + (previous ? -1 : 1));
+	}
+
 	selectLastEdit() {
 		if (!this.postEdits.length) return;
 		this.commitPendingEdit();

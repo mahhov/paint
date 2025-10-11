@@ -8,6 +8,4 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 // todo layers
 
 // todo post edits
-//   delete edits with keyboard
-//   traverse edits with keyboard
 //   drag/drop to reorder edits
