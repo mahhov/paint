@@ -77,7 +77,7 @@ export default class EditStack {
 
 	undoPendingEdit() {
 		if (this.pendingEdit?.validCommit()) {
-			this.redoEdits.push(this.pendingEdit);
+			this.redoEdits.unshift(this.pendingEdit);
 			this.pendingEdit = null;
 			this.maxDirty = DirtyMode.PENDING_EDIT;
 		}
@@ -92,10 +92,10 @@ export default class EditStack {
 		}
 	}
 
-	redoEdit() {
-		if (!this.redoEdits.length) return;
+	redoEdit(i = 0) {
+		if (i >= this.redoEdits.length) return;
 		this.commitPendingEdit();
-		this.pendingEdit = this.redoEdits.pop()!;
+		this.pendingEdit = this.redoEdits.splice(i, 1)[0];
 		this.controlPoint = 0;
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}

@@ -52,6 +52,7 @@ export default class Editor {
 			this.editStack.selectEdit(i);
 			this.editStack.undoEdit();
 		});
+		this.panel.addListener('redo-edit', i => this.editStack.redoEdit(i));
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
@@ -207,7 +208,8 @@ export default class Editor {
 		this.panel.setTool(this.tool);
 		this.panel.setColor(this.color);
 		this.panel.setZoom(this.camera.zoomPercent);
-		this.panel.setEditList(this.editList);
+		this.panel.setPostEditList(this.postEditList);
+		this.panel.setRedoEditList(this.redoEditList);
 
 		this.saveDebouncer = new Debouncer(() =>
 			Storage.write('save', Serializer.serialize(this.editStack))
@@ -250,7 +252,7 @@ export default class Editor {
 		let start = region ? this.editStack.pendingEdit!.points[0] : Point.P0;
 		let end = region ? this.editStack.pendingEdit!.points[1] : this.pixels.size;
 		this.editStack.startNewEdit(null);
-		this.flusheditStackToPixels();
+		this.flushEditStackToPixels();
 		Clipboard.copyCanvasRegion(await this.pixels.getImage(), start, end);
 	}
 
@@ -317,12 +319,16 @@ export default class Editor {
 		return 2000 / this.camera.zoomPercent;
 	}
 
-	private get editList(): [string, 0 | 1 | 2][] {
+	private get postEditList(): [string, 0 | 1 | 2][] {
 		return [
 			this.editStack.edits.map(edit => [edit.constructor.name, 0] as [string, 0 | 1 | 2]),
 			this.editStack.pendingEdit ? [([this.editStack.pendingEdit.constructor.name, 1] as [string, 0 | 1 | 2])] : [],
 			this.editStack.postEdits.map(edit => [edit.constructor.name, 2] as [string, 0 | 1 | 2]),
 		].flat();
+	}
+
+	private get redoEditList(): string[] {
+		return this.editStack.redoEdits.map(edit => edit.constructor.name);
 	}
 
 	private zoom(delta: number) {
@@ -403,9 +409,10 @@ export default class Editor {
 		}
 	}
 
-	private flusheditStackToPixels() {
+	private flushEditStackToPixels() {
 		// todo only update on edit list change
-		this.panel.setEditList(this.editList);
+		this.panel.setPostEditList(this.postEditList);
+		this.panel.setRedoEditList(this.redoEditList);
 		this.panel.draw();
 
 		if (this.editStack.dirty === DirtyMode.NONE) {
@@ -439,7 +446,7 @@ export default class Editor {
 	}
 
 	private async drawLoop() {
-		this.flusheditStackToPixels();
+		this.flushEditStackToPixels();
 
 		let srcStart = this.camera.canvasToWorld(Point.P0).scale(PIXELS_SIZE).round;
 		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE).round;

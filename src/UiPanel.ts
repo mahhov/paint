@@ -268,8 +268,8 @@ export default class UiPanel extends Emitter {
 	private readonly presetColorButtons: UiColorButton[];
 	private readonly recentColorButtons: UiColorButton[];
 	private readonly viewText: UiTextButton;
-	private readonly editList: UiTextButton[];
-	// todo also show redo edits
+	private readonly postEditList: UiTextButton[];
+	private readonly redoEditList: UiTextButton[];
 	private readonly pixels: Pixels;
 	private tooltip = '';
 	private tooltipPosition = Point.P0;
@@ -356,11 +356,18 @@ export default class UiPanel extends Emitter {
 			.setTooltip('reset zoom (ctrl+0)')
 			.addListener('click', () => this.emit('camera-reset'));
 
+		// todo preview edit on hover
 		this.grid.nextRow(margin);
-		this.editList = A(30).map((_, i) => this
+		this.postEditList = A(30).map((_, i) => this
 			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
 			.addListener('click', () => this.emit('select-edit', i))
 			.addListener('right-click', () => this.emit('remove-edit', i)));
+
+		// todo preview edit on hover
+		this.grid.nextRow(margin);
+		this.redoEditList = A(30).map((_, i) => this
+			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
+			.addListener('click', () => this.emit('redo-edit', i)));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
@@ -438,12 +445,21 @@ export default class UiPanel extends Emitter {
 		this.drawDirty = true;
 	}
 
-	setEditList(names: [string, 0 | 1 | 2][]) {
+	setPostEditList(names: [string, 0 | 1 | 2][]) {
 		let colors = [undefined, Color.WHITE, undefined];
-		this.editList.forEach((edit, i) => {
+		this.postEditList.forEach((edit, i) => {
 			let [text, colorIndex] = names[i] || ['', 0];
 			edit.text = text.slice(0, 10);
 			edit.color = colors[colorIndex];
+			edit.setTooltip(text);
+		});
+		this.drawDirty = true;
+	}
+
+	setRedoEditList(names: string[]) {
+		this.redoEditList.forEach((edit, i) => {
+			let text = names[i] || '';
+			edit.text = text.slice(0, 10);
 			edit.setTooltip(text);
 		});
 		this.drawDirty = true;
