@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -22,6 +22,7 @@ export default class Editor {
 	private readonly panelPixels: Pixels;
 	private editStack: EditStack;
 	private editSelecting: Point | null = null;
+	private preview: Preview | null = null;
 	private tool = Tool.SELECT;
 	private color = Color.LIGHT_GRAY;
 	private input: Input;
@@ -101,20 +102,26 @@ export default class Editor {
 			if (!point) return;
 			this.editSelecting = point;
 			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!;
+			let owner = this.pixels.getOwner(downPoint, point);
+			if (owner === -1)
+				this.preview = null;
+			else if (owner !== this.preview?.owner)
+				this.preview = new Preview(this.editStack.edits[owner], owner);
 		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.RELEASED], () => {
 			// todo preview potential selected edit while dragging
 			if (!this.editSelecting) return;
 			this.editSelecting = null;
-			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
-			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!;
 			let point = this.mousePositionToPixelsPosition();
-			if (!point) return;
-			let owner = this.pixels.getOwner(downPoint, point);
-			if (owner >= 0)
-				this.editStack.selectEdit(owner);
-			else
+			if (!point)
+				this.preview = null;
+			else if (this.preview) {
+				this.editStack.selectEdit(this.preview.owner);
+				this.preview = null;
+			} else
 				this.editStack.selectLastEdit();
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editStack.undoEdit()));
@@ -454,6 +461,7 @@ export default class Editor {
 		}
 		if (this.editSelecting)
 			new Select(this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!, this.editSelecting).draw(this.pendingPixels, this.pixels, true, 0);
+		this.preview?.draw(this.pendingPixels, this.pixels, true, 0);
 
 		this.editStack.dirty = DirtyMode.NONE;
 	}

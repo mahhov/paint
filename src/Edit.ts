@@ -2,7 +2,7 @@ import {PasteData} from './Clipboard.js';
 import Pixels from './Pixels.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {boundRect, boundTransferRect, getIndex} from './util/util.js';
+import {boundRect, boundTransferRect, getIndex, getIndexP} from './util/util.js';
 
 export class Edit {
 	protected readonly points_: Point[];
@@ -42,6 +42,45 @@ export class Select extends Edit {
 			Rect.points(this.points[0], this.points[1], (point, i) =>
 				pixels.set(point, colors[i % colors.length], editId));
 		}
+	}
+}
+
+export class Preview extends Edit {
+	private readonly edit: Edit;
+	readonly owner: number;
+	// todo is tracking ownerPoints more efficient
+	private ownerIndexes: number[] | null = null;
+
+	constructor(edit: Edit, owner: number) {
+		super([]);
+		this.edit = edit;
+		this.owner = owner;
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		this.ownerIndexes ||= sourcePixels.getOwnedBy(this.owner);
+
+		this.ownerIndexes.forEach(i => {
+			pixels.setIndex(i, Color.fromRgba(255, 0, 0, 255), 0);
+			let p = getIndexP(i, pixels.width);
+			pixels.setDirty(p);
+		});
+
+		if (!this.ownerIndexes.length) {
+			let oldColor;
+			if ('color' in this.edit) {
+				oldColor = this.edit.color;
+				this.edit.color = Color.fromRgba(255, 0, 0, 255);
+			}
+			this.edit.draw(pixels, sourcePixels, pending, 0);
+			if ('color' in this.edit)
+				this.edit.color = oldColor;
+		}
+
+		let min = this.edit.points[1] ? this.edit.points[0].min(this.edit.points[1]) : this.edit.points[0];
+		let max = this.edit.points[1] ? this.edit.points[0].max(this.edit.points[1]) : this.edit.points[0];
+		let padding = new Point(2);
+		new Select(min.subtract(padding), max.subtract(padding)).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 

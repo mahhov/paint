@@ -89,6 +89,15 @@ export default class Pixels {
 		return maxOwner;
 	}
 
+	getOwnedBy(owner: number) {
+		if (!this.owners) return [];
+		let indexes = [];
+		for (let i = 0; i < this.owners.length; i++)
+			if (this.owners[i] === owner)
+				indexes.push(i);
+		return indexes;
+	}
+
 	clear() {
 		this.imageData.data.set(this.cachedClearedImageDataData);
 		if (this.defaultColor.toRgba()[3] < 255)

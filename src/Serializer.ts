@@ -1,4 +1,4 @@
-import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack from './EditStack.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
@@ -15,6 +15,7 @@ let typeMap: TypeMap = {
 	EditStack,
 	Edit,
 	Select,
+	Preview,
 	Move,
 	Line,
 	StraightLine,
