@@ -48,7 +48,6 @@ export class Select extends Edit {
 export class Preview extends Edit {
 	private readonly edit: Edit;
 	readonly owner: number;
-	// todo is tracking ownerPoints more efficient
 	private ownerIndexes: number[] | null = null;
 
 	constructor(edit: Edit, owner: number) {
