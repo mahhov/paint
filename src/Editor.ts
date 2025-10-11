@@ -334,6 +334,37 @@ export default class Editor {
 		this.editStack.startNewEdit(edit);
 	}
 
+	private createEdit(point: Point): Edit {
+		switch (this.tool) {
+			case Tool.SELECT:
+				return new Select(point, point);
+			case Tool.MOVE:
+				return new Move(point, point, Point.P0);
+			case Tool.LINE:
+				return new Line(point, point, this.color);
+			case Tool.STRAIGHT_LINE:
+				return new StraightLine(point, point, this.color);
+			case Tool.GRID_LINE:
+				return new GridLine(point, point, Point.P0, this.color);
+			case Tool.RECT:
+				return new Rect(point, point, this.color);
+			case Tool.FILL_RECT:
+				return new FillRect(point, point, this.color);
+			case Tool.CLEAR:
+				return new Clear(point, point);
+			case Tool.TEXT:
+				return new TextEdit(point, this.color, '');
+			case Tool.COLOR_PICKER:
+				throw new Error('createEdit() should not handle COLOR_PICKER');
+			case Tool.BUCKET_FILL:
+				return new BucketFill(point, this.color);
+			case Tool.PASTE:
+				throw new Error('createEdit() should not handle PASTE');
+			case Tool.PEN:
+				return new Pen(point, this.color);
+		}
+	}
+
 	private setColor(color: Color) {
 		this.color = color;
 		this.editStack.setColor(color);
@@ -379,12 +410,6 @@ export default class Editor {
 			this.panel.setColorUsed(this.color);
 	}
 
-	private async loop() {
-		await this.drawLoop();
-		this.input.tick();
-		requestAnimationFrame(() => this.loop());
-	}
-
 	private mousePositionToCanvasPosition(mousePosition = this.input.mousePosition) {
 		// return [0,1) canvas position
 		let offset = mousePosition.subtract(new Point(PANEL_SIZE, 0));
@@ -403,35 +428,10 @@ export default class Editor {
 		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(Point.P0, new Point(PIXELS_SIZE - 1)).round : null;
 	}
 
-	private createEdit(point: Point): Edit {
-		switch (this.tool) {
-			case Tool.SELECT:
-				return new Select(point, point);
-			case Tool.MOVE:
-				return new Move(point, point, Point.P0);
-			case Tool.LINE:
-				return new Line(point, point, this.color);
-			case Tool.STRAIGHT_LINE:
-				return new StraightLine(point, point, this.color);
-			case Tool.GRID_LINE:
-				return new GridLine(point, point, Point.P0, this.color);
-			case Tool.RECT:
-				return new Rect(point, point, this.color);
-			case Tool.FILL_RECT:
-				return new FillRect(point, point, this.color);
-			case Tool.CLEAR:
-				return new Clear(point, point);
-			case Tool.TEXT:
-				return new TextEdit(point, this.color, '');
-			case Tool.COLOR_PICKER:
-				throw new Error('createEdit() should not handle COLOR_PICKER');
-			case Tool.BUCKET_FILL:
-				return new BucketFill(point, this.color);
-			case Tool.PASTE:
-				throw new Error('createEdit() should not handle PASTE');
-			case Tool.PEN:
-				return new Pen(point, this.color);
-		}
+	private async loop() {
+		await this.drawLoop();
+		this.input.tick();
+		requestAnimationFrame(() => this.loop());
 	}
 
 	private flushEditStackToPixels() {
@@ -488,5 +488,3 @@ export default class Editor {
 		this.ctx.drawImage(this.panelPixels.getImage(), 0, 0);
 	}
 }
-
-// todo reorder methods
