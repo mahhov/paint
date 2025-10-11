@@ -319,11 +319,11 @@ export default class Editor {
 		return 2000 / this.camera.zoomPercent;
 	}
 
-	private get postEditList(): [string, 0 | 1 | 2][] {
+	private get postEditList(): [string, boolean][] {
 		return [
-			this.editStack.edits.map(edit => [edit.constructor.name, 0] as [string, 0 | 1 | 2]),
-			this.editStack.pendingEdit ? [([this.editStack.pendingEdit.constructor.name, 1] as [string, 0 | 1 | 2])] : [],
-			this.editStack.postEdits.map(edit => [edit.constructor.name, 2] as [string, 0 | 1 | 2]),
+			this.editStack.edits.map(edit => [edit.constructor.name, false] as [string, boolean]),
+			this.editStack.pendingEdit ? [([this.editStack.pendingEdit.constructor.name, true] as [string, boolean])] : [],
+			this.editStack.postEdits.map(edit => [edit.constructor.name, false] as [string, boolean]),
 		].flat();
 	}
 

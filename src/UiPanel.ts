@@ -63,7 +63,7 @@ class UiButton extends UiElement {
 }
 
 class UiIconButton extends UiButton {
-	protected icon: IconInstruction[];
+	icon: IconInstruction[];
 	selected = false;
 
 	constructor(icon: IconInstruction[]) {
@@ -82,10 +82,10 @@ class UiIconButton extends UiButton {
 }
 
 class UiToolButton extends UiIconButton {
-	readonly tool: Tool;
+	readonly tool: Tool | null;
 
-	constructor(tool: Tool) {
-		super(UiToolButton.toolUiInfo[tool]![1]);
+	constructor(tool: Tool | null) {
+		super(tool !== null ? UiToolButton.toolUiInfo[tool]![1] : []);
 		this.tool = tool;
 	}
 
@@ -105,7 +105,24 @@ class UiToolButton extends UiIconButton {
 			[Tool.PEN]: [Tool.PEN, icons.PEN, 'pen (p)'],
 		};
 	}
-	// todo try showing icons for stacks
+
+	static get editStackUiInfo(): Record<string, IconInstruction[]> {
+		return {
+			'': [],
+			Select: icons.SELECT,
+			Move: icons.MOVE,
+			Line: icons.LINE,
+			StraightLine: icons.STRAIGHT_LINE,
+			GridLine: icons.GRID_LINE,
+			Rect: icons.RECT,
+			FillRect: icons.FILL_RECT,
+			Clear: icons.CLEAR,
+			TextEdit: icons.TEXT_EDIT,
+			BucketFill: icons.BUCKET_FILL,
+			Paste: icons.PASTE,
+			Pen: icons.PEN,
+		};
+	}
 }
 
 class UiColorButton extends UiIconButton {
@@ -286,8 +303,8 @@ export default class UiPanel extends Emitter {
 	private readonly presetColorButtons: UiColorButton[];
 	private readonly recentColorButtons: UiColorButton[];
 	private readonly viewText: UiTextButton;
-	private readonly postEditList: UiTextButton[];
-	private readonly redoEditList: UiTextButton[];
+	private readonly postEditList: UiToolButton[];
+	private readonly redoEditList: UiToolButton[];
 	private readonly pixels: Pixels;
 	private tooltip = '';
 	private tooltipPosition = Point.P0;
@@ -299,13 +316,13 @@ export default class UiPanel extends Emitter {
 		this.pixels = pixels;
 		let margin = 5;
 		this.grid = new GridLayout(pixels.width, margin);
-		let smallButtonSize = new Point(this.grid.divide(4));
+		let buttonSize = new Point(this.grid.divide(4));
 		let fullRowSize = this.grid.divide(1);
 		let editListWidth = this.grid.divide(2);
 
 		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
 			this
-				.add(new UiToolButton(uiInfo[0]), smallButtonSize)
+				.add(new UiToolButton(uiInfo[0]), buttonSize)
 				.setTooltip(uiInfo[2])
 				.addListener('click', () => this.emit('tool', uiInfo[0])));
 
@@ -313,7 +330,7 @@ export default class UiPanel extends Emitter {
 		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
 
 		this.grid.nextRow();
-		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, smallButtonSize.y / 2));
+		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, buttonSize.y / 2));
 
 		[this.colorCircle, this.colorBrightness].forEach(ui => ui.addListener('click', () =>
 			this.emit('color', Color.fromFloat(this.colorCircle.float, this.colorBrightness.brightness))));
@@ -338,7 +355,7 @@ export default class UiPanel extends Emitter {
 		] as [number, number, number][])
 			.map(rgb => Color.fromRgba(...rgb, 255))
 			.map((color, i) => {
-				let button = this.add(new UiColorButton(color), smallButtonSize);
+				let button = this.add(new UiColorButton(color), buttonSize);
 				if (i < 10)
 					button.setTooltip(`(${(i + 1) % 10})`);
 				button.addListener('click', () => this.emit('color', color));
@@ -347,7 +364,7 @@ export default class UiPanel extends Emitter {
 
 		this.grid.nextRow(margin);
 		this.recentColorButtons = A(12).map((_, i) => {
-			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), smallButtonSize);
+			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), buttonSize);
 			button.addListener('click', () => this.emit('color', button.color));
 			if (i < 10)
 				button.setTooltip(`(ctrl+${(i + 1) % 10})`);
@@ -356,39 +373,39 @@ export default class UiPanel extends Emitter {
 
 		this.grid.nextRow(margin);
 		this
-			.add(new UiIconButton(icons.UNDO), smallButtonSize)
+			.add(new UiIconButton(icons.UNDO), buttonSize)
 			.setTooltip('undo (ctrl+z or mb-4)')
 			.addListener('click', () => this.emit('undo'));
 		this
-			.add(new UiIconButton(icons.REDO), smallButtonSize)
+			.add(new UiIconButton(icons.REDO), buttonSize)
 			.setTooltip('redo (ctrl+shift+z or mb-5)')
 			.addListener('click', () => this.emit('redo'));
 		this
-			.add(new UiIconButton(icons.START_NEW), smallButtonSize)
+			.add(new UiIconButton(icons.START_NEW), buttonSize)
 			.setTooltip('new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
 
 		this.grid.nextRow(margin);
 		this.viewText = this
-			.add(new UiTextButton('100%'), new Point(fullRowSize, smallButtonSize.y / 2))
+			.add(new UiTextButton('100%'), new Point(fullRowSize, buttonSize.y / 2))
 			.setTooltip('reset zoom (ctrl+0)')
 			.addListener('click', () => this.emit('camera-reset'));
 
 		// todo preview edit on hover
 		this.grid.nextRow(margin);
 		this
-			.add(new UiTextLabel('edit stack'), new Point(fullRowSize, smallButtonSize.y / 2))
+			.add(new UiTextLabel('edit stack'), new Point(fullRowSize, buttonSize.y / 2))
 			.setTooltip('`');
-		this.postEditList = A(30).map((_, i) => this
-			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
+		this.postEditList = A(49).map((_, i) => this
+			.add(new UiToolButton(null), new Point(buttonSize.y / 2, buttonSize.y / 2))
 			.addListener('click', () => this.emit('select-edit', i))
 			.addListener('right-click', () => this.emit('remove-edit', i)));
 
 		// todo preview edit on hover
 		this.grid.nextRow(margin);
-		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, smallButtonSize.y / 2));
-		this.redoEditList = A(30).map((_, i) => this
-			.add(new UiTextButton(''), new Point(editListWidth, smallButtonSize.y / 2))
+		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, buttonSize.y / 2));
+		this.redoEditList = A(49).map((_, i) => this
+			.add(new UiToolButton(null), new Point(buttonSize.y / 2, buttonSize.y / 2))
 			.addListener('click', () => this.emit('redo-edit', i)));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
@@ -467,12 +484,11 @@ export default class UiPanel extends Emitter {
 		this.drawDirty = true;
 	}
 
-	setPostEditList(names: [string, 0 | 1 | 2][]) {
-		let colors = [undefined, Color.WHITE, undefined];
+	setPostEditList(names: [string, boolean][]) {
 		this.postEditList.forEach((edit, i) => {
-			let [text, colorIndex] = names[i] || ['', 0];
-			edit.text = text.slice(0, 10);
-			edit.color = colors[colorIndex];
+			let [text, selected] = names[i] || ['', 0];
+			edit.icon = UiToolButton.editStackUiInfo[text];
+			edit.selected = selected;
 			edit.setTooltip(text);
 		});
 		this.drawDirty = true;
@@ -481,7 +497,7 @@ export default class UiPanel extends Emitter {
 	setRedoEditList(names: string[]) {
 		this.redoEditList.forEach((edit, i) => {
 			let text = names[i] || '';
-			edit.text = text.slice(0, 10);
+			edit.icon = UiToolButton.editStackUiInfo[text];
 			edit.setTooltip(text);
 		});
 		this.drawDirty = true;
