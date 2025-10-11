@@ -48,7 +48,10 @@ export default class Editor {
 		this.panel.addListener('camera-reset', () => this.cameraReset());
 		this.panel.addListener('start-new', () => this.startNew());
 		this.panel.addListener('select-edit', i => this.editCreator.selectEdit(i));
-		this.panel.addListener('remove-edit', i => this.editCreator.removeEdit(i));
+		this.panel.addListener('remove-edit', i => {
+			this.editCreator.selectEdit(i);
+			this.editCreator.undoEdit();
+		});
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
@@ -122,8 +125,7 @@ export default class Editor {
 			this.selectTool(Tool.SELECT);
 			this.editCreator.startNewEdit(new Select(Point.P0, this.pixels.size));
 		}));
-		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () =>
-			this.editCreator.removeEdit(this.editCreator.edits.length)));
+		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editCreator.undoEdit()));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
