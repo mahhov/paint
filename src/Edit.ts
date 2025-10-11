@@ -185,7 +185,7 @@ export class GridLine extends Move {
 		}
 		new Rect(this.points[0], this.points[1], this.color).draw(pixels, sourcePixels, pending, editId);
 		if (delta.x || delta.y)
-			new Rect(this.points[2], this.points[3], this.color).draw(pixels, sourcePixels, pending, editId);
+			new Rect(this.points[3], this.points[4], this.color).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
