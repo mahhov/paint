@@ -1,5 +1,5 @@
 import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Rect, Select, StraightLine, TextEdit} from './Edit.js';
-import EditCreator from './EditCreator.js';
+import EditStack from './EditStack.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
 
@@ -12,7 +12,7 @@ type TypeMapValue = Class | CustomSerializerType<any, any> | null;
 type TypeMap = Record<string, TypeMapValue>;
 
 let typeMap: TypeMap = {
-	EditCreator,
+	EditStack,
 	Edit,
 	Select,
 	Move,

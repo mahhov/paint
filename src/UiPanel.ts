@@ -269,6 +269,7 @@ export default class UiPanel extends Emitter {
 	private readonly recentColorButtons: UiColorButton[];
 	private readonly viewText: UiTextButton;
 	private readonly editList: UiTextButton[];
+	// todo also show redo edits
 	private readonly pixels: Pixels;
 	private tooltip = '';
 	private tooltipPosition = Point.P0;

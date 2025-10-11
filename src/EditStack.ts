@@ -9,7 +9,7 @@ export enum DirtyMode {
 	ALL_EDITS,
 }
 
-export default class EditCreator {
+export default class EditStack {
 	edits: Edit[] = [];
 	pendingEdit: Edit | null = null;
 	controlPoint = 0;

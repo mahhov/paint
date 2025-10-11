@@ -1,7 +1,7 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
 import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Rect, Select, StraightLine, TextEdit} from './Edit.js';
-import EditCreator, {DirtyMode} from './EditCreator.js';
+import EditStack, {DirtyMode} from './EditStack.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
 import Serializer from './Serializer.js';
@@ -20,7 +20,7 @@ export default class Editor {
 	private readonly pixels: Pixels;
 	private readonly pendingPixels: Pixels;
 	private readonly panelPixels: Pixels;
-	private editCreator: EditCreator;
+	private editStack: EditStack;
 	private tool = Tool.SELECT;
 	private color = Color.LIGHT_GRAY;
 	private input: Input;
@@ -31,8 +31,8 @@ export default class Editor {
 	private editorSize!: number;
 	private readonly saveDebouncer: Debouncer;
 
-	constructor(canvas: HTMLCanvasElement, editCreator: EditCreator) {
-		this.editCreator = editCreator;
+	constructor(canvas: HTMLCanvasElement, editStack: EditStack) {
+		this.editStack = editStack;
 
 		this.ctx = canvas.getContext('2d')!;
 		this.pixels = new Pixels(PIXELS_SIZE, PIXELS_SIZE, this.ctx, Color.WHITE, true);
@@ -43,14 +43,14 @@ export default class Editor {
 
 		this.panel.addListener('tool', (tool: Tool) => this.selectTool(tool));
 		this.panel.addListener('color', (color: Color) => this.setColor(color));
-		this.panel.addListener('undo', () => this.editCreator.undoEdit());
-		this.panel.addListener('redo', () => this.editCreator.redoEdit());
+		this.panel.addListener('undo', () => this.editStack.undoEdit());
+		this.panel.addListener('redo', () => this.editStack.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
 		this.panel.addListener('start-new', () => this.startNew());
-		this.panel.addListener('select-edit', i => this.editCreator.selectEdit(i));
+		this.panel.addListener('select-edit', i => this.editStack.selectEdit(i));
 		this.panel.addListener('remove-edit', i => {
-			this.editCreator.selectEdit(i);
-			this.editCreator.undoEdit();
+			this.editStack.selectEdit(i);
+			this.editStack.undoEdit();
 		});
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
@@ -67,12 +67,12 @@ export default class Editor {
 				this.setColor(this.pixels.get(point));
 				return;
 			}
-			let controlPoint = this.editCreator.findControlPoint(point, this.editCreatorControlSize);
+			let controlPoint = this.editStack.findControlPoint(point, this.editStackControlSize);
 			if (controlPoint === -1)
-				this.editCreator.startNewEdit(this.createEdit(point));
+				this.editStack.startNewEdit(this.createEdit(point));
 			else {
-				this.editCreator.setControlPoint(controlPoint);
-				this.editCreator.moveControlPointTo(point, false);
+				this.editStack.setControlPoint(controlPoint);
+				this.editStack.moveControlPointTo(point, false);
 			}
 			this.editModified();
 		}));
@@ -87,7 +87,7 @@ export default class Editor {
 				this.setColor(this.pixels.get(point));
 				return;
 			}
-			this.editCreator.moveControlPointTo(point, this.input.shiftDown);
+			this.editStack.moveControlPointTo(point, this.input.shiftDown);
 			this.editModified();
 		}));
 
@@ -100,33 +100,33 @@ export default class Editor {
 			if (!point) return;
 			let owner = this.pixels.getOwner(downPoint, point);
 			if (owner >= 0)
-				this.editCreator.selectEdit(owner);
+				this.editStack.selectEdit(owner);
 			else
-				this.editCreator.selectLastEdit();
+				this.editStack.selectLastEdit();
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editCreator.undoEdit()));
-		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editCreator.redoEdit()));
+		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editStack.undoEdit()));
+		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editStack.redoEdit()));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			this.editCreator.undoEdit();
+			this.editStack.undoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
-			this.editCreator.redoEdit();
+			this.editStack.redoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			this.editCreator.redoEdit();
+			this.editStack.redoEdit();
 		}));
 
-		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editCreator.undoEdit()));
-		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editCreator.undoEdit()));
-		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editCreator.startNewEdit(null)));
-		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editCreator.setNextControlPoint(false)));
-		this.input.addBinding(new KeyBinding('tab', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editCreator.setNextControlPoint(true)));
-		this.input.addBinding(new KeyBinding('`', [], [InputState.PRESSED], () => this.editCreator.selectNextEdit(true)));
-		this.input.addBinding(new KeyBinding('~', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editCreator.selectNextEdit(false)));
+		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editStack.undoEdit()));
+		this.input.addBinding(new KeyBinding('delete', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.editStack.undoEdit()));
+		this.input.addBinding(new KeyBinding('enter', [], [InputState.PRESSED], () => this.editStack.startNewEdit(null)));
+		this.input.addBinding(new KeyBinding('tab', [], [InputState.PRESSED], () => this.editStack.setNextControlPoint(false)));
+		this.input.addBinding(new KeyBinding('tab', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editStack.setNextControlPoint(true)));
+		this.input.addBinding(new KeyBinding('`', [], [InputState.PRESSED], () => this.editStack.selectNextEdit(true)));
+		this.input.addBinding(new KeyBinding('~', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editStack.selectNextEdit(false)));
 		this.input.addBinding(new KeyBinding('a', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
 			this.selectTool(Tool.SELECT);
-			this.editCreator.startNewEdit(new Select(Point.P0, this.pixels.size));
+			this.editStack.startNewEdit(new Select(Point.P0, this.pixels.size));
 		}));
 
 		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
@@ -147,7 +147,7 @@ export default class Editor {
 		for (let i = 0; i <= 9; i++) {
 			let colorIndex = (i + 9) % 10;
 			this.input.addBinding(new KeyBinding(String(i), [], [InputState.PRESSED], () => {
-				if (this.editCreator.pendingEdit instanceof TextEdit) return;
+				if (this.editStack.pendingEdit instanceof TextEdit) return;
 				this.setColor(this.panel.presetColors[colorIndex]);
 			}));
 			this.input.addBinding(new KeyBinding(String(i), [KeyModifier.CONTROL], [InputState.PRESSED], () => this.setColor(this.panel.recentColors[colorIndex])));
@@ -168,26 +168,26 @@ export default class Editor {
 			[[KeyModifier.SHIFT], [InputState.DOWN], 25],
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
-				this.editCreator.moveControlPointBy(delta.scale(scale));
+				this.editStack.moveControlPointBy(delta.scale(scale));
 				this.editModified();
 			}));
 		}));
 
 		document.addEventListener('keydown', e => {
-			if (!(this.editCreator.pendingEdit instanceof TextEdit)) return;
+			if (!(this.editStack.pendingEdit instanceof TextEdit)) return;
 			// todo text cursor & selection & undo/redo typing
 			if (e.key === 'Delete' || e.key === 'Backspace') {
 				if (e.ctrlKey) {
-					let str = this.editCreator.pendingEdit.text.trim();
-					this.editCreator.pendingEdit.text = str.substring(0, str.lastIndexOf(' ') + 1);
+					let str = this.editStack.pendingEdit.text.trim();
+					this.editStack.pendingEdit.text = str.substring(0, str.lastIndexOf(' ') + 1);
 				} else
-					this.editCreator.pendingEdit.text = this.editCreator.pendingEdit.text.slice(0, -1);
+					this.editStack.pendingEdit.text = this.editStack.pendingEdit.text.slice(0, -1);
 				this.editModified();
-				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			} else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
-				this.editCreator.pendingEdit.text += e.key;
+				this.editStack.pendingEdit.text += e.key;
 				this.editModified();
-				this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			}
 		});
 
@@ -210,7 +210,7 @@ export default class Editor {
 		this.panel.setEditList(this.editList);
 
 		this.saveDebouncer = new Debouncer(() =>
-			Storage.write('save', Serializer.serialize(this.editCreator))
+			Storage.write('save', Serializer.serialize(this.editStack))
 				.catch(e => console.warn('Failed to save:', e)));
 
 		this.loop();
@@ -218,39 +218,39 @@ export default class Editor {
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
 		console.time('load read');
-		let editCreatorPromise: Promise<EditCreator> = Storage.read('save')
+		let editStackPromise: Promise<EditStack> = Storage.read('save')
 			.then(saveObj => {
 				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
 				console.time('load deserialize');
-				let editCreator: EditCreator = Serializer.deserialize(saveObj);
+				let editStack: EditStack = Serializer.deserialize(saveObj);
 				console.timeEnd('load deserialize');
-				editCreator.edits = editCreator.edits.filter(edit => edit instanceof Edit);
-				editCreator.postEdits = editCreator.postEdits.filter(edit => edit instanceof Edit);
-				editCreator.redoEdits = editCreator.redoEdits.filter(edit => edit instanceof Edit);
-				if (!(editCreator.pendingEdit instanceof Edit)) editCreator.pendingEdit = null;
-				editCreator.maxDirty = DirtyMode.ALL_EDITS;
-				return editCreator;
+				editStack.edits = editStack.edits.filter(edit => edit instanceof Edit);
+				editStack.postEdits = editStack.postEdits.filter(edit => edit instanceof Edit);
+				editStack.redoEdits = editStack.redoEdits.filter(edit => edit instanceof Edit);
+				if (!(editStack.pendingEdit instanceof Edit)) editStack.pendingEdit = null;
+				editStack.maxDirty = DirtyMode.ALL_EDITS;
+				return editStack;
 			})
 			.catch(e => {
 				console.warn('Failed to restore save', e);
-				return new EditCreator();
+				return new EditStack();
 			});
 
-		return new Editor(canvas, await editCreatorPromise);
+		return new Editor(canvas, await editStackPromise);
 	}
 
 	private startNew() {
-		this.editCreator = new EditCreator();
-		this.editCreator.maxDirty = DirtyMode.ALL_EDITS;
+		this.editStack = new EditStack();
+		this.editStack.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
 	private async copy() {
-		let region = this.editCreator.pendingEdit instanceof Select || this.editCreator.pendingEdit instanceof Move;
-		let start = region ? this.editCreator.pendingEdit!.points[0] : Point.P0;
-		let end = region ? this.editCreator.pendingEdit!.points[1] : this.pixels.size;
-		this.editCreator.startNewEdit(null);
-		this.flushEditCreatorToPixels();
+		let region = this.editStack.pendingEdit instanceof Select || this.editStack.pendingEdit instanceof Move;
+		let start = region ? this.editStack.pendingEdit!.points[0] : Point.P0;
+		let end = region ? this.editStack.pendingEdit!.points[1] : this.pixels.size;
+		this.editStack.startNewEdit(null);
+		this.flusheditStackToPixels();
 		Clipboard.copyCanvasRegion(await this.pixels.getImage(), start, end);
 	}
 
@@ -263,15 +263,15 @@ export default class Editor {
 
 		let str = Clipboard.clipboardToText(e);
 		if (str) {
-			if (!(this.editCreator.pendingEdit instanceof TextEdit))
-				this.editCreator.startNewEdit(new TextEdit(point, this.color, ''));
-			(this.editCreator.pendingEdit as TextEdit).text += str;
+			if (!(this.editStack.pendingEdit instanceof TextEdit))
+				this.editStack.startNewEdit(new TextEdit(point, this.color, ''));
+			(this.editStack.pendingEdit as TextEdit).text += str;
 			this.tool = Tool.TEXT;
 			return;
 		}
 
 		Clipboard.clipboardToPixelArray(e)
-			.then(int8Array => this.editCreator.startNewEdit(new Paste(point, int8Array)))
+			.then(int8Array => this.editStack.startNewEdit(new Paste(point, int8Array)))
 			.catch(e => console.warn('Paste failed:', e));
 	}
 
@@ -291,7 +291,7 @@ export default class Editor {
 	}
 
 	private keySelectTool(tool: Tool) {
-		if (this.editCreator.pendingEdit instanceof TextEdit) return;
+		if (this.editStack.pendingEdit instanceof TextEdit) return;
 		this.selectTool(tool);
 	}
 
@@ -299,29 +299,29 @@ export default class Editor {
 		this.tool = tool;
 		this.panel.setTool(tool);
 		let edit = null;
-		if (this.editCreator.pendingEdit && this.editCreator.pendingEdit.points.length >= 2)
+		if (this.editStack.pendingEdit && this.editStack.pendingEdit.points.length >= 2)
 			if ([Tool.MOVE, Tool.GRID_LINE, Tool.CLEAR].includes(tool)) {
-				edit = this.createEdit(this.editCreator.pendingEdit.points[0]);
-				edit.setPoint(1, this.editCreator.pendingEdit.points[1], false);
+				edit = this.createEdit(this.editStack.pendingEdit.points[0]);
+				edit.setPoint(1, this.editStack.pendingEdit.points[1], false);
 			}
-		this.editCreator.startNewEdit(edit);
+		this.editStack.startNewEdit(edit);
 	}
 
 	private setColor(color: Color) {
 		this.color = color;
-		this.editCreator.setColor(color);
+		this.editStack.setColor(color);
 		this.panel.setColor(color);
 	}
 
-	private get editCreatorControlSize() {
+	private get editStackControlSize() {
 		return 2000 / this.camera.zoomPercent;
 	}
 
 	private get editList(): [string, 0 | 1 | 2][] {
 		return [
-			this.editCreator.edits.map(edit => [edit.constructor.name, 0] as [string, 0 | 1 | 2]),
-			this.editCreator.pendingEdit ? [([this.editCreator.pendingEdit.constructor.name, 1] as [string, 0 | 1 | 2])] : [],
-			this.editCreator.postEdits.map(edit => [edit.constructor.name, 2] as [string, 0 | 1 | 2]),
+			this.editStack.edits.map(edit => [edit.constructor.name, 0] as [string, 0 | 1 | 2]),
+			this.editStack.pendingEdit ? [([this.editStack.pendingEdit.constructor.name, 1] as [string, 0 | 1 | 2])] : [],
+			this.editStack.postEdits.map(edit => [edit.constructor.name, 2] as [string, 0 | 1 | 2]),
 		].flat();
 	}
 
@@ -329,22 +329,22 @@ export default class Editor {
 		let canvasPosition = this.mousePositionToCanvasPosition();
 		if (canvasPosition) {
 			this.camera.zoom(delta, canvasPosition);
-			this.editCreator.maxDirty = DirtyMode.PENDING_EDIT;
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			this.panel.setZoom(this.camera.zoomPercent);
 		}
 	}
 
 	private editModified() {
-		if (!this.editCreator.pendingEdit) return;
+		if (!this.editStack.pendingEdit) return;
 
 		let status = '';
-		if (this.editCreator.pendingEdit.points.length >= 2) {
-			let delta = this.editCreator.pendingEdit.points[1].subtract(this.editCreator.pendingEdit.points[0]);
+		if (this.editStack.pendingEdit.points.length >= 2) {
+			let delta = this.editStack.pendingEdit.points[1].subtract(this.editStack.pendingEdit.points[0]);
 			status = `[${Math.abs(delta.x) + 1}, ${Math.abs(delta.y) + 1}]`;
 		}
 		this.panel.setStatus(status);
 
-		if ('color' in this.editCreator.pendingEdit!)
+		if ('color' in this.editStack.pendingEdit!)
 			this.panel.setColorUsed(this.color);
 	}
 
@@ -403,45 +403,43 @@ export default class Editor {
 		}
 	}
 
-	private flushEditCreatorToPixels() {
+	private flusheditStackToPixels() {
 		// todo only update on edit list change
 		this.panel.setEditList(this.editList);
 		this.panel.draw();
 
-		if (this.editCreator.dirty === DirtyMode.NONE) {
+		if (this.editStack.dirty === DirtyMode.NONE) {
 			this.saveDebouncer.allow();
 			return;
 		}
 
 		this.saveDebouncer.queue();
 
-		if (this.editCreator.dirty === DirtyMode.ALL_EDITS) {
+		if (this.editStack.dirty === DirtyMode.ALL_EDITS) {
 			this.pixels.clear();
-			this.editCreator.edits.forEach((edit, i) => edit.draw(this.pixels, this.pixels, false, i));
+			this.editStack.edits.forEach((edit, i) => edit.draw(this.pixels, this.pixels, false, i));
 		}
 
-		if (this.editCreator.dirty === DirtyMode.LAST_EDIT)
-			this.editCreator.edits.at(-1)!.draw(this.pixels, this.pixels, false, this.editCreator.edits.length - 1);
+		if (this.editStack.dirty === DirtyMode.LAST_EDIT)
+			this.editStack.edits.at(-1)!.draw(this.pixels, this.pixels, false, this.editStack.edits.length - 1);
 
-		console.time('draw');
 		this.pendingPixels.clear();
-		if (this.editCreator.pendingEdit) {
-			this.editCreator.pendingEdit.draw(this.pendingPixels, this.pixels, true, 0);
+		if (this.editStack.pendingEdit) {
+			this.editStack.pendingEdit.draw(this.pendingPixels, this.pixels, true, 0);
 			([
-				...this.editCreator.pendingEdit.points.map(p => [p, this.editCreatorControlSize / 2]),
-				[this.editCreator.pendingEdit.points[this.editCreator.controlPoint], this.editCreatorControlSize / 4],
+				...this.editStack.pendingEdit.points.map(p => [p, this.editStackControlSize / 2]),
+				[this.editStack.pendingEdit.points[this.editStack.controlPoint], this.editStackControlSize / 4],
 			] as [Point, number][]).forEach(([p, r]) => {
 				let rp = new Point(r).round;
 				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true, 0);
 			});
 		}
-		console.timeEnd('draw');
 
-		this.editCreator.dirty = DirtyMode.NONE;
+		this.editStack.dirty = DirtyMode.NONE;
 	}
 
 	private async drawLoop() {
-		this.flushEditCreatorToPixels();
+		this.flusheditStackToPixels();
 
 		let srcStart = this.camera.canvasToWorld(Point.P0).scale(PIXELS_SIZE).round;
 		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE).round;
