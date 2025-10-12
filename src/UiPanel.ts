@@ -41,6 +41,8 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 
 	onMouseDown(point: Point) {}
 
+	onMouseUp(point: Point) {}
+
 	containsPoint(point: Point) {
 		return point.atLeast(this.position) && point.atMost(this.position.add(this.size));
 	}
@@ -50,7 +52,9 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 	}
 }
 
-class UiButton extends UiElement<{ click: void, 'right-click': void }> {
+class UiButton extends UiElement<{ click: void, 'right-click': void, 'hover': void, 'hover-end': void }> {
+	private hovered: boolean = false;
+
 	onMousePress(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('click');
@@ -59,6 +63,16 @@ class UiButton extends UiElement<{ click: void, 'right-click': void }> {
 	onRightMousePress(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('right-click');
+	}
+
+	onMouseUp(point: Point) {
+		if (this.containsPoint(point)) {
+			this.hovered = true;
+			this.emit('hover');
+		} else if (this.hovered) {
+			this.hovered = false;
+			this.emit('hover-end');
+		}
 	}
 }
 
@@ -301,9 +315,13 @@ export default class UiPanel extends Emitter<{
 	redo: void,
 	'start-new': void,
 	'camera-reset': void,
-	'select-edit': number,
-	'remove-edit': number,
-	'redo-edit': number,
+	'post-edit-click': number,
+	'post-edit-right-click': number,
+	'post-edit-hover': number,
+	'post-edit-hover-end': number,
+	'redo-edit-click': number,
+	'redo-edit-hover': number,
+	'redo-edit-hover-end': number,
 }> {
 	private readonly grid: GridLayout;
 	private readonly uis: UiElement[] = [];
@@ -407,15 +425,19 @@ export default class UiPanel extends Emitter<{
 			.setTooltip('`');
 		this.postEditList = A(49).map((_, i) => this
 			.add(new UiToolButton(null), new Point(buttonSize.y / 2, buttonSize.y / 2))
-			.addListener('click', () => this.emit('select-edit', i))
-			.addListener('right-click', () => this.emit('remove-edit', i)));
+			.addListener('click', () => this.emit('post-edit-click', i))
+			.addListener('right-click', () => this.emit('post-edit-right-click', i))
+			.addListener('hover', () => this.emit('post-edit-hover', i))
+			.addListener('hover-end', () => this.emit('post-edit-hover-end', i)));
 
 		// todo preview edit on hover
 		this.grid.nextRow(margin);
 		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, buttonSize.y / 2));
 		this.redoEditList = A(49).map((_, i) => this
 			.add(new UiToolButton(null), new Point(buttonSize.y / 2, buttonSize.y / 2))
-			.addListener('click', () => this.emit('redo-edit', i)));
+			.addListener('click', () => this.emit('redo-edit-click', i))
+			.addListener('hover', () => this.emit('redo-edit-hover', i))
+			.addListener('hover-end', () => this.emit('redo-edit-hover-end', i)));
 
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
@@ -426,8 +448,8 @@ export default class UiPanel extends Emitter<{
 			this.uis.forEach(ui => ui.onMouseDown(input.mousePosition));
 		}));
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.UP], () => {
-			if (input.mousePosition.equals(input.mouseLastPosition)) return;
 			if (!input.mouseMoved) return;
+			this.uis.forEach(ui => ui.onMouseUp(input.mousePosition));
 			this.setTooltip(input.mousePosition);
 		}));
 	}

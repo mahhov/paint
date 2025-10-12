@@ -49,12 +49,12 @@ export default class Editor {
 		this.panel.addListener('redo', () => this.editStack.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
 		this.panel.addListener('start-new', () => this.startNew());
-		this.panel.addListener('select-edit', i => this.editStack.selectEdit(i));
-		this.panel.addListener('remove-edit', i => {
+		this.panel.addListener('post-edit-click', i => this.editStack.selectEdit(i));
+		this.panel.addListener('post-edit-right-click', i => {
 			this.editStack.selectEdit(i);
 			this.editStack.undoEdit();
 		});
-		this.panel.addListener('redo-edit', i => this.editStack.redoEdit(i));
+		this.panel.addListener('redo-edit-click', i => this.editStack.redoEdit(i));
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
