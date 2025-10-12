@@ -79,7 +79,7 @@ export class Preview extends Edit {
 		let min = this.edit.points[1] ? this.edit.points[0].min(this.edit.points[1]) : this.edit.points[0];
 		let max = this.edit.points[1] ? this.edit.points[0].max(this.edit.points[1]) : this.edit.points[0];
 		let padding = new Point(2);
-		new Select(min.subtract(padding), max.subtract(padding)).draw(pixels, sourcePixels, pending, editId);
+		new Select(min.subtract(padding), max.add(padding)).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
