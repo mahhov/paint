@@ -233,8 +233,11 @@ export default class Editor {
 		this.panel.setTool(this.tool);
 		this.panel.setColor(this.color);
 		this.panel.setZoom(this.camera.zoomPercent);
-		this.panel.setPostEditList(this.postEditList);
-		this.panel.setRedoEditList(this.redoEditList);
+		this.postEditsListChanged();
+		this.editStack.addListener('post-edits-changed', () => this.postEditsListChanged());
+		this.redoEditsListChanged();
+		this.editStack.addListener('redo-edits-changed', () => this.redoEditsListChanged());
+
 
 		this.saveDebouncer = new Debouncer(() =>
 			Storage.write('save', Serializer.serialize(this.editStack))
@@ -332,6 +335,39 @@ export default class Editor {
 		this.editStack.startNewEdit(edit);
 	}
 
+	private setColor(color: Color) {
+		this.color = color;
+		this.editStack.setColor(color);
+		this.panel.setColor(color);
+	}
+
+	private zoom(delta: number) {
+		let canvasPosition = this.mousePositionToCanvasPosition();
+		if (canvasPosition) {
+			this.camera.zoom(delta, canvasPosition);
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			this.panel.setZoom(this.camera.zoomPercent);
+		}
+	}
+
+	private postEditsListChanged() {
+		let tuples: [string, boolean][] = [
+			this.editStack.edits.map(edit => [edit.constructor.name, false] as [string, boolean]),
+			this.editStack.pendingEdit ? [([this.editStack.pendingEdit.constructor.name, true] as [string, boolean])] : [],
+			this.editStack.postEdits.map(edit => [edit.constructor.name, false] as [string, boolean]),
+		].flat();
+		this.panel.setPostEditList(tuples);
+	}
+
+	private redoEditsListChanged() {
+		let strings = this.editStack.redoEdits.map(edit => edit.constructor.name);
+		this.panel.setRedoEditList(strings);
+	}
+
+	private get editStackControlSize() {
+		return 2000 / this.camera.zoomPercent;
+	}
+
 	private createEdit(point: Point): Edit {
 		switch (this.tool) {
 			case Tool.SELECT:
@@ -360,37 +396,6 @@ export default class Editor {
 				throw new Error('createEdit() should not handle PASTE');
 			case Tool.PEN:
 				return new Pen(point, this.color);
-		}
-	}
-
-	private setColor(color: Color) {
-		this.color = color;
-		this.editStack.setColor(color);
-		this.panel.setColor(color);
-	}
-
-	private get editStackControlSize() {
-		return 2000 / this.camera.zoomPercent;
-	}
-
-	private get postEditList(): [string, boolean][] {
-		return [
-			this.editStack.edits.map(edit => [edit.constructor.name, false] as [string, boolean]),
-			this.editStack.pendingEdit ? [([this.editStack.pendingEdit.constructor.name, true] as [string, boolean])] : [],
-			this.editStack.postEdits.map(edit => [edit.constructor.name, false] as [string, boolean]),
-		].flat();
-	}
-
-	private get redoEditList(): string[] {
-		return this.editStack.redoEdits.map(edit => edit.constructor.name);
-	}
-
-	private zoom(delta: number) {
-		let canvasPosition = this.mousePositionToCanvasPosition();
-		if (canvasPosition) {
-			this.camera.zoom(delta, canvasPosition);
-			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
-			this.panel.setZoom(this.camera.zoomPercent);
 		}
 	}
 
@@ -433,9 +438,6 @@ export default class Editor {
 	}
 
 	private flushEditStackToPixels() {
-		// todo only update on edit list change
-		this.panel.setPostEditList(this.postEditList);
-		this.panel.setRedoEditList(this.redoEditList);
 		this.panel.draw();
 
 		if (this.editStack.dirty === DirtyMode.NONE) {
