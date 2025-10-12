@@ -245,7 +245,7 @@ export default class Editor {
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
 		console.time('load read');
-		let editStackPromise: Promise<EditStack> = Storage.read('save')
+		return Storage.read('save')
 			.then(saveObj => {
 				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
@@ -257,14 +257,12 @@ export default class Editor {
 				editStack.redoEdits = editStack.redoEdits.filter(edit => edit instanceof Edit);
 				if (!(editStack.pendingEdit instanceof Edit)) editStack.pendingEdit = null;
 				editStack.maxDirty = DirtyMode.ALL_EDITS;
-				return editStack;
+				return new Editor(canvas, editStack);
 			})
 			.catch(e => {
 				console.warn('Failed to restore save', e);
-				return new EditStack();
+				return new Editor(canvas, new EditStack());
 			});
-
-		return new Editor(canvas, await editStackPromise);
 	}
 
 	private startNew() {
