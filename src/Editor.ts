@@ -94,7 +94,14 @@ export default class Editor {
 			this.editModified();
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => this.editSelecting = this.mousePositionToPixelsPosition()));
+		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => {
+			this.editSelecting = this.mousePositionToPixelsPosition();
+			if (!this.editSelecting) return;
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			let owner = this.pixels.getOwner(this.editSelecting, this.editSelecting);
+			if (owner !== -1)
+				this.preview = new Preview(this.editStack.edits[owner], owner);
+		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => {
 			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
 			if (!this.editSelecting) return;
@@ -110,7 +117,6 @@ export default class Editor {
 				this.preview = new Preview(this.editStack.edits[owner], owner);
 		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.RELEASED], () => {
-			// todo preview potential selected edit while dragging
 			if (!this.editSelecting) return;
 			this.editSelecting = null;
 			let point = this.mousePositionToPixelsPosition();
