@@ -3,11 +3,11 @@ import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
 import Color from './util/Color.js';
-import Emitter from './util/Emitter.js';
+import Emitter, {EventMap} from './util/Emitter.js';
 import Point from './util/Point.js';
 import {A, clamp, getIndex, round, Tool} from './util/util.js';
 
-class UiElement extends Emitter {
+class UiElement<T extends EventMap = {}> extends Emitter<T> {
 	protected position = Point.P0;
 	protected size = Point.P0;
 	protected defaultTooltip = '';
@@ -50,7 +50,7 @@ class UiElement extends Emitter {
 	}
 }
 
-class UiButton extends UiElement {
+class UiButton extends UiElement<{ click: void, 'right-click': void }> {
 	onMousePress(point: Point) {
 		if (this.containsPoint(point))
 			this.emit('click');
@@ -161,7 +161,7 @@ class UiTextButton extends UiButton {
 	}
 }
 
-class UiColorCircle extends UiElement {
+class UiColorCircle extends UiElement<{ click: void }> {
 	float = new Point(.5);
 	brightness = .5;
 
@@ -199,7 +199,7 @@ class UiColorCircle extends UiElement {
 	}
 }
 
-class UiColorRange extends UiElement {
+class UiColorRange extends UiElement<{ click: void }> {
 	float = new Point(.5);
 	brightness = .5;
 
@@ -294,7 +294,17 @@ class GridLayout {
 	}
 }
 
-export default class UiPanel extends Emitter {
+export default class UiPanel extends Emitter<{
+	tool: Tool,
+	color: Color,
+	undo: void,
+	redo: void,
+	'start-new': void,
+	'camera-reset': void,
+	'select-edit': number,
+	'remove-edit': number,
+	'redo-edit': number,
+}> {
 	private readonly grid: GridLayout;
 	private readonly uis: UiElement[] = [];
 	private readonly toolButtons: UiToolButton[];

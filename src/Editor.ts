@@ -26,7 +26,7 @@ export default class Editor {
 	private tool = Tool.SELECT;
 	private color = Color.LIGHT_GRAY;
 	private readonly input: Input;
-	private readonly panel;
+	private readonly panel: UiPanel;
 	private camera!: Camera;
 	private editorWidth!: number;
 	private editorHeight!: number;

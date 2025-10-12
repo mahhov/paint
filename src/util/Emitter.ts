@@ -1,14 +1,15 @@
-export default class Emitter {
-	private readonly listeners: Record<string, ((...args: any[]) => void)[]> = {};
+export type EventMap = Record<string, any | void>;
 
-	addListener(event: string, listener: (...args: any[]) => void) {
+export default class Emitter<T extends EventMap> {
+	private readonly listeners: Partial<Record<keyof T, Function[]>> = {};
+
+	addListener<K extends keyof T>(event: K, listener: (arg: T[K]) => void): this {
 		this.listeners[event] ||= [];
 		this.listeners[event].push(listener);
 		return this;
 	}
 
-	emit(event: string, ...args: any[]) {
-		if (this.listeners[event])
-			this.listeners[event].forEach(listener => listener(...args));
+	emit<K extends keyof T>(event: K, ...arg: T[K] extends void ? [] : [T[K]]) {
+		this.listeners[event]?.forEach(listener => listener(arg));
 	}
 }
