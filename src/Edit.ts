@@ -46,26 +46,28 @@ export class Select extends Edit {
 }
 
 export class Preview extends Edit {
-	private readonly edit: Edit;
+	readonly edit: Edit;
 	readonly owner: number;
 	private ownerIndexes: number[] | null = null;
 
-	constructor(edit: Edit, owner: number) {
+	constructor(edit: Edit, owner: number = -1) {
 		super([]);
 		this.edit = edit;
 		this.owner = owner;
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		this.ownerIndexes ||= sourcePixels.getOwnedBy(this.owner);
+		if (this.owner !== -1) {
+			this.ownerIndexes ||= sourcePixels.getOwnedBy(this.owner);
 
-		this.ownerIndexes.forEach(i => {
-			pixels.setIndex(i, Color.fromRgba(255, 0, 0, 255), 0);
-			let p = getIndexP(i, pixels.width);
-			pixels.setDirty(p);
-		});
+			this.ownerIndexes.forEach(i => {
+				pixels.setIndex(i, Color.fromRgba(255, 0, 0, 255), 0);
+				let p = getIndexP(i, pixels.width);
+				pixels.setDirty(p);
+			});
+		}
 
-		if (!this.ownerIndexes.length) {
+		if (!this.ownerIndexes?.length) {
 			let oldColor;
 			if ('color' in this.edit) {
 				oldColor = this.edit.color;
