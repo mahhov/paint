@@ -97,6 +97,7 @@ export default class EditStack extends Emitter<{ 'post-edits-changed': void, 're
 		if (i >= this.redoEdits.length) return;
 		this.commitPendingEdit();
 		this.pendingEdit = this.redoEdits.splice(i, 1)[0];
+		this.emit('post-edits-changed');
 		this.emit('redo-edits-changed');
 		this.controlPoint = 0;
 		this.maxDirty = DirtyMode.PENDING_EDIT;
