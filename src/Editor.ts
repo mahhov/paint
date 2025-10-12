@@ -55,6 +55,19 @@ export default class Editor {
 			this.editStack.undoEdit();
 		});
 		this.panel.addListener('redo-edit-click', i => this.editStack.redoEdit(i));
+		this.panel.addListener('redo-edit-hover', i => {
+			let edit = this.editStack.redoEdits[i];
+			if (edit && edit !== this.preview?.edit) {
+				this.preview = new Preview(this.editStack.redoEdits[i]);
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			}
+		});
+		this.panel.addListener('redo-edit-hover-end', i => {
+			if (this.preview) {
+				this.preview = null;
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			}
+		});
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
 			let delta = this.input.mouseLastPosition.subtract(this.input.mousePosition);
