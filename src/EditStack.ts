@@ -1,5 +1,6 @@
 import {Edit} from './Edit.js';
 import Color from './util/Color.js';
+import Emitter from './util/Emitter.js';
 import Point from './util/Point.js';
 
 export enum DirtyMode {
@@ -9,7 +10,7 @@ export enum DirtyMode {
 	ALL_EDITS,
 }
 
-export default class EditStack {
+export default class EditStack extends Emitter<{ 'post-edits-changed': void, 'redo-edits-changed': void }> {
 	edits: Edit[] = [];
 	pendingEdit: Edit | null = null;
 	controlPoint = 0;
@@ -72,22 +73,22 @@ export default class EditStack {
 		this.commitPendingEdit();
 		this.pendingEdit = edit;
 		this.controlPoint = 0;
+		this.emit('post-edits-changed');
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
 
-	undoPendingEdit() {
+	undoEdit() {
 		if (this.pendingEdit?.validCommit()) {
 			this.redoEdits.unshift(this.pendingEdit);
+			this.emit('redo-edits-changed');
 			this.pendingEdit = null;
+			this.emit('post-edits-changed');
 			this.maxDirty = DirtyMode.PENDING_EDIT;
 		}
-	}
-
-	undoEdit() {
-		this.undoPendingEdit();
 		if (this.edits.length) {
 			this.pendingEdit = this.edits.pop()!;
 			this.controlPoint = 0;
+			this.emit('post-edits-changed');
 			this.maxDirty = DirtyMode.ALL_EDITS;
 		}
 	}
@@ -96,6 +97,7 @@ export default class EditStack {
 		if (i >= this.redoEdits.length) return;
 		this.commitPendingEdit();
 		this.pendingEdit = this.redoEdits.splice(i, 1)[0];
+		this.emit('redo-edits-changed');
 		this.controlPoint = 0;
 		this.maxDirty = DirtyMode.PENDING_EDIT;
 	}
@@ -108,6 +110,7 @@ export default class EditStack {
 		this.postEdits = combined.slice(index);
 		this.pendingEdit = this.postEdits.shift()!;
 		this.controlPoint = 0;
+		this.emit('post-edits-changed');
 		this.maxDirty = DirtyMode.ALL_EDITS;
 	}
 
@@ -124,6 +127,7 @@ export default class EditStack {
 		this.postEdits = [];
 		this.pendingEdit = this.edits.pop()!;
 		this.controlPoint = 0;
+		this.emit('post-edits-changed');
 		this.maxDirty = DirtyMode.ALL_EDITS;
 	}
 }
