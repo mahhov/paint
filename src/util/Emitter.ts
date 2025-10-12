@@ -10,6 +10,6 @@ export default class Emitter<T extends EventMap> {
 	}
 
 	emit<K extends keyof T>(event: K, ...arg: T[K] extends void ? [] : [T[K]]) {
-		this.listeners[event]?.forEach(listener => listener(arg));
+		this.listeners[event]?.forEach(listener => listener(...arg));
 	}
 }
