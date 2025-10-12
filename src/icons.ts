@@ -12,10 +12,10 @@ export interface IconInstruction {
 
 export let icons: Record<string, IconInstruction[]> = {
 	SELECT: [
-		{type: IconInstructionType.RECT, coords: [3, 3, 30, 30], color: Color.LIGHT_GRAY},
-		{type: IconInstructionType.LINE, coords: [5, 5, 13, 13], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [5, 5, 5, 13], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [5, 5, 13, 5], color: Color.DARK_GRAY},
+		{type: IconInstructionType.RECT, coords: [5, 5, 28, 28], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.LINE, coords: [7, 7, 15, 15], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [7, 7, 7, 15], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [7, 7, 15, 7], color: Color.DARK_GRAY},
 	],
 	MOVE: [
 		{type: IconInstructionType.RECT, coords: [11, 11, 21, 21], color: Color.DARK_GRAY},
@@ -53,10 +53,10 @@ export let icons: Record<string, IconInstruction[]> = {
 		{type: IconInstructionType.RECT, coords: [11, 11, 21, 21], color: Color.DARK_GRAY},
 	],
 	RECT: [
-		{type: IconInstructionType.RECT, coords: [2, 2, 30, 30], color: Color.DARK_GRAY},
+		{type: IconInstructionType.RECT, coords: [4, 4, 28, 28], color: Color.DARK_GRAY},
 	],
 	FILL_RECT: [
-		{type: IconInstructionType.FILL_RECT, coords: [2, 2, 30, 30], color: Color.DARK_GRAY},
+		{type: IconInstructionType.FILL_RECT, coords: [4, 4, 28, 28], color: Color.DARK_GRAY},
 	],
 	CLEAR: [
 		{type: IconInstructionType.FILL_RECT, coords: [5, 8, 27, 23], color: Color.LIGHT_GRAY},
@@ -66,22 +66,22 @@ export let icons: Record<string, IconInstruction[]> = {
 	],
 	TEXT_EDIT: [
 		// character 'a'
-		{type: IconInstructionType.LINE, coords: [11, 25, 11, 18], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [6, 25, 11, 25], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [6, 25, 6, 20], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [6, 20, 11, 20], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [9, 25, 9, 18], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [4, 25, 9, 25], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [4, 25, 4, 20], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [4, 20, 9, 20], color: Color.DARK_GRAY},
 		// character 'b'
-		{type: IconInstructionType.LINE, coords: [14, 25, 14, 8], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [14, 25, 18, 25], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [18, 25, 18, 19], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [14, 19, 18, 19], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [12, 25, 12, 8], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [12, 25, 16, 25], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [16, 25, 16, 19], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [12, 19, 16, 19], color: Color.DARK_GRAY},
 		// character 'c'
-		{type: IconInstructionType.LINE, coords: [21, 25, 26, 25], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [21, 25, 21, 18], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [21, 18, 26, 18], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [19, 25, 24, 25], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [19, 25, 19, 18], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [19, 18, 24, 18], color: Color.DARK_GRAY},
 		// cursor (thicker)
-		{type: IconInstructionType.LINE, coords: [29, 7, 29, 28], color: Color.DARK_GRAY},
-		{type: IconInstructionType.LINE, coords: [30, 7, 30, 28], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [27, 7, 27, 28], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [28, 7, 28, 28], color: Color.DARK_GRAY},
 	],
 	COLOR_PICKER: [
 		// color base
