@@ -182,6 +182,10 @@ export class Input {
 		this.bindings.push(binding);
 	}
 
+	get mouseMoved() {
+		return !this.mousePosition.equals(this.mouseLastPosition);
+	}
+
 	tick() {
 		Object.values(this.bindings).forEach(binding => binding.tick());
 		this.mouseLastPosition = this.mousePosition;

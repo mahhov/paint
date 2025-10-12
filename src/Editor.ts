@@ -81,7 +81,7 @@ export default class Editor {
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
-			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
+			if (!this.input.mouseMoved) return;
 			let downPoint = this.mousePositionToPixelsPosition(this.input.mouseDownPosition);
 			if (!downPoint) return;
 			let point = this.mousePositionToPixelsPosition();
@@ -103,7 +103,7 @@ export default class Editor {
 				this.preview = new Preview(this.editStack.edits[owner], owner);
 		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => {
-			if (this.input.mousePosition.equals(this.input.mouseLastPosition)) return;
+			if (!this.input.mouseMoved) return;
 			if (!this.editSelecting) return;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;

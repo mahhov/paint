@@ -421,10 +421,13 @@ export default class UiPanel extends Emitter<{
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
 		input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onRightMousePress(input.mousePosition))));
-		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () =>
-			this.uis.forEach(ui => ui.onMouseDown(input.mousePosition))));
+		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN], () => {
+			if (!input.mouseMoved) return;
+			this.uis.forEach(ui => ui.onMouseDown(input.mousePosition));
+		}));
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.DOWN, InputState.UP], () => {
 			if (input.mousePosition.equals(input.mouseLastPosition)) return;
+			if (!input.mouseMoved) return;
 			this.setTooltip(input.mousePosition);
 		}));
 	}
