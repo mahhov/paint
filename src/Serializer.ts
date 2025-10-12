@@ -1,5 +1,5 @@
 import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
-import EditStack from './EditStack.js';
+import EditStack, {DirtyMode} from './EditStack.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
 
@@ -11,8 +11,31 @@ type CustomSerializerType<Original extends object, Serialized extends object> = 
 type TypeMapValue = Class | CustomSerializerType<any, any> | null;
 type TypeMap = Record<string, TypeMapValue>;
 
+type SerializedEditStack = {
+	edits: Edit[],
+	pendingEdit: Edit | null,
+	postEdits: Edit[],
+	redoEdits: Edit[],
+};
+
 let typeMap: TypeMap = {
-	EditStack,
+	EditStack: {
+		serialize: (editStack: EditStack): SerializedEditStack => ({
+			edits: Serializer.serialize(editStack.edits),
+			pendingEdit: Serializer.serialize(editStack.pendingEdit),
+			postEdits: Serializer.serialize(editStack.postEdits),
+			redoEdits: Serializer.serialize(editStack.redoEdits),
+		}),
+		deserialize: (serializedEditStack: SerializedEditStack): EditStack => {
+			let editStack = new EditStack();
+			editStack.edits = Serializer.deserialize(serializedEditStack.edits);
+			editStack.pendingEdit = Serializer.deserialize(serializedEditStack.pendingEdit);
+			editStack.postEdits = Serializer.deserialize(serializedEditStack.postEdits);
+			editStack.redoEdits = Serializer.deserialize(serializedEditStack.redoEdits);
+			editStack.maxDirty = Serializer.deserialize(DirtyMode.ALL_EDITS);
+			return editStack;
+		},
+	} as CustomSerializerType<EditStack, SerializedEditStack>,
 	Edit,
 	Select,
 	Preview,
