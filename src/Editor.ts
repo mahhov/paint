@@ -54,11 +54,27 @@ export default class Editor {
 			this.editStack.selectEdit(i);
 			this.editStack.undoEdit();
 		});
+		this.panel.addListener('post-edit-hover', i => {
+			i -= this.editStack.edits.length;
+			if (this.editStack.pendingEdit)
+				i--;
+			let edit = this.editStack.postEdits[i];
+			if (edit && edit !== this.preview?.edit) {
+				this.preview = new Preview(edit);
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			}
+		});
+		this.panel.addListener('post-edit-hover-end', i => {
+			if (this.preview) {
+				this.preview = null;
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			}
+		});
 		this.panel.addListener('redo-edit-click', i => this.editStack.redoEdit(i));
 		this.panel.addListener('redo-edit-hover', i => {
 			let edit = this.editStack.redoEdits[i];
 			if (edit && edit !== this.preview?.edit) {
-				this.preview = new Preview(this.editStack.redoEdits[i]);
+				this.preview = new Preview(edit);
 				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			}
 		});
