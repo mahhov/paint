@@ -277,6 +277,10 @@ export default class Editor {
 	private startNew() {
 		this.editStack = new EditStack();
 		this.editStack.maxDirty = DirtyMode.ALL_EDITS;
+		this.postEditsListChanged();
+		this.editStack.addListener('post-edits-changed', () => this.postEditsListChanged());
+		this.redoEditsListChanged();
+		this.editStack.addListener('redo-edits-changed', () => this.redoEditsListChanged());
 	}
 
 	private copy() {
