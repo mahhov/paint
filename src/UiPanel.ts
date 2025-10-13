@@ -1,4 +1,4 @@
-import {Edit, FillRect, Line, Paste, Rect, TextEdit} from './Edit.js';
+import {Edit, FillRect, FixedTextEdit, Line, Paste, Rect} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
@@ -167,7 +167,7 @@ class UiTextButton extends UiButton {
 	protected get edits(): Edit[] {
 		return [
 			new FillRect(this.position, this.position.add(this.size), this.color || Color.fromRgba(220, 220, 220, 255)),
-			new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
+			new FixedTextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
 			...super.edits,
 		];
 	}
@@ -263,7 +263,7 @@ class UiTextLabel extends UiElement {
 	protected get edits(): Edit[] {
 		return [
 			new FillRect(this.position, this.position.add(this.size), Color.fromRgba(220, 220, 220, 255)),
-			new TextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
+			new FixedTextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
 			// don't draw super's outline rect
 		];
 	}
@@ -550,7 +550,7 @@ export default class UiPanel extends Emitter<{
 
 		if (this.tooltip) {
 			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
-			let tooltipTextEdit = new TextEdit(Point.P0, Color.BLACK, this.tooltip, 15);
+			let tooltipTextEdit = new FixedTextEdit(Point.P0, Color.BLACK, this.tooltip, 15);
 			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure()).add(new Point(6, 2));
 			let excessX = tooltipPoint2.x - this.pixels.width + 1;
 			if (excessX > 0) {

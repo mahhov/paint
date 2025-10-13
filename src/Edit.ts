@@ -282,29 +282,79 @@ export class Clear extends FillRect {
 	}
 }
 
-// todo split into fixed text and dynamic text
-export class TextEdit extends Edit {
+abstract class BaseTextEdit extends Edit {
 	static canvas = new OffscreenCanvas(0, 0);
-	static ctx = TextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
+	static ctx = BaseTextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
+
+	protected abstract get text(): string;
+
+	protected abstract get color(): Color;
+
+	protected abstract get size(): number;
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		let measureSize = this.measure(this.text);
+		FixedTextEdit.canvas.width = measureSize.x;
+		FixedTextEdit.canvas.height = measureSize.y;
+		this.updateContext();
+		FixedTextEdit.ctx.fillText(this.text, 0, 0);
+		let imageData = FixedTextEdit.ctx.getImageData(0, 0, FixedTextEdit.canvas.width, FixedTextEdit.canvas.height);
+		for (let x = 0; x < imageData.width; x++) {
+			for (let y = 0; y < imageData.height; y++) {
+				let index = (x + y * imageData.width) * 4;
+				let a = imageData.data[index + 3];
+				if (a > 150)
+					pixels.set(this.points[0].add(new Point(x, y)), this.color, editId);
+			}
+		}
+	}
+
+	measure(text: string = this.text) {
+		this.updateContext();
+		let metrics = FixedTextEdit.ctx.measureText(text);
+		return new Point(Math.ceil(metrics.width), Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent));
+	}
+
+	private updateContext() {
+		FixedTextEdit.ctx.font = `${this.size}px Arial`;
+		FixedTextEdit.ctx.imageSmoothingEnabled = false;
+		FixedTextEdit.ctx.textBaseline = 'top';
+		FixedTextEdit.ctx.globalAlpha = 1;
+	}
+}
+
+export class FixedTextEdit extends BaseTextEdit {
+	protected readonly text: string;
+	protected readonly color: Color;
+	protected readonly size: number;
+
+	constructor(point: Point, color: Color, text: string, size: number) {
+		super([point]);
+		this.text = text;
+		this.color = color;
+		this.size = size;
+	}
+}
+
+export class TextEdit extends BaseTextEdit {
 	static lastSize: number = 12;
 	readonly textEditor = new TextEditor();
-	private readonly color: Color;
-	private readonly fixedSize: number;
+	protected readonly color: Color;
 
-	constructor(point: Point, color: Color, text: string, fixedSize = 0) {
+	constructor(point: Point, color: Color, text: string) {
 		super([point, point.add(new Point(0, TextEdit.lastSize))]);
 		this.textEditor.type(text);
 		this.color = color;
-		this.fixedSize = fixedSize;
 	}
 
-	private get size() {
+	protected get text() {
+		return this.textEditor.state.text;
+	}
+
+	protected get size() {
 		return Math.abs(this.points[1].subtract(this.points[0]).y);
 	}
 
-	get text() {
-		return this.textEditor.state.text;
-	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
 		let size = this.size;
@@ -321,48 +371,22 @@ export class TextEdit extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let measureSize = this.measure(this.text);
-		if (this.text) {
-			if (!measureSize.x || !measureSize.y) return;
-			TextEdit.canvas.width = measureSize.x;
-			TextEdit.canvas.height = measureSize.y;
-			this.updateContext();
-			TextEdit.ctx.fillText(this.text, 0, 0);
-			let imageData = TextEdit.ctx.getImageData(0, 0, TextEdit.canvas.width, TextEdit.canvas.height);
-			for (let x = 0; x < imageData.width; x++) {
-				for (let y = 0; y < imageData.height; y++) {
-					let index = (x + y * imageData.width) * 4;
-					let a = imageData.data[index + 3];
-					if (a > 150)
-						pixels.set(this.points[0].add(new Point(x, y)), this.color, editId);
-				}
+		if (this.text)
+			super.draw(pixels, sourcePixels, pending, editId);
+
+		if (pending) {
+			let measureSize = this.measure(this.text);
+			let cursorXs = [this.textEditor.state.cursor, this.textEditor.state.selectionStart]
+				.filter(unique)
+				.map(cursor => this.measure(this.text.slice(0, cursor)).x);
+			let lines = cursorXs.map(cursorX => [new Point(cursorX, 0), new Point(cursorX, measureSize.y)]);
+			if (cursorXs.length > 1) {
+				lines.push([new Point(cursorXs[0], 0), new Point(cursorXs[1], 0)]);
+				lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
 			}
+			lines.forEach(([start, end]) =>
+				new Line(this.points[0].add(start), this.points[0].add(end), this.color).draw(pixels, sourcePixels, pending, editId));
 		}
-		if (!pending) return;
-
-		let cursorXs = [this.textEditor.state.cursor, this.textEditor.state.selectionStart]
-			.filter(unique)
-			.map(cursor => this.measure(this.text.slice(0, cursor)).x);
-		let lines = cursorXs.map(cursorX => [new Point(cursorX, 0), new Point(cursorX, measureSize.y)]);
-		if (cursorXs.length > 1) {
-			lines.push([new Point(cursorXs[0], 0), new Point(cursorXs[1], 0)]);
-			lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
-		}
-		lines.forEach(([start, end]) =>
-			new Line(this.points[0].add(start), this.points[0].add(end), this.color).draw(pixels, sourcePixels, pending, editId));
-	}
-
-	measure(text: string = this.text) {
-		this.updateContext();
-		let metrics = TextEdit.ctx.measureText(text);
-		return new Point(Math.ceil(metrics.width), Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent));
-	}
-
-	private updateContext() {
-		TextEdit.ctx.font = `${this.fixedSize || this.size}px Arial`;
-		TextEdit.ctx.imageSmoothingEnabled = false;
-		TextEdit.ctx.textBaseline = 'top';
-		TextEdit.ctx.globalAlpha = 1;
 	}
 }
 
