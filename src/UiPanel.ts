@@ -418,7 +418,6 @@ export default class UiPanel extends Emitter<{
 			.setTooltip('reset zoom (ctrl+0)')
 			.addListener('click', () => this.emit('camera-reset'));
 
-		// todo preview edit on hover
 		this.grid.nextRow(margin);
 		this
 			.add(new UiTextLabel('edit stack'), new Point(fullRowSize, buttonSize.y / 2))
@@ -430,7 +429,6 @@ export default class UiPanel extends Emitter<{
 			.addListener('hover', () => this.emit('post-edit-hover', i))
 			.addListener('hover-end', () => this.emit('post-edit-hover-end', i)));
 
-		// todo preview edit on hover
 		this.grid.nextRow(margin);
 		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, buttonSize.y / 2));
 		this.redoEditList = A(49).map((_, i) => this
@@ -555,7 +553,7 @@ export default class UiPanel extends Emitter<{
 		if (this.tooltip) {
 			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
 			let tooltipTextEdit = new TextEdit(Point.P0, Color.BLACK, this.tooltip, 15);
-			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure).add(new Point(6, 2));
+			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure()).add(new Point(6, 2));
 			let excessX = tooltipPoint2.x - this.pixels.width + 1;
 			if (excessX > 0) {
 				tooltipPoint1 = tooltipPoint1.add(new Point(-excessX, 10));

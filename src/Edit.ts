@@ -1,8 +1,9 @@
 import {PasteData} from './Clipboard.js';
 import Pixels from './Pixels.js';
+import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {boundRect, boundTransferRect, getIndex, getIndexP} from './util/util.js';
+import {boundRect, boundTransferRect, getIndex, getIndexP, unique} from './util/util.js';
 
 export class Edit {
 	protected readonly points_: Point[];
@@ -27,6 +28,7 @@ export class Edit {
 	}
 }
 
+// todo merge with move
 export class Select extends Edit {
 	constructor(start: Point, end: Point) {
 		super([start, end]);
@@ -85,6 +87,7 @@ export class Preview extends Edit {
 	}
 }
 
+// todo remove if delta = 0
 export class Move extends Edit {
 	constructor(start: Point, end: Point, delta: Point) {
 		super([start, end, Move.center(start, end), start.add(delta), end.add(delta)]);
@@ -285,19 +288,23 @@ export class TextEdit extends Edit {
 	static canvas = new OffscreenCanvas(0, 0);
 	static ctx = TextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
 	static lastSize: number = 12;
+	readonly textEditor = new TextEditor();
 	private readonly color: Color;
-	text = '';
 	private readonly fixedSize: number;
 
 	constructor(point: Point, color: Color, text: string, fixedSize = 0) {
 		super([point, point.add(new Point(0, TextEdit.lastSize))]);
+		this.textEditor.type(text);
 		this.color = color;
-		this.text = text;
 		this.fixedSize = fixedSize;
 	}
 
 	private get size() {
 		return Math.abs(this.points[1].subtract(this.points[0]).y);
+	}
+
+	get text() {
+		return this.textEditor.state.text;
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -315,28 +322,40 @@ export class TextEdit extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let measureSize = this.measure;
-		if (!measureSize.x || !measureSize.y) return;
-		TextEdit.canvas.width = measureSize.x;
-		TextEdit.canvas.height = measureSize.y;
-		this.updateContext();
-		TextEdit.ctx.fillText(this.text, 0, 0);
-		let imageData = TextEdit.ctx.getImageData(0, 0, TextEdit.canvas.width, TextEdit.canvas.height);
-		for (let x = 0; x < imageData.width; x++) {
-			for (let y = 0; y < imageData.height; y++) {
-				let index = (x + y * imageData.width) * 4;
-				let a = imageData.data[index + 3];
-				if (a > 150)
-					pixels.set(this.points[0].add(new Point(x, y)), this.color, editId);
+		let measureSize = this.measure(this.text);
+		if (this.text) {
+			if (!measureSize.x || !measureSize.y) return;
+			TextEdit.canvas.width = measureSize.x;
+			TextEdit.canvas.height = measureSize.y;
+			this.updateContext();
+			TextEdit.ctx.fillText(this.text, 0, 0);
+			let imageData = TextEdit.ctx.getImageData(0, 0, TextEdit.canvas.width, TextEdit.canvas.height);
+			for (let x = 0; x < imageData.width; x++) {
+				for (let y = 0; y < imageData.height; y++) {
+					let index = (x + y * imageData.width) * 4;
+					let a = imageData.data[index + 3];
+					if (a > 150)
+						pixels.set(this.points[0].add(new Point(x, y)), this.color, editId);
+				}
 			}
 		}
-		if (pending)
-			new Line(this.points[0].add(new Point(imageData.width, 0)), this.points[0].add(new Point(imageData.width, imageData.height)), this.color).draw(pixels, sourcePixels, pending, editId);
+		if (!pending) return;
+
+		let cursorXs = [this.textEditor.state.cursor, this.textEditor.state.selectionStart]
+			.filter(unique)
+			.map(cursor => this.measure(this.text.slice(0, cursor)).x);
+		let lines = cursorXs.map(cursorX => [new Point(cursorX, 0), new Point(cursorX, measureSize.y)]);
+		if (cursorXs.length > 1) {
+			lines.push([new Point(cursorXs[0], 0), new Point(cursorXs[1], 0)]);
+			lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
+		}
+		lines.forEach(([start, end]) =>
+			new Line(this.points[0].add(start), this.points[0].add(end), this.color).draw(pixels, sourcePixels, pending, editId));
 	}
 
-	get measure() {
+	measure(text: string = this.text) {
 		this.updateContext();
-		let metrics = TextEdit.ctx.measureText(this.text);
+		let metrics = TextEdit.ctx.measureText(text);
 		return new Point(Math.ceil(metrics.width), Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent));
 	}
 
@@ -425,6 +444,7 @@ export class Pen extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		// todo draw when 1 point
 		this.dots.forEach((dot, i, dots) => {
 			if (i)
 				new Line(this.points[1].add(dot), this.points[1].add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending, editId);

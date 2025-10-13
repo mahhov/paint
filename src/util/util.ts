@@ -22,6 +22,10 @@ export let clamp = (v: number, min: number, max: number) => Math.min(Math.max(v,
 
 export let round = (v: number, precision: number = 0) => Math.round(v * 10 ** precision) / 10 ** precision;
 
+export let unique = <T>(value: T, index: number, array: T[]) => array.indexOf(value) === index;
+
+export let sort2 = (a: number, b: number) => [Math.min(a, b), Math.max(a, b)];
+
 export let boundRect = (source1: Point, source2: Point, maxSize: Point): [Point, Point] => {
 	return [
 		source1.min(source2).max(Point.P0),

@@ -6,6 +6,7 @@ import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, M
 import Pixels from './Pixels.js';
 import Serializer from './Serializer.js';
 import Storage from './Storage.js';
+import {Direction} from './TextEditor.js';
 import UiPanel from './UiPanel.js';
 import Color from './util/Color.js';
 import Debouncer from './util/Debouncer.js';
@@ -228,6 +229,7 @@ export default class Editor {
 			[[KeyModifier.CONTROL], [InputState.PRESSED], 1],
 			[[KeyModifier.SHIFT], [InputState.DOWN], 25],
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
 				this.editStack.moveControlPointBy(delta.scale(scale));
 				this.editModified();
@@ -236,20 +238,35 @@ export default class Editor {
 
 		document.addEventListener('keydown', e => {
 			if (!(this.editStack.pendingEdit instanceof TextEdit)) return;
-			// todo text cursor & selection & undo/redo typing
-			if (e.key === 'Delete' || e.key === 'Backspace') {
-				if (e.ctrlKey) {
-					let str = this.editStack.pendingEdit.text.trim();
-					this.editStack.pendingEdit.text = str.substring(0, str.lastIndexOf(' ') + 1);
-				} else
-					this.editStack.pendingEdit.text = this.editStack.pendingEdit.text.slice(0, -1);
-				this.editModified();
-				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
-			} else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
-				this.editStack.pendingEdit.text += e.key;
-				this.editModified();
-				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
-			}
+			let textEditor = this.editStack.pendingEdit.textEditor;
+
+			// todo undo/redo
+			// todo copy, cut, paste
+			// todo ctrl+a
+
+			if (e.key === 'Delete')
+				textEditor.delete(e.ctrlKey ? Direction.WORD_RIGHT : Direction.RIGHT);
+			else if (e.key === 'Backspace')
+				textEditor.delete(e.ctrlKey ? Direction.WORD_LEFT : Direction.LEFT);
+			else if (e.ctrlKey && e.key === 'v')
+				0;
+			else if (e.ctrlKey && e.key === 'x')
+				0;
+			else if (e.key === 'ArrowUp' || e.key === 'Home')
+				textEditor.moveCursor(Direction.LINE_LEFT, e.shiftKey);
+			else if (e.key === 'ArrowDown' || e.key === 'End')
+				textEditor.moveCursor(Direction.LINE_RIGHT, e.shiftKey);
+			else if (e.key === 'ArrowLeft')
+				textEditor.moveCursor(e.ctrlKey ? Direction.WORD_LEFT : Direction.LEFT, e.shiftKey);
+			else if (e.key === 'ArrowRight')
+				textEditor.moveCursor(e.ctrlKey ? Direction.WORD_RIGHT : Direction.RIGHT, e.shiftKey);
+			else if (e.key.length === 1 && !e.ctrlKey && !e.altKey)
+				textEditor.type(e.key);
+			else
+				return;
+
+			this.editModified();
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 		});
 
 		document.addEventListener('copy', () => this.copy());
@@ -282,6 +299,7 @@ export default class Editor {
 	}
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
+		// return new Editor(canvas, new EditStack());
 		console.time('load read');
 		return Storage.read('save')
 			.then(saveObj => {
@@ -332,8 +350,9 @@ export default class Editor {
 		if (str) {
 			if (!(this.editStack.pendingEdit instanceof TextEdit))
 				this.editStack.startNewEdit(new TextEdit(point, this.color, ''));
-			(this.editStack.pendingEdit as TextEdit).text += str;
-			this.tool = Tool.TEXT;
+			// todo needed?
+			// (this.editStack.pendingEdit as TextEdit).text += str;
+			// this.tool = Tool.TEXT;
 			return;
 		}
 

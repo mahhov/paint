@@ -1,5 +1,6 @@
 import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
+import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
 
@@ -47,6 +48,7 @@ let typeMap: TypeMap = {
 	FillRect,
 	Clear,
 	TextEdit,
+	TextEditor,
 	BucketFill,
 	Paste,
 	Pen,
