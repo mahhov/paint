@@ -166,8 +166,10 @@ export class Input {
 		});
 		window.addEventListener('mouseup', e =>
 			Object.values(this.bindings).forEach(binding => binding.mouseUp(e.button)));
-		mouseTarget.addEventListener('mousemove', e =>
-			this.mousePosition = new Point((e.x - mouseTarget.offsetLeft), e.y - mouseTarget.offsetTop));
+		mouseTarget.addEventListener('mousemove', e => {
+			this.shiftDown = e.shiftKey;
+			this.mousePosition = new Point((e.x - mouseTarget.offsetLeft), e.y - mouseTarget.offsetTop);
+		});
 		mouseTarget.addEventListener('wheel', e => {
 			if (e.deltaY < 0)
 				Object.values(this.bindings).forEach(binding => binding.mouseWheel(false));
