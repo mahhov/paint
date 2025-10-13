@@ -301,10 +301,13 @@ export class TextEdit extends Edit {
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
+		let size = this.size;
 		super.setPoint(index, point, shiftDown);
-		if (index)
+		if (index) {
+			size = this.size;
 			TextEdit.lastSize = this.size;
-		this.points_[1] = this.points[0].add(new Point(0, TextEdit.lastSize));
+		}
+		this.points_[1] = this.points[0].add(new Point(0, size));
 	}
 
 	validCommit() {
