@@ -3,7 +3,6 @@ import Point from './Point.js';
 export let A = (n: number) => [...Array(n)];
 
 export enum Tool {
-	SELECT, // copy, paste, move, delete
 	MOVE,
 	LINE,
 	STRAIGHT_LINE,

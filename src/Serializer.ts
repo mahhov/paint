@@ -1,4 +1,4 @@
-import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
 import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
@@ -38,7 +38,6 @@ let typeMap: TypeMap = {
 		},
 	} as CustomSerializerType<EditStack, SerializedEditStack>,
 	Edit,
-	Select,
 	Preview,
 	Move,
 	Line,

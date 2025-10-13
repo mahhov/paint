@@ -24,7 +24,7 @@ export default class Editor {
 	private editStack: EditStack;
 	private editSelecting: Point | null = null;
 	private preview: Preview | null = null;
-	private tool = Tool.SELECT;
+	private tool = Tool.MOVE;
 	private color = Color.LIGHT_GRAY;
 	private readonly input: Input;
 	private readonly panel: UiPanel;
@@ -177,7 +177,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editStack.undoEdit()));
 		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => {
 			if (this.editStack.pendingEdit instanceof TextEdit) return;
-			if (([Select, Move] as any[]).includes(this.editStack.pendingEdit?.constructor))
+			if (this.editStack.pendingEdit?.constructor === Move)
 				this.selectTool(Tool.CLEAR);
 			else
 				this.editStack.undoEdit();
@@ -188,11 +188,10 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('`', [], [InputState.PRESSED], () => this.editStack.selectNextEdit(true)));
 		this.input.addBinding(new KeyBinding('~', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editStack.selectNextEdit(false)));
 		this.input.addBinding(new KeyBinding('a', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
-			this.selectTool(Tool.SELECT);
-			this.editStack.startNewEdit(new Select(Point.P0, this.pixels.size));
+			this.selectTool(Tool.MOVE);
+			this.editStack.startNewEdit(new Move(Point.P0, this.pixels.size, Point.P0));
 		}));
 
-		this.input.addBinding(new KeyBinding('s', [], [InputState.PRESSED], () => this.keySelectTool(Tool.SELECT)));
 		this.input.addBinding(new KeyBinding('m', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding(' ', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.keySelectTool(Tool.LINE)));
@@ -331,7 +330,7 @@ export default class Editor {
 	}
 
 	private copy() {
-		let region = this.editStack.pendingEdit instanceof Select || this.editStack.pendingEdit instanceof Move;
+		let region = this.editStack.pendingEdit instanceof Move;
 		let start = region ? this.editStack.pendingEdit!.points[0] : Point.P0;
 		let end = region ? this.editStack.pendingEdit!.points[1] : this.pixels.size;
 		this.editStack.startNewEdit(null);
@@ -342,9 +341,6 @@ export default class Editor {
 	private paste(e: ClipboardEvent) {
 		let point = this.mousePositionToPixelsPosition();
 		if (!point) return;
-
-		if (this.tool === Tool.COLOR_PICKER)
-			this.selectTool(Tool.SELECT);
 
 		let str = Clipboard.clipboardToText(e);
 		if (str) {
@@ -428,8 +424,6 @@ export default class Editor {
 
 	private createEdit(point: Point): Edit {
 		switch (this.tool) {
-			case Tool.SELECT:
-				return new Select(point, point);
 			case Tool.MOVE:
 				return new Move(point, point, Point.P0);
 			case Tool.LINE:

@@ -105,8 +105,7 @@ class UiToolButton extends UiIconButton {
 
 	static get toolUiInfo(): Partial<Record<Tool, [Tool, IconInstruction[], string]>> {
 		return {
-			[Tool.SELECT]: [Tool.SELECT, icons.SELECT, 'select (s)'],
-			[Tool.MOVE]: [Tool.MOVE, icons.MOVE, 'move (m or space)'],
+			[Tool.MOVE]: [Tool.MOVE, icons.SELECT, 'move (m or space)'],
 			[Tool.LINE]: [Tool.LINE, icons.LINE, 'line (l)'],
 			[Tool.STRAIGHT_LINE]: [Tool.STRAIGHT_LINE, icons.STRAIGHT_LINE, 'guiding line (k)'],
 			[Tool.GRID_LINE]: [Tool.GRID_LINE, icons.GRID_LINE, 'guiding box (g)'],
@@ -123,8 +122,7 @@ class UiToolButton extends UiIconButton {
 	static get editStackUiInfo(): Record<string, IconInstruction[]> {
 		return {
 			'': [],
-			Select: icons.SELECT,
-			Move: icons.MOVE,
+			Move: icons.SELECT,
 			Line: icons.LINE,
 			StraightLine: icons.STRAIGHT_LINE,
 			GridLine: icons.GRID_LINE,

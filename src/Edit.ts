@@ -28,7 +28,6 @@ export class Edit {
 	}
 }
 
-// todo merge with move
 export class Select extends Edit {
 	constructor(start: Point, end: Point) {
 		super([start, end]);
@@ -87,7 +86,6 @@ export class Preview extends Edit {
 	}
 }
 
-// todo remove if delta = 0
 export class Move extends Edit {
 	constructor(start: Point, end: Point, delta: Point) {
 		super([start, end, Move.center(start, end), start.add(delta), end.add(delta)]);
@@ -129,7 +127,7 @@ export class Move extends Edit {
 	}
 
 	validCommit() {
-		return !this.points[0].equals(this.points[1]);
+		return !this.points[3].equals(this.points[0]);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
