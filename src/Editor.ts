@@ -188,6 +188,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding('`', [], [InputState.PRESSED], () => this.editStack.selectNextEdit(true)));
 		this.input.addBinding(new KeyBinding('~', [KeyModifier.SHIFT], [InputState.PRESSED], () => this.editStack.selectNextEdit(false)));
 		this.input.addBinding(new KeyBinding('a', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.selectTool(Tool.MOVE);
 			this.editStack.startNewEdit(new Move(Point.P0, this.pixels.size, Point.P0));
 		}));
@@ -240,18 +241,21 @@ export default class Editor {
 			let textEditor = this.editStack.pendingEdit.textEditor;
 
 			// todo undo/redo
-			// todo copy, cut, paste
-			// todo ctrl+a
 
 			if (e.key === 'Delete')
 				textEditor.delete(e.ctrlKey ? Direction.WORD_RIGHT : Direction.RIGHT);
 			else if (e.key === 'Backspace')
 				textEditor.delete(e.ctrlKey ? Direction.WORD_LEFT : Direction.LEFT);
-			else if (e.ctrlKey && e.key === 'v')
-				0;
-			else if (e.ctrlKey && e.key === 'x')
-				0;
-			else if (e.key === 'ArrowUp' || e.key === 'Home')
+			else if (e.ctrlKey && (e.key === 'c' || e.key === 'x')) {
+				let selectedText = textEditor.selectedText;
+				if (!selectedText) return;
+				navigator.clipboard.writeText(selectedText);
+				if (e.key === 'x')
+					textEditor.deleteSelection();
+			} else if (e.ctrlKey && e.key === 'a') {
+				textEditor.moveCursor(Direction.LINE_LEFT, false);
+				textEditor.moveCursor(Direction.LINE_RIGHT, true);
+			} else if (e.key === 'ArrowUp' || e.key === 'Home')
 				textEditor.moveCursor(Direction.LINE_LEFT, e.shiftKey);
 			else if (e.key === 'ArrowDown' || e.key === 'End')
 				textEditor.moveCursor(Direction.LINE_RIGHT, e.shiftKey);
@@ -268,8 +272,12 @@ export default class Editor {
 			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 		});
 
-		document.addEventListener('copy', () => this.copy());
+		document.addEventListener('copy', () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
+			this.copy();
+		});
 		document.addEventListener('cut', () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.copy();
 			this.selectTool(Tool.CLEAR);
 		});
@@ -346,9 +354,8 @@ export default class Editor {
 		if (str) {
 			if (!(this.editStack.pendingEdit instanceof TextEdit))
 				this.editStack.startNewEdit(new TextEdit(point, this.color, ''));
-			// todo needed?
-			// (this.editStack.pendingEdit as TextEdit).text += str;
-			// this.tool = Tool.TEXT;
+			(this.editStack.pendingEdit as TextEdit).textEditor.type(str);
+			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			return;
 		}
 

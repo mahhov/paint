@@ -52,6 +52,18 @@ export default class TextEditor {
 		}
 	}
 
+	deleteSelection() {
+		if (this.lastEditType !== EditType.DELETE)
+			this.commit();
+		this.lastEditType = EditType.DELETE;
+		if (!this.hasSelection()) return;
+		let start = Math.min(this.state.cursor, this.state.selectionStart);
+		let end = Math.max(this.state.cursor, this.state.selectionStart);
+		this.state.text = this.state.text.slice(0, start) + this.state.text.slice(end);
+		this.state.cursor = start;
+		this.state.selectionStart = start;
+	}
+
 	moveCursor(direction: Direction, selectionMode: boolean) {
 		this.lastEditType = EditType.CURSOR;
 		this.state.cursor = this.findNextCursor(direction);
@@ -71,17 +83,14 @@ export default class TextEditor {
 		this.state = this.redoStack.pop()!;
 	}
 
-	private hasSelection() {
-		return this.state.cursor !== this.state.selectionStart;
-	}
-
-	private deleteSelection() {
-		if (!this.hasSelection()) return;
+	get selectedText() {
 		let start = Math.min(this.state.cursor, this.state.selectionStart);
 		let end = Math.max(this.state.cursor, this.state.selectionStart);
-		this.state.text = this.state.text.slice(0, start) + this.state.text.slice(end);
-		this.state.cursor = start;
-		this.state.selectionStart = start;
+		return this.state.text.slice(start, end);
+	}
+
+	private hasSelection() {
+		return this.state.cursor !== this.state.selectionStart;
 	}
 
 	private commit() {
