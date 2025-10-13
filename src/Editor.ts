@@ -165,12 +165,15 @@ export default class Editor {
 		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editStack.undoEdit()));
 		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editStack.redoEdit()));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.editStack.undoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL, KeyModifier.SHIFT], [InputState.PRESSED], () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.editStack.redoEdit();
 		}));
 		this.input.addBinding(new KeyBinding('y', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
+			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.editStack.redoEdit();
 		}));
 
@@ -240,8 +243,6 @@ export default class Editor {
 			if (!(this.editStack.pendingEdit instanceof TextEdit)) return;
 			let textEditor = this.editStack.pendingEdit.textEditor;
 
-			// todo undo/redo
-
 			if (e.key === 'Delete')
 				textEditor.delete(e.ctrlKey ? Direction.WORD_RIGHT : Direction.RIGHT);
 			else if (e.key === 'Backspace')
@@ -251,11 +252,15 @@ export default class Editor {
 				if (!selectedText) return;
 				navigator.clipboard.writeText(selectedText);
 				if (e.key === 'x')
-					textEditor.deleteSelection();
+					textEditor.delete(Direction.LEFT);
 			} else if (e.ctrlKey && e.key === 'a') {
 				textEditor.moveCursor(Direction.LINE_LEFT, false);
 				textEditor.moveCursor(Direction.LINE_RIGHT, true);
-			} else if (e.key === 'ArrowUp' || e.key === 'Home')
+			} else if (e.ctrlKey && e.key === 'z')
+				textEditor.undo();
+			else if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z')))
+				textEditor.redo();
+			else if (e.key === 'ArrowUp' || e.key === 'Home')
 				textEditor.moveCursor(Direction.LINE_LEFT, e.shiftKey);
 			else if (e.key === 'ArrowDown' || e.key === 'End')
 				textEditor.moveCursor(Direction.LINE_RIGHT, e.shiftKey);

@@ -29,9 +29,7 @@ export default class TextEditor {
 
 	type(text: string) {
 		if (!text) return;
-		if (this.lastEditType !== EditType.TYPE)
-			this.commit();
-		this.lastEditType = EditType.TYPE;
+		this.maybeCommit(EditType.TYPE);
 		this.deleteSelection();
 		this.state.text = this.state.text.slice(0, this.state.cursor) + text + this.state.text.slice(this.state.cursor);
 		this.state.cursor += text.length;
@@ -39,9 +37,7 @@ export default class TextEditor {
 	}
 
 	delete(direction: Direction) {
-		if (this.lastEditType !== EditType.DELETE)
-			this.commit();
-		this.lastEditType = EditType.DELETE;
+		this.maybeCommit(EditType.DELETE);
 		if (this.hasSelection())
 			this.deleteSelection();
 		else {
@@ -52,20 +48,8 @@ export default class TextEditor {
 		}
 	}
 
-	deleteSelection() {
-		if (this.lastEditType !== EditType.DELETE)
-			this.commit();
-		this.lastEditType = EditType.DELETE;
-		if (!this.hasSelection()) return;
-		let start = Math.min(this.state.cursor, this.state.selectionStart);
-		let end = Math.max(this.state.cursor, this.state.selectionStart);
-		this.state.text = this.state.text.slice(0, start) + this.state.text.slice(end);
-		this.state.cursor = start;
-		this.state.selectionStart = start;
-	}
-
 	moveCursor(direction: Direction, selectionMode: boolean) {
-		this.lastEditType = EditType.CURSOR;
+		this.maybeCommit(EditType.CURSOR);
 		this.state.cursor = this.findNextCursor(direction);
 		if (!selectionMode)
 			this.state.selectionStart = this.state.cursor;
@@ -75,12 +59,14 @@ export default class TextEditor {
 		if (!this.undoStack.length) return;
 		this.redoStack.push(this.state);
 		this.state = this.undoStack.pop()!;
+		this.lastEditType = EditType.CURSOR;
 	}
 
 	redo() {
 		if (!this.redoStack.length) return;
 		this.undoStack.push(this.state);
 		this.state = this.redoStack.pop()!;
+		this.lastEditType = EditType.CURSOR;
 	}
 
 	get selectedText() {
@@ -93,8 +79,19 @@ export default class TextEditor {
 		return this.state.cursor !== this.state.selectionStart;
 	}
 
-	private commit() {
-		this.undoStack.push({...this.state});
+	private deleteSelection() {
+		if (!this.hasSelection()) return;
+		let start = Math.min(this.state.cursor, this.state.selectionStart);
+		let end = Math.max(this.state.cursor, this.state.selectionStart);
+		this.state.text = this.state.text.slice(0, start) + this.state.text.slice(end);
+		this.state.cursor = start;
+		this.state.selectionStart = start;
+	}
+
+	private maybeCommit(editType: EditType) {
+		if (editType !== EditType.CURSOR && editType !== this.lastEditType)
+			this.undoStack.push({...this.state});
+		this.lastEditType = editType;
 	}
 
 	private findNextCursor(direction: Direction) {

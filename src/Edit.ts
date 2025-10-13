@@ -282,6 +282,7 @@ export class Clear extends FillRect {
 	}
 }
 
+// todo split into fixed text and dynamic text
 export class TextEdit extends Edit {
 	static canvas = new OffscreenCanvas(0, 0);
 	static ctx = TextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
