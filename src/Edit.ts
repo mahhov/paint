@@ -437,15 +437,20 @@ export class Pen extends Edit {
 		super.setPoint(index, point, shiftDown);
 		if (index)
 			this.points_[0] = point.add(this.dots.at(-1)!);
-		else
-			this.dots.push(point.subtract(this.points[1]));
+		else {
+			let newDot = point.subtract(this.points[1]);
+			if (!newDot.equals(this.dots.at(-1)!))
+				this.dots.push(newDot);
+		}
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		// todo draw when 1 point
-		this.dots.forEach((dot, i, dots) => {
-			if (i)
-				new Line(this.points[1].add(dot), this.points[1].add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending, editId);
-		});
+		if (this.dots.length > 1)
+			this.dots.forEach((dot, i, dots) => {
+				if (i)
+					new Line(this.points[1].add(dot), this.points[1].add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending, editId);
+			});
+		else
+			pixels.set(this.points[1].add(this.dots[0]), this.color, editId);
 	}
 }
