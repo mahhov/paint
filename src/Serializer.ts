@@ -5,7 +5,7 @@ import Color from './util/Color.js';
 import Point from './util/Point.js';
 
 type Class = new (...args: any[]) => any;
-type CustomSerializerType<Original extends object, Serialized extends object> = {
+type CustomSerializerType<Original extends any, Serialized extends any> = {
 	serialize: (original: Original) => Serialized,
 	deserialize: (serialized: Serialized) => Original,
 };
@@ -48,7 +48,14 @@ let typeMap: TypeMap = {
 	FillRect,
 	Clear,
 	TextEdit,
-	TextEditor,
+	TextEditor: {
+		serialize: (textEditor: TextEditor): string => textEditor.state.text,
+		deserialize: (text: string): TextEditor => {
+			let textEditor = new TextEditor();
+			textEditor.type(text);
+			return textEditor;
+		},
+	} as CustomSerializerType<TextEditor, string>,
 	BucketFill,
 	Paste,
 	Pen,
@@ -95,7 +102,6 @@ export default class Serializer {
 		// Type custom serializer
 		if (typeof Type === 'object') {
 			let x = (Type as CustomSerializerType<any, any>).serialize(obj);
-			x.type__ = obj.constructor.name;
 			return {type__: obj.constructor.name, wrapped: x};
 		}
 

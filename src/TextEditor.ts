@@ -1,6 +1,6 @@
 import {sort2} from './util/util.js';
 
-interface State {
+type State = {
 	text: string;
 	cursor: number;
 	selectionStart: number;

@@ -4,7 +4,7 @@ import Point from './util/Point.js';
 
 enum IconInstructionType {SELECT, LINE, RECT, FILL_RECT}
 
-export interface IconInstruction {
+export type IconInstruction = {
 	type: IconInstructionType;
 	coords: [number, number, number, number];
 	color: Color;
