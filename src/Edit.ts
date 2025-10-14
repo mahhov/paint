@@ -148,30 +148,45 @@ export class Move extends Edit {
 	}
 }
 
+// todo add thickness
 export class Line extends Edit {
 	private readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
-		super([start, end]);
+		super([start, end, start.add(new Point(50, 0))]);
 		this.color = color;
 	}
 
+	private get thickness() {
+		return this.points[2].subtract(this.points[0]).x - 50;
+	}
+
 	setPoint(index: number, point: Point, shiftDown: boolean) {
+		let thickness = this.thickness;
 		super.setPoint(index, point, shiftDown);
-		if (!shiftDown) return;
-		let delta = this.points_[index].subtract(this.points_[1 - index]);
-		delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
-		this.points_[index] = this.points_[1 - index].add(delta);
+		if (shiftDown && index <= 1) {
+			let delta = this.points_[index].subtract(this.points_[1 - index]);
+			delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
+			this.points_[index] = this.points_[1 - index].add(delta);
+		}
+		if (index === 0)
+			this.points_[2] = this.points[0].add(new Point(thickness + 50, 0));
+		if (index === 2)
+			this.points_[2] = this.points[0].add(new Point(Math.max(this.thickness, 0) + 50, 0));
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let delta = this.points[1].subtract(this.points[0]);
 		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y)) + 1;
-		for (let i = 0; i <= steps; i++)
-			pixels.set(this.points[0].add(delta.scale(i / steps).round), this.color, editId);
+		let thickness = new Point(this.thickness / 2);
+		for (let step = 0; step <= steps; step++) {
+			let point = this.points[0].add(delta.scale(step / steps));
+			new FillRect(point.subtract(thickness).round, point.add(thickness).round, this.color).draw(pixels, sourcePixels, pending, editId);
+		}
 	}
 }
 
+// todo add thickness
 export class StraightLine extends Edit {
 	private readonly color: Color;
 
@@ -230,6 +245,7 @@ export class GridLine extends Move {
 	}
 }
 
+// todo add thickness
 export class Rect extends Edit {
 	protected readonly color: Color;
 
@@ -449,6 +465,7 @@ export class Paste extends Edit {
 	}
 }
 
+// todo add thickness
 export class Pen extends Edit {
 	private readonly dots = [Point.P0];
 	private readonly color: Color;
