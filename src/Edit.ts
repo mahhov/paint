@@ -503,12 +503,13 @@ export class BucketFill extends Edit {
 		let targetColor = sourcePixels.get(this.position);
 		if (targetColor.int32 === this.color.int32) return;
 		let queue = [this.position.x + this.position.y * pixels.width];
-		while (queue.length) {
+		let maxIteration = 0;
+		while (queue.length && maxIteration++ < 1000000) {
 			let index = queue.pop()!;
-			let x = index % pixels.width;
-			let y = (index / pixels.width) | 0;
 			if (pixels.get32(index) === this.color.int32) continue;
 			if (sourcePixels.get32(index) !== targetColor.int32) continue;
+			let x = index % pixels.width;
+			let y = (index / pixels.width) | 0;
 			pixels.setIndex(index, this.color, editId);
 			pixels.setDirty(new Point(x, y));
 			if (x < pixels.width - 1) queue.push(index + 1);
