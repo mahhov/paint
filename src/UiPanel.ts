@@ -192,7 +192,7 @@ class UiColorCircle extends UiElement<{ click: void }> {
 				let point = new Point(x, y);
 				let color = this.getColor(point);
 				if (color)
-					edits.push(new Line(point, point, color));
+					edits.push(new Line(point, point, 1, color));
 			}
 		return edits;
 	}

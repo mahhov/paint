@@ -181,21 +181,19 @@ export class Move extends Edit {
 export class Line extends Edit {
 	private start: Point;
 	private end: Point;
+	private thickness: number;
 	private readonly color: Color;
 
-	constructor(start: Point, end: Point, color: Color) {
+	constructor(start: Point, end: Point, thickness: number, color: Color) {
 		super();
 		this.start = start;
 		this.end = end;
+		this.thickness = thickness;
 		this.color = color;
 	}
 
-	private get thickness() {
-		return 1;
-	}
-
 	get points() {
-		return [this.start, this.end];
+		return [this.end, this.start, this.end.add(new Point(this.thickness + 10, 0))];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -203,10 +201,13 @@ export class Line extends Edit {
 			point = point.subtract(this.points[1 - index]).flatten().add(this.points[1 - index]);
 		switch (index) {
 			case 0:
-				this.start = point;
+				this.end = point;
 				break;
 			case 1:
-				this.end = point;
+				this.start = point;
+				break;
+			case 2:
+				this.thickness = Math.max(point.subtract(this.end).x - 10, 0);
 				break;
 		}
 	}
@@ -476,7 +477,7 @@ export class TextEdit extends BaseTextEdit {
 				lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
 			}
 			lines.forEach(([start, end]) =>
-				new Line(this.position.add(start), this.position.add(end), this.color).draw(pixels, sourcePixels, pending, editId));
+				new Line(this.position.add(start), this.position.add(end), 1, this.color).draw(pixels, sourcePixels, pending, editId));
 		}
 	}
 }
@@ -593,7 +594,7 @@ export class Pen extends Edit {
 		if (this.dots.length > 1)
 			this.dots.forEach((dot, i, dots) => {
 				if (i)
-					new Line(this.position.add(dot), this.position.add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending, editId);
+					new Line(this.position.add(dot), this.position.add(dots[i - 1]), 1, this.color).draw(pixels, sourcePixels, pending, editId);
 			});
 		else
 			pixels.set(this.position.add(this.dots[0]), this.color, editId);
