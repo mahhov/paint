@@ -294,10 +294,10 @@ export class GridLine extends Move {
 }
 
 export class Rect extends Edit {
-	protected start: Point;
-	protected end: Point;
+	private start: Point;
+	private end: Point;
 	private thickness: number;
-	protected readonly color: Color;
+	private readonly color: Color;
 
 	constructor(start: Point, end: Point, thickness: number, color: Color) {
 		super();
@@ -343,9 +343,36 @@ export class Rect extends Edit {
 	}
 }
 
-export class FillRect extends Rect {
+export class FillRect extends Edit {
+	private start: Point;
+	private end: Point;
+	private readonly color: Color;
+
 	constructor(start: Point, end: Point, color: Color) {
-		super(start, end, 0, color);
+		super();
+		this.start = start;
+		this.end = end;
+		this.color = color;
+	}
+
+	get points() {
+		return [this.end, this.start];
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		if (shiftDown) {
+			let delta = point.subtract(this.points[1 - index]);
+			let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
+			point = this.points[1 - index].add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
+		}
+		switch (index) {
+			case 0:
+				this.end = point;
+				break;
+			case 1:
+				this.start = point;
+				break;
+		}
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
