@@ -232,8 +232,12 @@ export default class Editor {
 			[[KeyModifier.CONTROL], [InputState.PRESSED], 1],
 			[[KeyModifier.SHIFT], [InputState.DOWN], 25],
 		] as [KeyModifier[], InputState[], number][]).forEach(([modifiers, states, scale]) => {
-			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.input.addBinding(new KeyBinding(key, modifiers, states, () => {
+				if (this.editStack.pendingEdit instanceof TextEdit) return;
+				this.editStack.moveControlPointBy(delta.scale(scale));
+				this.editModified();
+			}));
+			this.input.addBinding(new KeyBinding(key, modifiers.concat(KeyModifier.ALT), states, () => {
 				this.editStack.moveControlPointBy(delta.scale(scale));
 				this.editModified();
 			}));
@@ -241,6 +245,7 @@ export default class Editor {
 
 		document.addEventListener('keydown', e => {
 			if (!(this.editStack.pendingEdit instanceof TextEdit)) return;
+			if (e.altKey) return;
 			let textEditor = this.editStack.pendingEdit.textEditor;
 
 			if (e.key === 'Delete')
