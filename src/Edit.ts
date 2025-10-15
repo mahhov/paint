@@ -6,19 +6,9 @@ import Point from './util/Point.js';
 import {boundRect, boundTransferRect, getIndex, getIndexP, unique} from './util/util.js';
 
 export class Edit {
-	protected readonly points_: Point[];
+	get points(): Point[] {return [];};
 
-	constructor(points: Point[]) {
-		this.points_ = points;
-	}
-
-	get points(): readonly Point[] {
-		return this.points_;
-	}
-
-	setPoint(index: number, point: Point, shiftDown: boolean) {
-		this.points_[index] = point;
-	}
+	setPoint(index: number, point: Point, shiftDown: boolean) {};
 
 	validCommit() {
 		return true;
@@ -29,18 +19,38 @@ export class Edit {
 }
 
 export class Select extends Edit {
+	private start: Point;
+	private end: Point;
+
 	constructor(start: Point, end: Point) {
-		super([start, end]);
+		super();
+		this.start = start;
+		this.end = end;
+	}
+
+	get points() {
+		return [this.start, this.end];
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		switch (index) {
+			case 0:
+				this.start = point;
+				break;
+			case 1:
+				this.end = point;
+				break;
+		}
 	}
 
 	validCommit() {
-		return !this.points[0].equals(this.points[1]);
+		return !this.start.equals(this.end);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		if (pending) {
 			let colors = [Color.WHITE, Color.BLACK];
-			Rect.points(this.points[0], this.points[1], (point, i) =>
+			Rect.points(this.start, this.end, (point, i) =>
 				pixels.set(point, colors[i % colors.length], editId));
 		}
 	}
@@ -52,10 +62,14 @@ export class Preview extends Edit {
 	private ownerIndexes: number[] | null = null;
 
 	constructor(edit: Edit, owner: number = -1) {
-		super([]);
+		super();
 		this.edit = edit;
 		this.owner = owner;
 	}
+
+	get points() {return [];}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		if (this.owner !== -1) {
@@ -79,60 +93,75 @@ export class Preview extends Edit {
 				this.edit.color = oldColor;
 		}
 
-		let min = this.edit.points[1] ? this.edit.points[0].min(this.edit.points[1]) : this.edit.points[0];
-		let max = this.edit.points[1] ? this.edit.points[0].max(this.edit.points[1]) : this.edit.points[0];
+		let points = this.edit.points;
+		let min = points.length >= 2 ? points[0].min(points[1]) : points[0];
+		let max = points.length >= 2 ? points[0].max(points[1]) : points[0];
 		let padding = new Point(2);
 		new Select(min.subtract(padding), max.add(padding)).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
 export class Move extends Edit {
+	protected start: Point;
+	protected end: Point;
+	protected delta: Point;
+
 	constructor(start: Point, end: Point, delta: Point) {
-		super([start, end, Move.center(start, end), start.add(delta), end.add(delta)]);
+		super();
+		this.start = start;
+		this.end = end;
+		this.delta = delta;
 	}
 
-	static center(p1: Point, p2: Point) {
-		return p1.add(p2).scale(.5).round;
+	private get center() {
+		return this.start.add(this.end).scale(.5).round;
 	}
 
-	protected get delta() {
-		return this.points[3].subtract(this.points[0]);
+	protected get destStart() {
+		return this.start.add(this.delta);
+	}
+
+	protected get destEnd() {
+		return this.end.add(this.delta);
+	}
+
+	protected get destCenter() {
+		return this.center.add(this.delta);
+	}
+
+	get points() {
+		return [this.start, this.end, this.destCenter, this.destStart, this.destEnd];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		let delta = this.delta;
-		super.setPoint(index, point, shiftDown);
-		let center = Move.center(this.points[0], this.points[1]);
 		switch (index) {
 			case 0:
-			case 1:
-				this.points_[index + 3] = this.points[index].add(delta);
-				this.points_[2] = center.add(delta);
+				this.start = point;
 				break;
-			case 3:
-			case 4:
-				this.points_[index - 3] = this.points[index].subtract(delta);
-				this.points_[2] = center.add(delta);
+			case 1:
+				this.end = point;
 				break;
 			case 2:
-				delta = this.points[2].subtract(center);
-				if (shiftDown) {
-					delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
-					this.points_[2] = center.add(delta);
-				}
-				this.points_[3] = this.points[0].add(delta);
-				this.points_[4] = this.points[1].add(delta);
+				this.delta = point.subtract(this.center);
+				if (shiftDown)
+					this.delta = this.delta.flatten();
+				break;
+			case 3:
+				this.start = this.start.add(point.subtract(this.destStart));
+				break;
+			case 4:
+				this.end = this.end.add(point.subtract(this.destEnd));
 				break;
 		}
 	}
 
 	validCommit() {
-		return !this.points[3].equals(this.points[0]);
+		return !this.delta.equals(Point.P0);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let move = this.delta;
-		let [min, max] = boundTransferRect(this.points[0], this.points[1], pixels.size, move, pixels.size);
+		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, move, pixels.size);
 		let clearLine = new Uint8ClampedArray((max.subtract(min).x + 1) * 4).fill(255);
 		let copyLines = [];
 		for (let y = min.y; y <= max.y; y++)
@@ -143,44 +172,51 @@ export class Move extends Edit {
 			pixels.setLine(getIndex(min.x + move.x, y + move.y, pixels.width, true), copyLines[y], editId);
 		pixels.setDirty(min, max);
 		pixels.setDirty(min.add(move), max.add(move));
-		new Select(this.points[0], this.points[1]).draw(pixels, sourcePixels, pending, editId);
-		new Select(this.points[3], this.points[4]).draw(pixels, sourcePixels, pending, editId);
+		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
+		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
 // todo add thickness
 export class Line extends Edit {
+	private start: Point;
+	private end: Point;
 	private readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
-		super([start, end, start.add(new Point(50, 0))]);
+		super();
+		this.start = start;
+		this.end = end;
 		this.color = color;
 	}
 
 	private get thickness() {
-		return this.points[2].subtract(this.points[0]).x - 50;
+		return 1;
+	}
+
+	get points() {
+		return [this.start, this.end];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		let thickness = this.thickness;
-		super.setPoint(index, point, shiftDown);
-		if (shiftDown && index <= 1) {
-			let delta = this.points_[index].subtract(this.points_[1 - index]);
-			delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
-			this.points_[index] = this.points_[1 - index].add(delta);
+		if (shiftDown)
+			point = point.subtract(this.points[1 - index]).flatten().add(this.points[1 - index]);
+		switch (index) {
+			case 0:
+				this.start = point;
+				break;
+			case 1:
+				this.end = point;
+				break;
 		}
-		if (index === 0)
-			this.points_[2] = this.points[0].add(new Point(thickness + 50, 0));
-		if (index === 2)
-			this.points_[2] = this.points[0].add(new Point(Math.max(this.thickness, 0) + 50, 0));
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let delta = this.points[1].subtract(this.points[0]);
+		let delta = this.end.subtract(this.start);
 		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y)) + 1;
 		let thickness = new Point(this.thickness / 2);
 		for (let step = 0; step <= steps; step++) {
-			let point = this.points[0].add(delta.scale(step / steps));
+			let point = this.start.add(delta.scale(step / steps));
 			new FillRect(point.subtract(thickness).round, point.add(thickness).round, this.color).draw(pixels, sourcePixels, pending, editId);
 		}
 	}
@@ -188,36 +224,40 @@ export class Line extends Edit {
 
 // todo add thickness
 export class StraightLine extends Edit {
+	private position: Point;
+	private control: Point;
 	private readonly color: Color;
 
-	constructor(start: Point, end: Point, color: Color) {
-		super([start, end]);
+	constructor(position: Point, control: Point, color: Color) {
+		super();
+		this.position = position;
+		this.control = control;
 		this.color = color;
 	}
 
-	get delta() {
-		return this.points[0].subtract(this.points[1]);
+	get points() {
+		return [this.control, this.position];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		let delta = this.delta;
-		super.setPoint(index, point, shiftDown);
-		if (index)
-			this.points_[0] = this.points[1].add(delta);
-		else {
-			delta = this.delta;
-			delta = Math.abs(delta.x) > Math.abs(delta.y) ? new Point(delta.x, 0) : new Point(0, delta.y);
-			this.points_[0] = this.points_[1].add(delta);
+		switch (index) {
+			case 0:
+				this.control = point.subtract(this.position).flatten().add(this.position);
+				break;
+			case 1:
+				this.control = this.control.subtract(this.position).add(point);
+				this.position = point;
+				break;
 		}
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		if (this.delta.x)
+		if (this.control.x !== this.position.x)
 			for (let x = 0; x < pixels.size.x; x++)
-				pixels.set(new Point(x, this.points[0].y), this.color, editId);
+				pixels.set(new Point(x, this.control.y), this.color, editId);
 		else
 			for (let y = 0; y < pixels.size.y; y++)
-				pixels.set(new Point(this.points[0].x, y), this.color, editId);
+				pixels.set(new Point(this.control.x, y), this.color, editId);
 	}
 }
 
@@ -230,27 +270,32 @@ export class GridLine extends Move {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let delta = this.delta;
-		for (let i = 0; i < 2; i++) {
-			if (!delta.y)
-				for (let x = 0; x <= pixels.width; x += 2)
-					pixels.set(new Point(x, this.points[i].y), this.color, editId);
-			if (!delta.x)
-				for (let y = 0; y <= pixels.height; y += 2)
-					pixels.set(new Point(this.points[i].x, y), this.color, editId);
-		}
-		new Rect(this.points[0], this.points[1], this.color).draw(pixels, sourcePixels, pending, editId);
-		if (delta.x || delta.y)
-			new Rect(this.points[3], this.points[4], this.color).draw(pixels, sourcePixels, pending, editId);
+		if (!this.delta.y)
+			for (let x = 0; x <= pixels.width; x += 2) {
+				pixels.set(new Point(x, this.start.y), this.color, editId);
+				pixels.set(new Point(x, this.end.y), this.color, editId);
+			}
+		if (!this.delta.x)
+			for (let y = 0; y <= pixels.height; y += 2) {
+				pixels.set(new Point(this.start.x, y), this.color, editId);
+				pixels.set(new Point(this.end.x, y), this.color, editId);
+			}
+		new Rect(this.start, this.end, this.color).draw(pixels, sourcePixels, pending, editId);
+		if (this.delta.x || this.delta.y)
+			new Rect(this.destStart, this.destEnd, this.color).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
 // todo add thickness
 export class Rect extends Edit {
+	protected start: Point;
+	protected end: Point;
 	protected readonly color: Color;
 
 	constructor(start: Point, end: Point, color: Color) {
-		super([start, end]);
+		super();
+		this.start = start;
+		this.end = end;
 		this.color = color;
 	}
 
@@ -268,22 +313,34 @@ export class Rect extends Edit {
 			handler(new Point(max.x, y), i++);
 	}
 
+	get points() {
+		return [this.start, this.end];
+	}
+
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		super.setPoint(index, point, shiftDown);
-		if (!shiftDown) return;
-		let delta = this.points[index].subtract(this.points[1 - index]);
-		let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
-		this.points_[index] = this.points[1 - index].add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
+		if (shiftDown) {
+			let delta = point.subtract(this.points[1 - index]);
+			let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
+			point = this.points[1 - index].add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
+		}
+		switch (index) {
+			case 0:
+				this.start = point;
+				break;
+			case 1:
+				this.end = point;
+				break;
+		}
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		Rect.points(this.points[0], this.points[1], point => pixels.set(point, this.color, editId));
+		Rect.points(this.start, this.end, point => pixels.set(point, this.color, editId));
 	}
 }
 
 export class FillRect extends Rect {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let [min, max] = boundRect(this.points[0], this.points[1], pixels.size);
+		let [min, max] = boundRect(this.start, this.end, pixels.size);
 		let line = new Uint8ClampedArray((max.subtract(min).x + 1) * 4);
 		new Uint32Array(line.buffer).fill(this.color.int32);
 		for (let y = min.y; y <= max.y; y++)
@@ -301,6 +358,13 @@ export class Clear extends FillRect {
 abstract class BaseTextEdit extends Edit {
 	static canvas = new OffscreenCanvas(0, 0);
 	static ctx = BaseTextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
+	protected position: Point;
+
+	protected constructor(position: Point) {
+		super();
+		this.position = position;
+	}
+
 
 	protected abstract get text(): string;
 
@@ -310,7 +374,8 @@ abstract class BaseTextEdit extends Edit {
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let measureSize = this.measure(this.text);
-		FixedTextEdit.canvas.width = measureSize.x;
+		if (!measureSize.x || !measureSize.y) return;
+		FixedTextEdit.canvas.width = measureSize.x; // todo wrong static access
 		FixedTextEdit.canvas.height = measureSize.y;
 		this.updateContext();
 		FixedTextEdit.ctx.fillText(this.text, 0, 0);
@@ -320,7 +385,7 @@ abstract class BaseTextEdit extends Edit {
 				let index = (x + y * imageData.width) * 4;
 				let a = imageData.data[index + 3];
 				if (a > 150)
-					pixels.set(this.points[0].add(new Point(x, y)), this.color, editId);
+					pixels.set(this.position.add(new Point(x, y)), this.color, editId);
 			}
 		}
 	}
@@ -340,25 +405,35 @@ abstract class BaseTextEdit extends Edit {
 }
 
 export class FixedTextEdit extends BaseTextEdit {
+	protected readonly size: number;
 	protected readonly text: string;
 	protected readonly color: Color;
-	protected readonly size: number;
 
-	constructor(point: Point, color: Color, text: string, size: number) {
-		super([point]);
+	constructor(position: Point, size: number, color: Color, text: string) {
+		super(position);
+		this.size = size;
 		this.text = text;
 		this.color = color;
-		this.size = size;
+	}
+
+	get points() {
+		return [this.position];
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		this.position = point;
 	}
 }
 
 export class TextEdit extends BaseTextEdit {
 	static lastSize: number = 12;
+	protected size: number;
 	readonly textEditor = new TextEditor();
 	protected readonly color: Color;
 
-	constructor(point: Point, color: Color, text: string) {
-		super([point, point.add(new Point(0, TextEdit.lastSize))]);
+	constructor(position: Point, color: Color, text: string) {
+		super(position);
+		this.size = TextEdit.lastSize;
 		this.textEditor.type(text);
 		this.color = color;
 	}
@@ -367,19 +442,19 @@ export class TextEdit extends BaseTextEdit {
 		return this.textEditor.state.text;
 	}
 
-	protected get size() {
-		return Math.abs(this.points[1].subtract(this.points[0]).y);
+	get points() {
+		return [this.position, this.position.add(new Point(0, this.size))];
 	}
 
-
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		let size = this.size;
-		super.setPoint(index, point, shiftDown);
-		if (index) {
-			size = this.size;
-			TextEdit.lastSize = this.size;
+		switch (index) {
+			case 0:
+				this.position = point;
+				break;
+			case 1:
+				this.size = Math.abs(point.subtract(this.position).y);
+				break;
 		}
-		this.points_[1] = this.points[0].add(new Point(0, size));
 	}
 
 	validCommit() {
@@ -401,23 +476,33 @@ export class TextEdit extends BaseTextEdit {
 				lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
 			}
 			lines.forEach(([start, end]) =>
-				new Line(this.points[0].add(start), this.points[0].add(end), this.color).draw(pixels, sourcePixels, pending, editId));
+				new Line(this.position.add(start), this.position.add(end), this.color).draw(pixels, sourcePixels, pending, editId));
 		}
 	}
 }
 
 export class BucketFill extends Edit {
+	private position: Point;
 	private readonly color: Color;
 
-	constructor(point: Point, color: Color) {
-		super([point]);
+	constructor(position: Point, color: Color) {
+		super();
+		this.position = position;
 		this.color = color;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let targetColor = sourcePixels.get(this.points[0]);
+	get points() {
+		return [this.position];
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		this.position = point;
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) { // todo too slow
+		let targetColor = sourcePixels.get(this.position);
 		if (targetColor.int32 === this.color.int32) return;
-		let queue = [this.points[0].x + this.points[0].y * pixels.width];
+		let queue = [this.position.x + this.position.y * pixels.width];
 		while (queue.length) {
 			let index = queue.pop()!;
 			let x = index % pixels.width;
@@ -435,10 +520,12 @@ export class BucketFill extends Edit {
 }
 
 export class Paste extends Edit {
+	private position: Point;
 	private readonly pasteData: PasteData;
 
-	constructor(point: Point, pasteData: PasteData) {
-		super([point, point.add(new Point(pasteData.width, pasteData.height))]);
+	constructor(position: Point, pasteData: PasteData) {
+		super();
+		this.position = position;
 		this.pasteData = pasteData;
 	}
 
@@ -446,43 +533,58 @@ export class Paste extends Edit {
 		return new Point(this.pasteData.width, this.pasteData.height);
 	}
 
+	get points() {
+		return [this.position, this.position.add(this.size)];
+	}
+
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		super.setPoint(index, point, shiftDown);
-		if (index)
-			this.points_[0] = point.subtract(this.size);
-		else
-			this.points_[1] = point.add(this.size);
+		switch (index) {
+			case 0:
+				this.position = point;
+				break;
+			case 1:
+				this.position = point.subtract(this.size);
+				break;
+		}
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let size = this.size;
-		let [min, max] = boundTransferRect(Point.P0, size, size, this.points[0], pixels.size);
+		let [min, max] = boundTransferRect(Point.P0, size, size, this.position, pixels.size);
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(
-				getIndex(min.x + this.points[0].x, y + this.points[0].y, pixels.width, true),
+				getIndex(min.x + this.position.x, y + this.position.y, pixels.width, true),
 				this.pasteData.int8Array.subarray(getIndex(min.x, y, size.x, true), getIndex(max.x + 1, y, size.x, true)), editId);
-		pixels.setDirty(min.add(this.points[0]), max.add(this.points[0]));
+		pixels.setDirty(min.add(this.position), max.add(this.position));
 	}
 }
 
 // todo add thickness
 export class Pen extends Edit {
+	private position: Point;
 	private readonly dots = [Point.P0];
 	private readonly color: Color;
 
-	constructor(point: Point, color: Color) {
-		super([point, point]);
+	constructor(position: Point, color: Color) {
+		super();
+		this.position = position;
 		this.color = color;
 	}
 
+	get points() {
+		return [this.position.add(this.dots.at(-1)!), this.position];
+	}
+
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		super.setPoint(index, point, shiftDown);
-		if (index)
-			this.points_[0] = point.add(this.dots.at(-1)!);
-		else {
-			let newDot = point.subtract(this.points[1]);
-			if (!newDot.equals(this.dots.at(-1)!))
-				this.dots.push(newDot);
+		switch (index) {
+			case 0:
+				let newDot = point.subtract(this.position);
+				if (!newDot.equals(this.dots.at(-1)!))
+					this.dots.push(newDot);
+				break;
+			case 1:
+				this.position = point;
+				break;
 		}
 	}
 
@@ -490,9 +592,9 @@ export class Pen extends Edit {
 		if (this.dots.length > 1)
 			this.dots.forEach((dot, i, dots) => {
 				if (i)
-					new Line(this.points[1].add(dot), this.points[1].add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending, editId);
+					new Line(this.position.add(dot), this.position.add(dots[i - 1]), this.color).draw(pixels, sourcePixels, pending, editId);
 			});
 		else
-			pixels.set(this.points[1].add(this.dots[0]), this.color, editId);
+			pixels.set(this.position.add(this.dots[0]), this.color, editId);
 	}
 }

@@ -167,7 +167,7 @@ class UiTextButton extends UiButton {
 	protected get edits(): Edit[] {
 		return [
 			new FillRect(this.position, this.position.add(this.size), this.color || Color.fromRgba(220, 220, 220, 255)),
-			new FixedTextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
+			new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text),
 			...super.edits,
 		];
 	}
@@ -263,7 +263,7 @@ class UiTextLabel extends UiElement {
 	protected get edits(): Edit[] {
 		return [
 			new FillRect(this.position, this.position.add(this.size), Color.fromRgba(220, 220, 220, 255)),
-			new FixedTextEdit(this.position.add(new Point(4, 2)), Color.DARK_GRAY, this.text, 15),
+			new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text),
 			// don't draw super's outline rect
 		];
 	}
@@ -550,7 +550,7 @@ export default class UiPanel extends Emitter<{
 
 		if (this.tooltip) {
 			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
-			let tooltipTextEdit = new FixedTextEdit(Point.P0, Color.BLACK, this.tooltip, 15);
+			let tooltipTextEdit = new FixedTextEdit(Point.P0, 15, Color.BLACK, this.tooltip);
 			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure()).add(new Point(6, 2));
 			let excessX = tooltipPoint2.x - this.pixels.width + 1;
 			if (excessX > 0) {

@@ -63,4 +63,8 @@ export default class Point {
 	clamp(min: Point, max: Point) {
 		return new Point(clamp(this.x, min.x, max.x), clamp(this.y, min.y, max.y));
 	}
+
+	flatten() {
+		return Math.abs(this.x) >= Math.abs(this.y) ? new Point(this.x, 0) : new Point(0, this.y);
+	}
 }
