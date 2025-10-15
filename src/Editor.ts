@@ -325,7 +325,9 @@ export default class Editor {
 				editStack.redoEdits = editStack.redoEdits.filter(edit => edit instanceof Edit);
 				if (!(editStack.pendingEdit instanceof Edit)) editStack.pendingEdit = null;
 				editStack.maxDirty = DirtyMode.ALL_EDITS;
-				return new Editor(canvas, editStack);
+				let editor = new Editor(canvas, editStack);
+				editor.flushEditStackToPixels();
+				return editor;
 			})
 			.catch(e => {
 				console.warn('Failed to restore save', e);
