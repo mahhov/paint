@@ -32,7 +32,7 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 	}
 
 	protected get edits(): Edit[] {
-		return [new Rect(this.position, this.position.add(this.size), Color.BLACK)];
+		return [new Rect(this.position, this.position.add(this.size), 0, Color.BLACK)];
 	}
 
 	onMousePress(point: Point) {}
@@ -86,12 +86,8 @@ class UiIconButton extends UiButton {
 	}
 
 	protected get edits(): Edit[] {
-		let edits = super.edits.concat(iconToEdits(this.icon, this.position, this.size));
-		if (this.selected) {
-			edits.push(new Rect(this.position.subtract(Point.P1), this.position.add(this.size).add(Point.P1), Color.fromRgba(0, 0, 0, 255)));
-			edits.push(new Rect(this.position.subtract(new Point(2)), this.position.add(this.size).add(new Point(2)), Color.fromRgba(0, 0, 0, 255)));
-		}
-		return edits;
+		let edits = this.selected ? super.edits : [new Rect(this.position, this.position.add(this.size), 2, Color.BLACK)];
+		return edits.concat(iconToEdits(this.icon, this.position, this.size));
 	}
 }
 
@@ -192,7 +188,7 @@ class UiColorCircle extends UiElement<{ click: void }> {
 				let point = new Point(x, y);
 				let color = this.getColor(point);
 				if (color)
-					edits.push(new Line(point, point, 1, color));
+					edits.push(new Line(point, point, 0, color));
 			}
 		return edits;
 	}
@@ -560,7 +556,7 @@ export default class UiPanel extends Emitter<{
 
 			tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
 			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, false, 0);
-			new Rect(tooltipPoint1, tooltipPoint2, Color.BLACK).draw(this.pixels, this.pixels, false, 0);
+			new Rect(tooltipPoint1, tooltipPoint2, 0, Color.BLACK).draw(this.pixels, this.pixels, false, 0);
 			tooltipTextEdit.draw(this.pixels, this.pixels, false, 0);
 		}
 	}

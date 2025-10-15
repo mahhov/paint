@@ -202,9 +202,9 @@ export let iconToEdits = (instructions: IconInstruction[], position: Point, size
 			case IconInstructionType.SELECT:
 				return new Select(...editCoords);
 			case IconInstructionType.LINE:
-				return new Line(...editCoords, 1, instruction.color);
+				return new Line(...editCoords, 0, instruction.color);
 			case IconInstructionType.RECT:
-				return new Rect(...editCoords, instruction.color);
+				return new Rect(...editCoords, 0, instruction.color);
 			case IconInstructionType.FILL_RECT:
 				return new FillRect(...editCoords, instruction.color);
 		}

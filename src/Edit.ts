@@ -3,7 +3,7 @@ import Pixels from './Pixels.js';
 import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {boundRect, boundTransferRect, getIndex, getIndexP, unique} from './util/util.js';
+import {boundRect, boundTransferRect, clamp, getIndex, getIndexP, unique} from './util/util.js';
 
 export class Edit {
 	get points(): Point[] {return [];};
@@ -29,7 +29,7 @@ export class Select extends Edit {
 	}
 
 	get points() {
-		return [this.start, this.end];
+		return [this.end, this.start];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -48,11 +48,19 @@ export class Select extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		if (pending) {
-			let colors = [Color.WHITE, Color.BLACK];
-			Rect.points(this.start, this.end, (point, i) =>
-				pixels.set(point, colors[i % colors.length], editId));
-		}
+		if (!pending) return;
+		let min = this.start.min(this.end);
+		let max = this.start.max(this.end);
+		let colors = [Color.WHITE, Color.BLACK];
+		let i = 0;
+		for (let x = min.x; x <= max.x; x++)
+			pixels.set(new Point(x, min.y), colors[i++ % colors.length], editId);
+		for (let x = min.x; x <= max.x; x++)
+			pixels.set(new Point(x, max.y), colors[i++ % colors.length], editId);
+		for (let y = min.y; y <= max.y; y++)
+			pixels.set(new Point(min.x, y), colors[i++ % colors.length], editId);
+		for (let y = min.y; y <= max.y; y++)
+			pixels.set(new Point(max.x, y), colors[i++ % colors.length], editId);
 	}
 }
 
@@ -177,7 +185,6 @@ export class Move extends Edit {
 	}
 }
 
-// todo add thickness
 export class Line extends Edit {
 	private start: Point;
 	private end: Point;
@@ -207,7 +214,7 @@ export class Line extends Edit {
 				this.start = point;
 				break;
 			case 2:
-				this.thickness = Math.max(point.subtract(this.end).x - 10, 0);
+				this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
 				break;
 		}
 	}
@@ -223,7 +230,6 @@ export class Line extends Edit {
 	}
 }
 
-// todo add thickness
 export class StraightLine extends Edit {
 	private position: Point;
 	private control: Point;
@@ -281,41 +287,28 @@ export class GridLine extends Move {
 				pixels.set(new Point(this.start.x, y), this.color, editId);
 				pixels.set(new Point(this.end.x, y), this.color, editId);
 			}
-		new Rect(this.start, this.end, this.color).draw(pixels, sourcePixels, pending, editId);
+		new Rect(this.start, this.end, 0, this.color).draw(pixels, sourcePixels, pending, editId);
 		if (this.delta.x || this.delta.y)
-			new Rect(this.destStart, this.destEnd, this.color).draw(pixels, sourcePixels, pending, editId);
+			new Rect(this.destStart, this.destEnd, 0, this.color).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
-// todo add thickness
 export class Rect extends Edit {
 	protected start: Point;
 	protected end: Point;
+	private thickness: number;
 	protected readonly color: Color;
 
-	constructor(start: Point, end: Point, color: Color) {
+	constructor(start: Point, end: Point, thickness: number, color: Color) {
 		super();
 		this.start = start;
 		this.end = end;
+		this.thickness = thickness;
 		this.color = color;
 	}
 
-	static points(start: Point, end: Point, handler: (point: Point, index: number) => void) {
-		let min = start.min(end);
-		let max = start.max(end);
-		let i = 0;
-		for (let x = min.x; x <= max.x; x++)
-			handler(new Point(x, min.y), i++);
-		for (let x = min.x; x <= max.x; x++)
-			handler(new Point(x, max.y), i++);
-		for (let y = min.y; y <= max.y; y++)
-			handler(new Point(min.x, y), i++);
-		for (let y = min.y; y <= max.y; y++)
-			handler(new Point(max.x, y), i++);
-	}
-
 	get points() {
-		return [this.start, this.end];
+		return [this.end, this.start, this.end.add(new Point(this.thickness + 10, 0))];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -326,20 +319,35 @@ export class Rect extends Edit {
 		}
 		switch (index) {
 			case 0:
-				this.start = point;
+				this.end = point;
 				break;
 			case 1:
-				this.end = point;
+				this.start = point;
+				break;
+			case 2:
+				this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
 				break;
 		}
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		Rect.points(this.start, this.end, point => pixels.set(point, this.color, editId));
+		let min = this.start.min(this.end);
+		let max = this.start.max(this.end);
+		let cornerTopRight = new Point(max.x, min.y);
+		let cornerBottomLeft = new Point(min.x, max.y);
+
+		new FillRect(min, cornerTopRight.add(new Point(0, this.thickness)), this.color).draw(pixels, sourcePixels, pending, editId); // top
+		new FillRect(cornerBottomLeft, max.subtract(new Point(0, this.thickness)), this.color).draw(pixels, sourcePixels, pending, editId); // bottom
+		new FillRect(min, cornerBottomLeft.add(new Point(this.thickness, 0)), this.color).draw(pixels, sourcePixels, pending, editId); // left
+		new FillRect(cornerTopRight, max.subtract(new Point(this.thickness, 0)), this.color).draw(pixels, sourcePixels, pending, editId); // right
 	}
 }
 
 export class FillRect extends Rect {
+	constructor(start: Point, end: Point, color: Color) {
+		super(start, end, 0, color);
+	}
+
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let [min, max] = boundRect(this.start, this.end, pixels.size);
 		let line = new Uint8ClampedArray((max.subtract(min).x + 1) * 4);
@@ -477,7 +485,7 @@ export class TextEdit extends BaseTextEdit {
 				lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
 			}
 			lines.forEach(([start, end]) =>
-				new Line(this.position.add(start), this.position.add(end), 1, this.color).draw(pixels, sourcePixels, pending, editId));
+				new Line(this.position.add(start), this.position.add(end), 0, this.color).draw(pixels, sourcePixels, pending, editId));
 		}
 	}
 }
@@ -594,7 +602,7 @@ export class Pen extends Edit {
 		if (this.dots.length > 1)
 			this.dots.forEach((dot, i, dots) => {
 				if (i)
-					new Line(this.position.add(dot), this.position.add(dots[i - 1]), 1, this.color).draw(pixels, sourcePixels, pending, editId);
+					new Line(this.position.add(dot), this.position.add(dots[i - 1]), 0, this.color).draw(pixels, sourcePixels, pending, editId);
 			});
 		else
 			pixels.set(this.position.add(this.dots[0]), this.color, editId);

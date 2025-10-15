@@ -446,13 +446,13 @@ export default class Editor {
 			case Tool.MOVE:
 				return new Move(point, point, Point.P0);
 			case Tool.LINE:
-				return new Line(point, point, 1, this.color);
+				return new Line(point, point, 0, this.color);
 			case Tool.STRAIGHT_LINE:
 				return new StraightLine(point, point, this.color);
 			case Tool.GRID_LINE:
 				return new GridLine(point, point, Point.P0, this.color);
 			case Tool.RECT:
-				return new Rect(point, point, this.color);
+				return new Rect(point, point, 0, this.color);
 			case Tool.FILL_RECT:
 				return new FillRect(point, point, this.color);
 			case Tool.CLEAR:
