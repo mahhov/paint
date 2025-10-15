@@ -86,8 +86,9 @@ class UiIconButton extends UiButton {
 	}
 
 	protected get edits(): Edit[] {
-		let edits = this.selected ? super.edits : [new Rect(this.position, this.position.add(this.size), 2, Color.BLACK)];
-		return edits.concat(iconToEdits(this.icon, this.position, this.size));
+		let icon = iconToEdits(this.icon, this.position, this.size);
+		let outline = this.selected ? new Rect(this.position, this.position.add(this.size), 2, Color.BLACK) : super.edits;
+		return icon.concat(outline);
 	}
 }
 
@@ -153,7 +154,6 @@ class UiColorButton extends UiIconButton {
 
 class UiTextButton extends UiButton {
 	text: string;
-	color?: Color;
 
 	constructor(text: string) {
 		super();
@@ -161,11 +161,7 @@ class UiTextButton extends UiButton {
 	}
 
 	protected get edits(): Edit[] {
-		return [
-			new FillRect(this.position, this.position.add(this.size), this.color || Color.fromRgba(220, 220, 220, 255)),
-			new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text),
-			...super.edits,
-		];
+		return super.edits.concat(new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text));
 	}
 }
 
