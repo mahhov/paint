@@ -609,8 +609,12 @@ export class Pen extends Edit {
 		this.color = color;
 	}
 
+	private get end() {
+		return this.position.add(this.dots.at(-1)!);
+	}
+
 	get points() {
-		return [this.position.add(this.dots.at(-1)!), this.position, this.position.add(new Point(this.thickness + 10, 0))];
+		return [this.end, this.position, this.end.add(new Point(this.thickness + 10, 0))];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -624,7 +628,7 @@ export class Pen extends Edit {
 				this.position = point;
 				break;
 			case 2:
-				this.thickness = clamp(point.subtract(this.position).x - 10, 0, 20);
+				this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
 				break;
 		}
 	}
