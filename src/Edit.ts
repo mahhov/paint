@@ -569,20 +569,21 @@ export class Paste extends Edit {
 	}
 }
 
-// todo add thickness
 export class Pen extends Edit {
 	private position: Point;
 	private readonly dots = [Point.P0];
+	private thickness: number;
 	private readonly color: Color;
 
-	constructor(position: Point, color: Color) {
+	constructor(position: Point, thickness: number, color: Color) {
 		super();
 		this.position = position;
+		this.thickness = thickness;
 		this.color = color;
 	}
 
 	get points() {
-		return [this.position.add(this.dots.at(-1)!), this.position];
+		return [this.position.add(this.dots.at(-1)!), this.position, this.position.add(new Point(this.thickness + 10, 0))];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -595,6 +596,9 @@ export class Pen extends Edit {
 			case 1:
 				this.position = point;
 				break;
+			case 2:
+				this.thickness = clamp(point.subtract(this.position).x - 10, 0, 20);
+				break;
 		}
 	}
 
@@ -602,7 +606,7 @@ export class Pen extends Edit {
 		if (this.dots.length > 1)
 			this.dots.forEach((dot, i, dots) => {
 				if (i)
-					new Line(this.position.add(dot), this.position.add(dots[i - 1]), 0, this.color).draw(pixels, sourcePixels, pending, editId);
+					new Line(this.position.add(dot), this.position.add(dots[i - 1]), this.thickness, this.color).draw(pixels, sourcePixels, pending, editId);
 			});
 		else
 			pixels.set(this.position.add(this.dots[0]), this.color, editId);
