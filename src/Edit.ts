@@ -375,11 +375,11 @@ abstract class BaseTextEdit extends Edit {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let measureSize = this.measure(this.text);
 		if (!measureSize.x || !measureSize.y) return;
-		FixedTextEdit.canvas.width = measureSize.x; // todo wrong static access
-		FixedTextEdit.canvas.height = measureSize.y;
+		BaseTextEdit.canvas.width = measureSize.x;
+		BaseTextEdit.canvas.height = measureSize.y;
 		this.updateContext();
-		FixedTextEdit.ctx.fillText(this.text, 0, 0);
-		let imageData = FixedTextEdit.ctx.getImageData(0, 0, FixedTextEdit.canvas.width, FixedTextEdit.canvas.height);
+		BaseTextEdit.ctx.fillText(this.text, 0, 0);
+		let imageData = BaseTextEdit.ctx.getImageData(0, 0, BaseTextEdit.canvas.width, BaseTextEdit.canvas.height);
 		for (let x = 0; x < imageData.width; x++) {
 			for (let y = 0; y < imageData.height; y++) {
 				let index = (x + y * imageData.width) * 4;
@@ -392,15 +392,15 @@ abstract class BaseTextEdit extends Edit {
 
 	measure(text: string = this.text) {
 		this.updateContext();
-		let metrics = FixedTextEdit.ctx.measureText(text);
+		let metrics = BaseTextEdit.ctx.measureText(text);
 		return new Point(Math.ceil(metrics.width), Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent));
 	}
 
 	private updateContext() {
-		FixedTextEdit.ctx.font = `${this.size}px Arial`;
-		FixedTextEdit.ctx.imageSmoothingEnabled = false;
-		FixedTextEdit.ctx.textBaseline = 'top';
-		FixedTextEdit.ctx.globalAlpha = 1;
+		BaseTextEdit.ctx.font = `${this.size}px Arial`;
+		BaseTextEdit.ctx.imageSmoothingEnabled = false;
+		BaseTextEdit.ctx.textBaseline = 'top';
+		BaseTextEdit.ctx.globalAlpha = 1;
 	}
 }
 
