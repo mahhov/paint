@@ -26,15 +26,19 @@ export let unique = <T>(value: T, index: number, array: T[]) => array.indexOf(va
 export let sort2 = (a: number, b: number) => [Math.min(a, b), Math.max(a, b)];
 
 export let boundRect = (source1: Point, source2: Point, maxSize: Point): [Point, Point] => {
+	maxSize = maxSize.subtract(Point.P1);
 	return [
-		source1.min(source2).max(Point.P0),
-		source1.max(source2).min(maxSize.subtract(Point.P1)),
+		source1.min(source2).clamp(Point.P0, maxSize),
+		source1.max(source2).clamp(Point.P0, maxSize),
 	];
 };
 export let boundTransferRect = (source1: Point, source2: Point, sourceSize: Point, destDelta: Point, destSize: Point): [Point, Point] => {
+	let sourceMax = sourceSize.subtract(Point.P1);
+	let destMin = destDelta.scale(-1);
+	let destMax = destSize.subtract(destDelta).subtract(Point.P1);
 	return [
-		source1.min(source2).max(Point.P0).max(destDelta.scale(-1)),
-		source1.max(source2).min(sourceSize.subtract(Point.P1)).min(destSize.subtract(destDelta).subtract(Point.P1)),
+		source1.min(source2).clamp(Point.P0, sourceMax).clamp(destMin, destMax),
+		source1.max(source2).clamp(Point.P0, sourceMax).clamp(destMin, destMax),
 	];
 };
 
