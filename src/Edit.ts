@@ -368,9 +368,9 @@ abstract class BaseTextEdit extends Edit {
 
 	protected abstract get text(): string;
 
-	protected abstract get color(): Color;
-
 	protected abstract get size(): number;
+
+	protected abstract get color(): Color;
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let measureSize = this.measure(this.text);
@@ -405,8 +405,8 @@ abstract class BaseTextEdit extends Edit {
 }
 
 export class FixedTextEdit extends BaseTextEdit {
-	protected readonly size: number;
 	protected readonly text: string;
+	protected readonly size: number;
 	protected readonly color: Color;
 
 	constructor(position: Point, size: number, color: Color, text: string) {
@@ -427,8 +427,8 @@ export class FixedTextEdit extends BaseTextEdit {
 
 export class TextEdit extends BaseTextEdit {
 	static lastSize: number = 12;
-	protected size: number;
 	readonly textEditor = new TextEditor();
+	protected size: number;
 	protected readonly color: Color;
 
 	constructor(position: Point, color: Color, text: string) {
