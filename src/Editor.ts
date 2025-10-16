@@ -466,7 +466,7 @@ export default class Editor {
 			case Tool.PASTE:
 				throw new Error('createEdit() should not handle PASTE');
 			case Tool.PEN:
-				return new Pen(point, 1, this.color);
+				return new Pen(point, 0, this.color);
 		}
 	}
 

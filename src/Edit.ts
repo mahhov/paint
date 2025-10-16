@@ -3,7 +3,7 @@ import Pixels from './Pixels.js';
 import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {boundRect, boundTransferRect, clamp, getIndex, getIndexP, unique} from './util/util.js';
+import {boundRect, boundTransferRect, clamp, getIndex, getIndexP, getPIndex, unique} from './util/util.js';
 
 export class Edit {
 	get points(): Point[] {return [];};
@@ -535,23 +535,52 @@ export class BucketFill extends Edit {
 		this.position = point;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) { // todo too slow
-		let targetColor = sourcePixels.get(this.position);
-		if (targetColor.int32 === this.color.int32) return;
-		let queue = [this.position.x + this.position.y * pixels.width];
-		let maxIteration = 0;
-		while (queue.length && maxIteration++ < 1000000) {
-			let index = queue.pop()!;
+	private scanHorizontal(x: number, y: number, sourcePixels: Pixels, targetColor: number): [number, number] | null {
+		let index = getIndex(x, y, sourcePixels.width);
+		if (sourcePixels.get32(index) !== targetColor) return null;
+		let leftX = x;
+		while (leftX > 0 && sourcePixels.get32(getIndex(leftX - 1, y, sourcePixels.width)) === targetColor)
+			leftX--;
+		let rightX = x;
+		while (rightX < sourcePixels.width - 1 && sourcePixels.get32(getIndex(rightX + 1, y, sourcePixels.width)) === targetColor)
+			rightX++;
+		return [leftX, rightX];
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		let index = getPIndex(this.position, pixels.width);
+		let targetColor = sourcePixels.get32(index);
+		if (targetColor === this.color.int32) return;
+		let queue: [[number, number], number, boolean, boolean][] = [[this.scanHorizontal(this.position.x, this.position.y, sourcePixels, targetColor)!, this.position.y, true, true]];
+		let line = new Uint8ClampedArray(pixels.width * 4);
+		new Uint32Array(line.buffer).fill(this.color.int32);
+
+		while (queue.length) {
+			let [[left, right], y, up, down] = queue.pop()!;
+			let index = getIndex(left, y, pixels.width);
 			if (pixels.get32(index) === this.color.int32) continue;
-			if (sourcePixels.get32(index) !== targetColor.int32) continue;
-			let x = index % pixels.width;
-			let y = (index / pixels.width) | 0;
-			pixels.setIndex(index, this.color, editId);
-			pixels.setDirty(new Point(x, y));
-			if (x < pixels.width - 1) queue.push(index + 1);
-			if (y < pixels.height - 1) queue.push(index + pixels.width);
-			if (x > 0) queue.push(index - 1);
-			if (y > 0) queue.push(index - pixels.width);
+			pixels.setLine(index * 4, line.subarray(0, (right - left + 1) * 4), editId);
+			pixels.setDirty(new Point(left, y), new Point(right, y));
+			if (up && y > 0) {
+				for (let x = left; x <= right;) {
+					let scan = this.scanHorizontal(x, y - 1, sourcePixels, targetColor);
+					if (scan) {
+						queue.push([scan, y - 1, true, scan[0] < left || scan[1] > right]);
+						x = scan[1] + 2;
+					} else
+						x++;
+				}
+			}
+			if (down && y < pixels.height - 1) {
+				for (let x = left; x <= right;) {
+					let scan = this.scanHorizontal(x, y + 1, sourcePixels, targetColor);
+					if (scan) {
+						queue.push([scan, y + 1, scan[0] < left || scan[1] > right, true]);
+						x = scan[1] + 2;
+					} else
+						x++;
+				}
+			}
 		}
 	}
 }
