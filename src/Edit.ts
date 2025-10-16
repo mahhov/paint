@@ -484,7 +484,7 @@ export class TextEdit extends BaseTextEdit {
 				this.position = point;
 				break;
 			case 1:
-				this.size = Math.abs(point.subtract(this.position).y);
+				TextEdit.lastSize = this.size = Math.abs(point.subtract(this.position).y);
 				break;
 		}
 	}
