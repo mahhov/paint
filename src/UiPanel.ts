@@ -31,8 +31,15 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 		this.edits(pixels.width).forEach(edit => edit.draw(pixels, pixels, false, 0));
 	}
 
+	protected bgRect(color: Color) {
+		return new FillRect(this.position, this.position.add(this.size), color);
+	}
+
 	protected edits(pixelsWidth: number): Edit[] {
-		return [new Rect(this.position, this.position.add(this.size), 0, Color.BLACK)];
+		return [
+			this.bgRect(Color.WHITE),
+			new Rect(this.position, this.position.add(this.size), 0, Color.DARK_GRAY),
+		];
 	}
 
 	onMousePress(point: Point) {}
@@ -86,9 +93,11 @@ class UiIconButton extends UiButton {
 	}
 
 	protected edits(pixelsWidth: number): Edit[] {
-		let icon = iconToEdits(this.icon, this.position, this.size);
-		let outline = this.selected ? new Rect(this.position, this.position.add(this.size), 2, Color.BLACK) : super.edits(pixelsWidth);
-		return icon.concat(outline);
+		let edits = super.edits(pixelsWidth);
+		edits = edits.concat(iconToEdits(this.icon, this.position, this.size));
+		if (this.selected)
+			edits.push(new Rect(this.position, this.position.add(this.size), 2, Color.BLACK));
+		return edits;
 	}
 }
 
@@ -161,7 +170,8 @@ class UiTextButton extends UiButton {
 	}
 
 	protected edits(pixelsWidth: number): Edit[] {
-		return super.edits(pixelsWidth).concat(new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text));
+		let textEdit = new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text);
+		return super.edits(pixelsWidth).concat(textEdit);
 	}
 }
 
@@ -178,7 +188,7 @@ class UiColorCircle extends UiElement<{ click: void }> {
 	}
 
 	protected edits(pixelsWidth: number): Edit[] {
-		let edits = [];
+		let edits: Edit[] = [this.bgRect(Color.fromRgba(240, 240, 240, 255))];
 		for (let x = this.position.x; x <= this.position.add(this.size).x; x++)
 			for (let y = this.position.y; y <= this.position.add(this.size).y; y++) {
 				let point = new Point(x, y);
@@ -214,15 +224,14 @@ class UiColorRange extends UiElement<{ click: void }> {
 	}
 
 	protected edits(pixelsWidth: number): Edit[] {
-		let edits: Edit[] = [];
 		let rect = new Uint8ClampedArray((this.size.x + 1) * (this.size.y + 1) * 4);
 		let rect32 = new Uint32Array(rect.buffer);
 		for (let x = 0; x <= this.size.x; x++)
 			rect32[x] = this.getPointColor(x / this.size.x).int32;
 		for (let y = 0; y <= this.size.y; y++)
 			rect32.set(rect32.subarray(0, getIndex(this.size.x + 1, 0, this.size.x + 1, false)), getIndex(0, y, this.size.x + 1, false));
-		edits.push(new Paste(this.position, {width: this.size.x + 1, height: this.size.y + 1, int8Array: rect}));
-		return edits.concat(super.edits(pixelsWidth));
+		let paste = new Paste(this.position, {width: this.size.x + 1, height: this.size.y + 1, int8Array: rect});
+		return super.edits(pixelsWidth).concat(paste);
 	}
 
 	onMouseDown(point: Point) {
@@ -254,9 +263,8 @@ class UiTextLabel extends UiElement {
 
 	protected edits(pixelsWidth: number): Edit[] {
 		return [
-			new FillRect(this.position, this.position.add(this.size), Color.fromRgba(220, 220, 220, 255)),
+			this.bgRect(Color.fromRgba(220, 220, 220, 255)),
 			new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text),
-			// don't draw super's outline rect
 		];
 	}
 }
@@ -277,7 +285,7 @@ class UiTooltip extends UiElement {
 		tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
 		return [
 			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE),
-			new Rect(tooltipPoint1, tooltipPoint2, 0, Color.BLACK),
+			new Rect(tooltipPoint1, tooltipPoint2, 0, Color.DARK_GRAY),
 			tooltipTextEdit,
 		];
 	}

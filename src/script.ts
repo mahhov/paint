@@ -8,3 +8,4 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 // todo layers
 // todo post edits drag/drop to reorder edits or move them between stacks (e.g. edits, post edits, redo edits)
 // todo clearer post edit navigation
+// todo multi save
