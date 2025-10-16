@@ -46,7 +46,7 @@ export default class Pixels {
 	}
 
 	getLine(start4: number, end4: number) {
-		return this.imageData.data.slice(start4, end4);
+		return this.imageData.data.subarray(start4, end4);
 	}
 
 	set(p: Point, c: Color, owner: number) {
