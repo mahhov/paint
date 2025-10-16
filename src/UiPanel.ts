@@ -28,10 +28,10 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 	}
 
 	draw(pixels: Pixels) {
-		this.edits.forEach(edit => edit.draw(pixels, pixels, false, 0));
+		this.edits(pixels.width).forEach(edit => edit.draw(pixels, pixels, false, 0));
 	}
 
-	protected get edits(): Edit[] {
+	protected edits(pixelsWidth: number): Edit[] {
 		return [new Rect(this.position, this.position.add(this.size), 0, Color.BLACK)];
 	}
 
@@ -85,9 +85,9 @@ class UiIconButton extends UiButton {
 		this.icon = icon;
 	}
 
-	protected get edits(): Edit[] {
+	protected edits(pixelsWidth: number): Edit[] {
 		let icon = iconToEdits(this.icon, this.position, this.size);
-		let outline = this.selected ? new Rect(this.position, this.position.add(this.size), 2, Color.BLACK) : super.edits;
+		let outline = this.selected ? new Rect(this.position, this.position.add(this.size), 2, Color.BLACK) : super.edits(pixelsWidth);
 		return icon.concat(outline);
 	}
 }
@@ -142,9 +142,9 @@ class UiColorButton extends UiIconButton {
 		this.color = color;
 	}
 
-	protected get edits(): Edit[] {
+	protected edits(pixelsWidth: number): Edit[] {
 		this.icon = colorIcon(this.color);
-		return super.edits;
+		return super.edits(pixelsWidth);
 	}
 
 	get tooltip(): string {
@@ -160,8 +160,8 @@ class UiTextButton extends UiButton {
 		this.text = text;
 	}
 
-	protected get edits(): Edit[] {
-		return super.edits.concat(new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text));
+	protected edits(pixelsWidth: number): Edit[] {
+		return super.edits(pixelsWidth).concat(new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text));
 	}
 }
 
@@ -177,7 +177,7 @@ class UiColorCircle extends UiElement<{ click: void }> {
 		return Color.fromFloat(float, this.brightness);
 	}
 
-	protected get edits(): Edit[] {
+	protected edits(pixelsWidth: number): Edit[] {
 		let edits = [];
 		for (let x = this.position.x; x <= this.position.add(this.size).x; x++)
 			for (let y = this.position.y; y <= this.position.add(this.size).y; y++) {
@@ -213,7 +213,7 @@ class UiColorRange extends UiElement<{ click: void }> {
 		return Color.fromFloat(this.float, xf);
 	}
 
-	protected get edits(): Edit[] {
+	protected edits(pixelsWidth: number): Edit[] {
 		let edits: Edit[] = [];
 		let rect = new Uint8ClampedArray((this.size.x + 1) * (this.size.y + 1) * 4);
 		let rect32 = new Uint32Array(rect.buffer);
@@ -222,7 +222,7 @@ class UiColorRange extends UiElement<{ click: void }> {
 		for (let y = 0; y <= this.size.y; y++)
 			rect32.set(rect32.subarray(0, getIndex(this.size.x + 1, 0, this.size.x + 1, false)), getIndex(0, y, this.size.x + 1, false));
 		edits.push(new Paste(this.position, {width: this.size.x + 1, height: this.size.y + 1, int8Array: rect}));
-		return edits.concat(super.edits);
+		return edits.concat(super.edits(pixelsWidth));
 	}
 
 	onMouseDown(point: Point) {
@@ -252,11 +252,33 @@ class UiTextLabel extends UiElement {
 		this.text = text;
 	}
 
-	protected get edits(): Edit[] {
+	protected edits(pixelsWidth: number): Edit[] {
 		return [
 			new FillRect(this.position, this.position.add(this.size), Color.fromRgba(220, 220, 220, 255)),
 			new FixedTextEdit(this.position.add(new Point(4, 2)), 15, Color.DARK_GRAY, this.text),
 			// don't draw super's outline rect
+		];
+	}
+}
+
+class UiTooltip extends UiElement {
+	text: string = '';
+
+	protected edits(pixelsWidth: number): Edit[] {
+		if (!this.text) return [];
+		let tooltipPoint1 = this.position.add(new Point(8, 0));
+		let tooltipTextEdit = new FixedTextEdit(Point.P0, 15, Color.BLACK, this.text);
+		let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure()).add(new Point(6, 2));
+		let excessX = tooltipPoint2.x - pixelsWidth + 1;
+		if (excessX > 0) {
+			tooltipPoint1 = tooltipPoint1.add(new Point(-excessX, 10));
+			tooltipPoint2 = tooltipPoint2.add(new Point(-excessX, 10));
+		}
+		tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
+		return [
+			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE),
+			new Rect(tooltipPoint1, tooltipPoint2, 0, Color.BLACK),
+			tooltipTextEdit,
 		];
 	}
 }
@@ -323,10 +345,9 @@ export default class UiPanel extends Emitter<{
 	private readonly viewText: UiTextButton;
 	private readonly postEditList: UiToolButton[];
 	private readonly redoEditList: UiToolButton[];
+	private readonly tooltip = new UiTooltip();
 	private readonly pixels: Pixels;
-	private tooltip = '';
-	private tooltipPosition = Point.P0;
-	private drawDirty = true;
+	private drawDirtyUis: UiElement[] = [];
 
 	constructor(pixels: Pixels, input: Input) {
 		super();
@@ -427,6 +448,8 @@ export default class UiPanel extends Emitter<{
 			.addListener('hover', () => this.emit('redo-edit-hover', i))
 			.addListener('hover-end', () => this.emit('redo-edit-hover-end', i)));
 
+		this.uis.push(this.tooltip);
+
 		input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () =>
 			this.uis.forEach(ui => ui.onMousePress(input.mousePosition))));
 		input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () =>
@@ -447,6 +470,7 @@ export default class UiPanel extends Emitter<{
 		ui.setPosition(position);
 		ui.setSize(size);
 		this.uis.push(ui);
+		this.drawDirtyUis.push(ui);
 		return ui;
 	}
 
@@ -460,7 +484,7 @@ export default class UiPanel extends Emitter<{
 
 	setTool(tool: Tool) {
 		this.toolButtons.forEach(button => button.selected = button.tool === tool);
-		this.drawDirty = true;
+		this.drawDirtyUis = this.drawDirtyUis.concat(this.toolButtons);
 	}
 
 	setColor(color: Color) {
@@ -470,7 +494,8 @@ export default class UiPanel extends Emitter<{
 		this.colorBrightness.float = float;
 		this.colorBrightness.brightness = brightness;
 		this.setSelectedColor(color);
-		this.drawDirty = true;
+		this.drawDirtyUis.push(this.colorCircle);
+		this.drawDirtyUis.push(this.colorBrightness);
 	}
 
 	setColorUsed(colorUsed: Color) {
@@ -483,7 +508,6 @@ export default class UiPanel extends Emitter<{
 			recentColors.unshift(recentColors.splice(index, 1)[0]);
 		this.recentColorButtons.forEach((button, i) => button.color = recentColors[i]);
 		this.setSelectedColor(colorUsed);
-		this.drawDirty = true;
 	}
 
 	private setSelectedColor(color: Color) {
@@ -494,16 +518,18 @@ export default class UiPanel extends Emitter<{
 			if (button.selected)
 				found = true;
 		});
+		this.drawDirtyUis = this.drawDirtyUis.concat(this.presetColorButtons);
+		this.drawDirtyUis = this.drawDirtyUis.concat(this.recentColorButtons);
 	}
 
 	setZoom(zoom: number) {
 		this.viewText.text = `${zoom}%`;
-		this.drawDirty = true;
+		this.drawDirtyUis.push(this.viewText);
 	}
 
 	setStatus(status: string) {
 		this.viewText.text = status;
-		this.drawDirty = true;
+		this.drawDirtyUis.push(this.viewText);
 	}
 
 	setPostEditList(names: [string, boolean][]) {
@@ -513,7 +539,7 @@ export default class UiPanel extends Emitter<{
 			edit.selected = selected;
 			edit.setTooltip(text);
 		});
-		this.drawDirty = true;
+		this.drawDirtyUis = this.drawDirtyUis.concat(this.postEditList);
 	}
 
 	setRedoEditList(names: string[]) {
@@ -522,40 +548,23 @@ export default class UiPanel extends Emitter<{
 			edit.icon = UiToolButton.editStackUiInfo[text];
 			edit.setTooltip(text);
 		});
-		this.drawDirty = true;
+		this.drawDirtyUis = this.drawDirtyUis.concat(this.redoEditList);
 	}
 
 	private setTooltip(mousePosition: Point) {
 		let tooltip = this.uis.find(ui => ui.containsPoint(mousePosition))?.tooltip || '';
-		if (!tooltip && !this.tooltip) return;
-		this.tooltip = tooltip;
-		this.tooltipPosition = mousePosition;
-		this.drawDirty = true;
+		if (!tooltip && !this.tooltip.text) return;
+		this.tooltip.setPosition(mousePosition).text = tooltip;
+		this.drawDirtyUis.push(this.tooltip);
 	}
 
 	draw() {
-		if (!this.drawDirty) return;
-		this.drawDirty = false;
-
-		this.pixels.clear();
-		console.time('panel');
-		this.uis.forEach(ui => ui.draw(this.pixels));
-		console.timeEnd('panel');
-
-		if (this.tooltip) {
-			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
-			let tooltipTextEdit = new FixedTextEdit(Point.P0, 15, Color.BLACK, this.tooltip);
-			let tooltipPoint2 = tooltipPoint1.add(tooltipTextEdit.measure()).add(new Point(6, 2));
-			let excessX = tooltipPoint2.x - this.pixels.width + 1;
-			if (excessX > 0) {
-				tooltipPoint1 = tooltipPoint1.add(new Point(-excessX, 10));
-				tooltipPoint2 = tooltipPoint2.add(new Point(-excessX, 10));
-			}
-
-			tooltipTextEdit.setPoint(0, tooltipPoint1.add(new Point(3)), false);
-			new FillRect(tooltipPoint1, tooltipPoint2, Color.WHITE).draw(this.pixels, this.pixels, false, 0);
-			new Rect(tooltipPoint1, tooltipPoint2, 0, Color.BLACK).draw(this.pixels, this.pixels, false, 0);
-			tooltipTextEdit.draw(this.pixels, this.pixels, false, 0);
-		}
+		let dirtySet = new Set(this.drawDirtyUis);
+		if (dirtySet.has(this.tooltip)) {
+			this.pixels.clear();
+			this.uis.forEach(ui => ui.draw(this.pixels));
+		} else
+			dirtySet.forEach(ui => ui.draw(this.pixels));
+		this.drawDirtyUis = [];
 	}
 }
