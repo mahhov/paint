@@ -121,11 +121,11 @@ export class Move extends Edit {
 		return this.start.add(this.end).scale(.5).round;
 	}
 
-	protected get destStart() {
+	get destStart() {
 		return this.start.add(this.delta);
 	}
 
-	protected get destEnd() {
+	get destEnd() {
 		return this.end.add(this.delta);
 	}
 

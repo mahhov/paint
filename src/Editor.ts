@@ -372,8 +372,8 @@ export default class Editor {
 
 	private copy() {
 		let region = this.editStack.pendingEdit instanceof Move;
-		let start = region ? this.editStack.pendingEdit!.points[0] : Point.P0;
-		let end = region ? this.editStack.pendingEdit!.points[1] : this.pixels.size;
+		let start = region ? (this.editStack.pendingEdit as Move).destStart : Point.P0;
+		let end = region ? (this.editStack.pendingEdit as Move).destEnd : this.pixels.size;
 		this.editStack.startNewEdit(null);
 		this.flushEditStackToPixels();
 		Clipboard.copyCanvasRegion(this.pixels.getImage(), start, end);
