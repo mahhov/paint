@@ -58,10 +58,17 @@ export default class Editor {
 			this.editStack.undoEdit();
 		});
 		this.panel.addListener('post-edit-hover', i => {
-			i -= this.editStack.edits.length;
-			if (this.editStack.pendingEdit)
-				i--;
-			let edit = this.editStack.postEdits[i];
+			let edit;
+			if (i < this.editStack.edits.length) {
+				edit = this.editStack.edits[i];
+			} else if (i === this.editStack.edits.length && this.editStack.pendingEdit)
+				edit = this.editStack.pendingEdit;
+			else {
+				i -= this.editStack.edits.length;
+				if (this.editStack.pendingEdit)
+					i--;
+				edit = this.editStack.postEdits[i];
+			}
 			if (edit && edit !== this.preview?.edit) {
 				this.preview = new Preview(edit);
 				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
