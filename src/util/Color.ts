@@ -85,6 +85,14 @@ export default class Color {
 		return Color.fromRgba(...rgb, 255);
 	}
 
+	static subtract(color1: number, color2: number) {
+		let diffB = Math.abs((color1 & 0xFF) - (color2 & 0xFF));
+		let diffG = Math.abs(((color1 >> 8) & 0xFF) - ((color2 >> 8) & 0xFF));
+		let diffR = Math.abs(((color1 >> 16) & 0xFF) - ((color2 >> 16) & 0xFF));
+		let diffAlpha = 0xFF;
+		return ((diffAlpha << 24) | (diffR << 16) | (diffG << 8) | diffB) >>> 0;
+	}
+
 	toRgba(): [number, number, number, number] {
 		let r = (this.int32) & 0xFF;
 		let g = (this.int32 >> 8) & 0xFF;

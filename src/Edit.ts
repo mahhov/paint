@@ -164,8 +164,7 @@ export class Move extends Edit {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let move = this.delta;
-		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, move, pixels.size);
+		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
 		let clearLine = new Uint8ClampedArray((max.subtract(min).x + 1) * 4).fill(255);
 		let copyLines = [];
 		for (let y = min.y; y <= max.y; y++)
@@ -173,9 +172,9 @@ export class Move extends Edit {
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x, y, pixels.width, true), clearLine, editId);
 		for (let y = min.y; y <= max.y; y++)
-			pixels.setLine(getIndex(min.x + move.x, y + move.y, pixels.width, true), copyLines[y], editId);
+			pixels.setLine(getIndex(min.x + this.delta.x, y + this.delta.y, pixels.width, true), copyLines[y], editId);
 		pixels.setDirty(min, max);
-		pixels.setDirty(min.add(move), max.add(move));
+		pixels.setDirty(min.add(this.delta), max.add(this.delta));
 		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
 		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
 	}
@@ -273,6 +272,14 @@ export class GridLine extends Move {
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
+		let deltaIndex = getPIndex(this.delta, pixels.width);
+		for (let x = min.x; x <= max.x; x++)
+			for (let y = min.y; y <= max.y; y++) {
+				let index = getIndex(x, y, pixels.width);
+				let diffColor = new Color(Color.subtract(sourcePixels.get32(index), sourcePixels.get32(index + deltaIndex)));
+				pixels.setIndex(index + deltaIndex, diffColor, editId);
+			}
 		if (!this.delta.y)
 			for (let x = 0; x <= pixels.width; x += 2) {
 				pixels.set(new Point(x, this.start.y), this.color, editId);
