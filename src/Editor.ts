@@ -26,7 +26,7 @@ export default class Editor {
 	private preview: Preview | null = null;
 	private tool = Tool.MOVE;
 	private color = Color.LIGHT_GRAY;
-	private save = 0; // todo get last save value
+	private save: number;
 	private readonly input: Input;
 	private readonly panel: UiPanel;
 	private camera!: Camera;
@@ -35,7 +35,8 @@ export default class Editor {
 	private editorSize!: number;
 	private readonly saveDebouncer: Debouncer;
 
-	constructor(canvas: HTMLCanvasElement, editStack: EditStack) {
+	constructor(canvas: HTMLCanvasElement, save: number, editStack: EditStack) {
+		this.save = save;
 		this.editStack = editStack;
 
 		this.ctx = canvas.getContext('2d')!;
@@ -87,7 +88,9 @@ export default class Editor {
 			}
 		});
 		this.panel.addListener('save-click', async i => {
+			if (this.save === i) return;
 			this.save = i;
+			localStorage.setItem('save-index', String(this.save));
 			this.panel.setSave(this.save);
 			this.editStack = await Editor.loadEditStack(this.save);
 		});
@@ -312,7 +315,7 @@ export default class Editor {
 		this.editStack.addListener('post-edits-changed', () => this.postEditsListChanged());
 		this.redoEditsListChanged();
 		this.editStack.addListener('redo-edits-changed', () => this.redoEditsListChanged());
-		this.panel.setSave(0);
+		this.panel.setSave(this.save);
 
 		this.saveDebouncer = new Debouncer(() =>
 			Storage.write(`save_${this.save}`, Serializer.serialize(this.editStack))
@@ -339,15 +342,16 @@ export default class Editor {
 	}
 
 	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
-		return Editor.loadEditStack(0)
+		let save = Number(localStorage.getItem('save-index'));
+		return Editor.loadEditStack(save)
 			.then(editStack => {
-				let editor = new Editor(canvas, editStack);
+				let editor = new Editor(canvas, save, editStack);
 				editor.flushEditStackToPixels();
 				return editor;
 			})
 			.catch(e => {
 				console.warn('Failed load editor', e);
-				return new Editor(canvas, new EditStack());
+				return new Editor(canvas, save, new EditStack());
 			});
 	}
 
