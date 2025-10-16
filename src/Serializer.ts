@@ -38,7 +38,6 @@ let typeMap: TypeMap = {
 		},
 	} as CustomSerializerType<EditStack, SerializedEditStack>,
 	Edit,
-	Preview,
 	Move,
 	Line,
 	StraightLine,

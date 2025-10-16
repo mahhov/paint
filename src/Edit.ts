@@ -75,10 +75,6 @@ export class Preview extends Edit {
 		this.owner = owner;
 	}
 
-	get points() {return [];}
-
-	setPoint(index: number, point: Point, shiftDown: boolean) {}
-
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		if (this.owner !== -1) {
 			this.ownerIndexes ||= sourcePixels.getOwnedBy(this.owner);
@@ -670,5 +666,20 @@ export class Pen extends Edit {
 			});
 		else
 			pixels.set(this.position.add(this.dots[0]), this.color, editId);
+	}
+}
+
+export class Dot extends Edit {
+	private position: Point;
+	private readonly color: Color;
+
+	constructor(position: Point, color: Color) {
+		super();
+		this.position = position;
+		this.color = color;
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		pixels.set(this.position, this.color, editId);
 	}
 }

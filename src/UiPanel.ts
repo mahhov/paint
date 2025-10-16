@@ -1,4 +1,4 @@
-import {Edit, FillRect, FixedTextEdit, Line, Paste, Rect} from './Edit.js';
+import {Dot, Edit, FillRect, FixedTextEdit, Paste, Rect} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
@@ -184,7 +184,7 @@ class UiColorCircle extends UiElement<{ click: void }> {
 				let point = new Point(x, y);
 				let color = this.getColor(point);
 				if (color)
-					edits.push(new Line(point, point, 0, color));
+					edits.push(new Dot(point, color));
 			}
 		return edits;
 	}
@@ -538,7 +538,9 @@ export default class UiPanel extends Emitter<{
 		this.drawDirty = false;
 
 		this.pixels.clear();
+		console.time('panel');
 		this.uis.forEach(ui => ui.draw(this.pixels));
+		console.timeEnd('panel');
 
 		if (this.tooltip) {
 			let tooltipPoint1 = this.tooltipPosition.add(new Point(8, 0));
