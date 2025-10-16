@@ -60,6 +60,7 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 }
 
 class UiButton extends UiElement<{ click: void, 'right-click': void, 'hover': void, 'hover-end': void }> {
+	selected = false;
 	private hovered: boolean = false;
 
 	onMousePress(point: Point) {
@@ -81,11 +82,17 @@ class UiButton extends UiElement<{ click: void, 'right-click': void, 'hover': vo
 			this.emit('hover-end');
 		}
 	}
+
+	protected edits(pixelsWidth: number): Edit[] {
+		let edits = super.edits(pixelsWidth);
+		if (this.selected)
+			edits.push(new Rect(this.position, this.position.add(this.size), 2, Color.BLACK));
+		return edits;
+	}
 }
 
 class UiIconButton extends UiButton {
 	icon: IconInstruction[];
-	selected = false;
 
 	constructor(icon: IconInstruction[]) {
 		super();
@@ -94,9 +101,7 @@ class UiIconButton extends UiButton {
 
 	protected edits(pixelsWidth: number): Edit[] {
 		let edits = super.edits(pixelsWidth);
-		edits = edits.concat(iconToEdits(this.icon, this.position, this.size));
-		if (this.selected)
-			edits.push(new Rect(this.position, this.position.add(this.size), 2, Color.BLACK));
+		edits.splice(1, 0, ...iconToEdits(this.icon, this.position, this.size));
 		return edits;
 	}
 }
@@ -342,6 +347,7 @@ export default class UiPanel extends Emitter<{
 	'redo-edit-click': number,
 	'redo-edit-hover': number,
 	'redo-edit-hover-end': number,
+	'save-click': number,
 }> {
 	private readonly grid: GridLayout;
 	private readonly uis: UiElement[] = [];
@@ -353,6 +359,7 @@ export default class UiPanel extends Emitter<{
 	private readonly viewText: UiTextButton;
 	private readonly postEditList: UiToolButton[];
 	private readonly redoEditList: UiToolButton[];
+	private readonly saveList: UiTextButton[];
 	private readonly tooltip = new UiTooltip();
 	private readonly pixels: Pixels;
 	private drawDirtyUis: UiElement[] = [];
@@ -363,12 +370,13 @@ export default class UiPanel extends Emitter<{
 		this.pixels = pixels;
 		let margin = 5;
 		this.grid = new GridLayout(pixels.width, margin);
-		let buttonSize = new Point(this.grid.divide(4));
+		let quarterRowSize = new Point(this.grid.divide(4));
+		let halfRowSize = this.grid.divide(2);
 		let fullRowSize = this.grid.divide(1);
 
 		this.toolButtons = Object.values(UiToolButton.toolUiInfo).map(uiInfo =>
 			this
-				.add(new UiToolButton(uiInfo[0]), buttonSize)
+				.add(new UiToolButton(uiInfo[0]), quarterRowSize)
 				.setTooltip(uiInfo[2])
 				.addListener('click', () => this.emit('tool', uiInfo[0])));
 
@@ -376,7 +384,7 @@ export default class UiPanel extends Emitter<{
 		this.colorCircle = this.add(new UiColorCircle(), new Point(fullRowSize));
 
 		this.grid.nextRow();
-		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, buttonSize.y / 2));
+		this.colorBrightness = this.add(new UiColorRange(), new Point(fullRowSize, quarterRowSize.y / 2));
 
 		[this.colorCircle, this.colorBrightness].forEach(ui => ui.addListener('click', () =>
 			this.emit('color', Color.fromFloat(this.colorCircle.float, this.colorBrightness.brightness))));
@@ -401,7 +409,7 @@ export default class UiPanel extends Emitter<{
 		] as [number, number, number][])
 			.map(rgb => Color.fromRgba(...rgb, 255))
 			.map((color, i) => {
-				let button = this.add(new UiColorButton(color), buttonSize);
+				let button = this.add(new UiColorButton(color), quarterRowSize);
 				if (i < 10)
 					button.setTooltip(`(${(i + 1) % 10})`);
 				button.addListener('click', () => this.emit('color', color));
@@ -410,7 +418,7 @@ export default class UiPanel extends Emitter<{
 
 		this.grid.nextRow(margin);
 		this.recentColorButtons = A(12).map((_, i) => {
-			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), buttonSize);
+			let button = this.add(new UiColorButton(Color.LIGHT_GRAY), quarterRowSize);
 			button.addListener('click', () => this.emit('color', button.color));
 			if (i < 10)
 				button.setTooltip(`(ctrl+${(i + 1) % 10})`);
@@ -419,42 +427,48 @@ export default class UiPanel extends Emitter<{
 
 		this.grid.nextRow(margin);
 		this
-			.add(new UiIconButton(icons.UNDO), buttonSize)
+			.add(new UiIconButton(icons.UNDO), quarterRowSize)
 			.setTooltip('undo (ctrl+z or mb-4)')
 			.addListener('click', () => this.emit('undo'));
 		this
-			.add(new UiIconButton(icons.REDO), buttonSize)
+			.add(new UiIconButton(icons.REDO), quarterRowSize)
 			.setTooltip('redo (ctrl+shift+z or mb-5)')
 			.addListener('click', () => this.emit('redo'));
 		this
-			.add(new UiIconButton(icons.START_NEW), buttonSize)
+			.add(new UiIconButton(icons.START_NEW), quarterRowSize)
 			.setTooltip('new (ctrl+e)')
 			.addListener('click', () => this.emit('start-new'));
 
 		this.grid.nextRow(margin);
 		this.viewText = this
-			.add(new UiTextButton('100%'), new Point(fullRowSize, buttonSize.y / 2))
+			.add(new UiTextButton('100%'), new Point(fullRowSize, quarterRowSize.y / 2))
 			.setTooltip('reset zoom (ctrl+0)')
 			.addListener('click', () => this.emit('camera-reset'));
 
 		this.grid.nextRow(margin);
 		this
-			.add(new UiTextLabel('edit stack'), new Point(fullRowSize, buttonSize.y / 2))
+			.add(new UiTextLabel('edit stack'), new Point(fullRowSize, quarterRowSize.y / 2))
 			.setTooltip('`');
 		this.postEditList = A(49).map((_, i) => this
-			.add(new UiToolButton(null), new Point(buttonSize.y / 2, buttonSize.y / 2))
+			.add(new UiToolButton(null), quarterRowSize.scale(.5))
 			.addListener('click', () => this.emit('post-edit-click', i))
 			.addListener('right-click', () => this.emit('post-edit-right-click', i))
 			.addListener('hover', () => this.emit('post-edit-hover', i))
 			.addListener('hover-end', () => this.emit('post-edit-hover-end', i)));
 
 		this.grid.nextRow(margin);
-		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, buttonSize.y / 2));
+		this.add(new UiTextLabel('undo stack'), new Point(fullRowSize, quarterRowSize.y / 2));
 		this.redoEditList = A(49).map((_, i) => this
-			.add(new UiToolButton(null), new Point(buttonSize.y / 2, buttonSize.y / 2))
+			.add(new UiToolButton(null), quarterRowSize.scale(.5))
 			.addListener('click', () => this.emit('redo-edit-click', i))
 			.addListener('hover', () => this.emit('redo-edit-hover', i))
 			.addListener('hover-end', () => this.emit('redo-edit-hover-end', i)));
+
+		this.grid.nextRow(margin);
+		this.add(new UiTextLabel('saves'), new Point(fullRowSize, quarterRowSize.y / 2));
+		this.saveList = A(16).map((_, i) => this
+			.add(new UiTextButton(`Save ${i}`), new Point(halfRowSize, quarterRowSize.y / 2))
+			.addListener('click', () => this.emit('save-click', i)));
 
 		this.uis.push(this.tooltip);
 
@@ -559,6 +573,11 @@ export default class UiPanel extends Emitter<{
 		this.drawDirtyUis = this.drawDirtyUis.concat(this.redoEditList);
 	}
 
+	setSave(index: number) {
+		this.saveList.forEach((button, i) => button.selected = i === index);
+		this.drawDirtyUis = this.drawDirtyUis.concat(this.saveList);
+	}
+
 	private setTooltip(mousePosition: Point) {
 		let tooltip = this.uis.find(ui => ui.containsPoint(mousePosition))?.tooltip || '';
 		if (!tooltip && !this.tooltip.text) return;
@@ -567,6 +586,8 @@ export default class UiPanel extends Emitter<{
 	}
 
 	draw() {
+		if (!this.drawDirtyUis.length) return;
+		this.drawDirtyUis.push(this.tooltip);
 		let dirtySet = new Set(this.drawDirtyUis);
 		if (dirtySet.has(this.tooltip)) {
 			this.pixels.clear();

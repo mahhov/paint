@@ -9,3 +9,7 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 // todo post edits drag/drop to reorder edits or move them between stacks (e.g. edits, post edits, redo edits)
 // todo clearer post edit navigation
 // todo multi save
+//   preview on hover
+//   rename saves
+//   don't permanently delete on ctrl+e
+//   load last used save

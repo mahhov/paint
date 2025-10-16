@@ -16,7 +16,7 @@ export default class EditStack extends Emitter<{ 'post-edits-changed': void, 're
 	controlPoint = 0;
 	postEdits: Edit[] = [];
 	redoEdits: Edit[] = [];
-	dirty = DirtyMode.NONE;
+	dirty = DirtyMode.ALL_EDITS;
 
 	set maxDirty(dirtyMode: DirtyMode) {
 		this.dirty = Math.max(this.dirty, dirtyMode);

@@ -26,6 +26,7 @@ export default class Editor {
 	private preview: Preview | null = null;
 	private tool = Tool.MOVE;
 	private color = Color.LIGHT_GRAY;
+	private save = 0; // todo get last save value
 	private readonly input: Input;
 	private readonly panel: UiPanel;
 	private camera!: Camera;
@@ -84,6 +85,11 @@ export default class Editor {
 				this.preview = null;
 				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			}
+		});
+		this.panel.addListener('save-click', async i => {
+			this.save = i;
+			this.panel.setSave(this.save);
+			this.editStack = await Editor.loadEditStack(this.save);
 		});
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
@@ -306,36 +312,41 @@ export default class Editor {
 		this.editStack.addListener('post-edits-changed', () => this.postEditsListChanged());
 		this.redoEditsListChanged();
 		this.editStack.addListener('redo-edits-changed', () => this.redoEditsListChanged());
-
+		this.panel.setSave(0);
 
 		this.saveDebouncer = new Debouncer(() =>
-			Storage.write('save', Serializer.serialize(this.editStack))
+			Storage.write(`save_${this.save}`, Serializer.serialize(this.editStack))
 				.catch(e => console.warn('Failed to save:', e)));
 
 		this.loop();
 	}
 
-	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
-		// return new Editor(canvas, new EditStack());
-		console.time('load read');
-		return Storage.read('save')
+	static async loadEditStack(save: number): Promise<EditStack> {
+		return Storage.read(`save_${save}`)
 			.then(saveObj => {
-				console.timeEnd('load read');
 				if (!saveObj) throw new Error('empty storage');
-				console.time('load deserialize');
 				let editStack: EditStack = Serializer.deserialize(saveObj);
-				console.timeEnd('load deserialize');
 				editStack.edits = editStack.edits.filter(edit => edit instanceof Edit);
 				editStack.postEdits = editStack.postEdits.filter(edit => edit instanceof Edit);
 				editStack.redoEdits = editStack.redoEdits.filter(edit => edit instanceof Edit);
 				if (!(editStack.pendingEdit instanceof Edit)) editStack.pendingEdit = null;
-				editStack.maxDirty = DirtyMode.ALL_EDITS;
+				return editStack;
+			})
+			.catch(e => {
+				console.warn('Failed to load edit stack', e);
+				return new EditStack();
+			});
+	}
+
+	static async load(canvas: HTMLCanvasElement): Promise<Editor> {
+		return Editor.loadEditStack(0)
+			.then(editStack => {
 				let editor = new Editor(canvas, editStack);
 				editor.flushEditStackToPixels();
 				return editor;
 			})
 			.catch(e => {
-				console.warn('Failed to restore save', e);
+				console.warn('Failed load editor', e);
 				return new Editor(canvas, new EditStack());
 			});
 	}
