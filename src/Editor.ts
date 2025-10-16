@@ -51,7 +51,7 @@ export default class Editor {
 		this.panel.addListener('undo', () => this.editStack.undoEdit());
 		this.panel.addListener('redo', () => this.editStack.redoEdit());
 		this.panel.addListener('camera-reset', () => this.cameraReset());
-		this.panel.addListener('start-new', () => this.startNew());
+		this.panel.addListener('start-new', () => this.setEditStack(new EditStack()));
 		this.panel.addListener('post-edit-click', i => this.editStack.selectEdit(i));
 		this.panel.addListener('post-edit-right-click', i => {
 			this.editStack.selectEdit(i);
@@ -92,7 +92,7 @@ export default class Editor {
 			this.save = i;
 			localStorage.setItem('save-index', String(this.save));
 			this.panel.setSave(this.save);
-			this.editStack = await Editor.loadEditStack(this.save);
+			this.setEditStack(await Editor.loadEditStack(this.save));
 		});
 
 		this.input.addBinding(new MouseBinding(MouseButton.MIDDLE, [InputState.DOWN], () => {
@@ -229,7 +229,7 @@ export default class Editor {
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
 
-		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.startNew()));
+		this.input.addBinding(new KeyBinding('e', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.setEditStack(new EditStack())));
 
 		([
 			['ArrowUp', new Point(0, -1)],
@@ -355,9 +355,8 @@ export default class Editor {
 			});
 	}
 
-	private startNew() {
-		this.editStack = new EditStack();
-		this.editStack.maxDirty = DirtyMode.ALL_EDITS;
+	private setEditStack(editStack: EditStack) {
+		this.editStack = editStack;
 		this.postEditsListChanged();
 		this.editStack.addListener('post-edits-changed', () => this.postEditsListChanged());
 		this.redoEditsListChanged();

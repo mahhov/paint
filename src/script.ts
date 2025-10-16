@@ -12,4 +12,3 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 //   preview on hover
 //   rename saves
 //   don't permanently delete on ctrl+e
-//   load last used save

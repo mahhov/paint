@@ -33,7 +33,6 @@ let typeMap: TypeMap = {
 			editStack.pendingEdit = Serializer.deserialize(serializedEditStack.pendingEdit);
 			editStack.postEdits = Serializer.deserialize(serializedEditStack.postEdits);
 			editStack.redoEdits = Serializer.deserialize(serializedEditStack.redoEdits);
-			editStack.maxDirty = Serializer.deserialize(DirtyMode.ALL_EDITS);
 			return editStack;
 		},
 	} as CustomSerializerType<EditStack, SerializedEditStack>,
