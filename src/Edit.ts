@@ -6,7 +6,25 @@ import Point from './util/Point.js';
 import {boundRect, boundTransferRect, clamp, getIndex, getIndexP, getPIndex, unique} from './util/util.js';
 
 export class Edit {
-	static lastThickness = 0;
+	protected static lastThickness = 0;
+
+	protected static alignPoints(point: Point, other: Point) {
+		return point.subtract(other).flatten().add(other);
+	}
+
+	protected static squareRect(point: Point, other: Point) {
+		let delta = point.subtract(other);
+		let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
+		return other.add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
+	}
+
+	protected static getThicknessPoint(point: Point, thickness: number) {
+		return point.add(new Point(thickness + 10, 0));
+	}
+
+	protected static readThicknessPoint(delta: Point) {
+		return clamp(delta.x - 10, 0, 20);
+	}
 
 	get points(): Point[] {return [];};
 
@@ -20,14 +38,16 @@ export class Edit {
 	}
 }
 
-export class Select extends Edit {
-	private start: Point;
-	private end: Point;
+export class EditWith2Points extends Edit {
+	protected start: Point;
+	protected end: Point;
+	protected readonly color: Color;
 
-	constructor(start: Point, end: Point) {
+	constructor(start: Point, end: Point, color: Color) {
 		super();
 		this.start = start;
 		this.end = end;
+		this.color = color;
 	}
 
 	get points() {
@@ -37,16 +57,18 @@ export class Select extends Edit {
 	setPoint(index: number, point: Point, shiftDown: boolean) {
 		switch (index) {
 			case 0:
-				this.start = point;
+				this.end = point;
 				break;
 			case 1:
-				this.end = point;
+				this.start = point;
 				break;
 		}
 	}
+}
 
-	validCommit() {
-		return !this.start.equals(this.end);
+export class Select extends EditWith2Points {
+	constructor(start: Point, end: Point) {
+		super(start, end, Color.WHITE);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
@@ -182,38 +204,25 @@ export class Move extends Edit {
 	}
 }
 
-export class Line extends Edit {
-	private start: Point;
-	private end: Point;
+export class Line extends EditWith2Points {
 	private thickness: number;
-	private readonly color: Color;
 
 	constructor(start: Point, end: Point, thickness = Edit.lastThickness, color: Color) {
-		super();
-		this.start = start;
-		this.end = end;
+		super(start, end, color);
 		this.thickness = thickness;
-		this.color = color;
 	}
 
 	get points() {
-		return [this.end, this.start, this.end.add(new Point(this.thickness + 10, 0))];
+		return super.points.concat(Edit.getThicknessPoint(this.end, this.thickness));
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		if (shiftDown)
-			point = point.subtract(this.points[1 - index]).flatten().add(this.points[1 - index]);
-		switch (index) {
-			case 0:
-				this.end = point;
-				break;
-			case 1:
-				this.start = point;
-				break;
-			case 2:
-				Edit.lastThickness = this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
-				break;
-		}
+		if (index <= 1) {
+			if (shiftDown)
+				point = Edit.alignPoints(point, this.points[1 - index]);
+			super.setPoint(index, point, shiftDown);
+		} else
+			Edit.lastThickness = this.thickness = Edit.readThicknessPoint(point.subtract(this.end));
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
@@ -246,7 +255,7 @@ export class StraightLine extends Edit {
 	setPoint(index: number, point: Point, shiftDown: boolean) {
 		switch (index) {
 			case 0:
-				this.control = point.subtract(this.position).flatten().add(this.position);
+				this.control = Edit.alignPoints(point, this.position);
 				break;
 			case 1:
 				this.control = this.control.subtract(this.position).add(point);
@@ -265,41 +274,28 @@ export class StraightLine extends Edit {
 	}
 }
 
-export class Rect extends Edit {
-	private start: Point;
-	private end: Point;
+export class Measure extends Edit {
+}
+
+export class Rect extends EditWith2Points {
 	private thickness: number;
-	private readonly color: Color;
 
 	constructor(start: Point, end: Point, thickness = Edit.lastThickness, color: Color) {
-		super();
-		this.start = start;
-		this.end = end;
+		super(start, end, color);
 		this.thickness = thickness;
-		this.color = color;
 	}
 
 	get points() {
-		return [this.end, this.start, this.end.add(new Point(this.thickness + 10, 0))];
+		return super.points.concat(Edit.getThicknessPoint(this.end, this.thickness));
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		if (shiftDown) {
-			let delta = point.subtract(this.points[1 - index]);
-			let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
-			point = this.points[1 - index].add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
-		}
-		switch (index) {
-			case 0:
-				this.end = point;
-				break;
-			case 1:
-				this.start = point;
-				break;
-			case 2:
-				Edit.lastThickness = this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
-				break;
-		}
+		if (index <= 1) {
+			if (shiftDown)
+				point = Edit.squareRect(point, this.points[1 - index]);
+			super.setPoint(index, point, shiftDown);
+		} else
+			Edit.lastThickness = this.thickness = Edit.readThicknessPoint(point.subtract(this.end));
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
@@ -315,36 +311,11 @@ export class Rect extends Edit {
 	}
 }
 
-export class FillRect extends Edit {
-	private start: Point;
-	private end: Point;
-	private readonly color: Color;
-
-	constructor(start: Point, end: Point, color: Color) {
-		super();
-		this.start = start;
-		this.end = end;
-		this.color = color;
-	}
-
-	get points() {
-		return [this.end, this.start];
-	}
-
+export class FillRect extends EditWith2Points {
 	setPoint(index: number, point: Point, shiftDown: boolean) {
-		if (shiftDown) {
-			let delta = point.subtract(this.points[1 - index]);
-			let magnitude = Math.min(Math.abs(delta.x), Math.abs(delta.y));
-			point = this.points[1 - index].add(new Point(Math.sign(delta.x), Math.sign(delta.y)).scale(magnitude));
-		}
-		switch (index) {
-			case 0:
-				this.end = point;
-				break;
-			case 1:
-				this.start = point;
-				break;
-		}
+		if (shiftDown)
+			point = Edit.squareRect(point, this.points[1 - index]);
+		super.setPoint(index, point, shiftDown);
 	}
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
@@ -641,7 +612,7 @@ export class Pen extends Edit {
 	}
 
 	get points() {
-		return [this.end, this.position, this.end.add(new Point(this.thickness + 10, 0))];
+		return [this.end, this.position, Edit.getThicknessPoint(this.end, this.thickness)];
 	}
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {
@@ -655,7 +626,7 @@ export class Pen extends Edit {
 				this.position = point;
 				break;
 			case 2:
-				Edit.lastThickness = this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
+				Edit.lastThickness = this.thickness = Edit.readThicknessPoint(point.subtract(this.end));
 				break;
 		}
 	}
@@ -672,7 +643,7 @@ export class Pen extends Edit {
 }
 
 export class Dot extends Edit {
-	private position: Point;
+	private readonly position: Point;
 	private readonly color: Color;
 
 	constructor(position: Point, color: Color) {
