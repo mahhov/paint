@@ -469,13 +469,13 @@ export default class Editor {
 			case Tool.MOVE:
 				return new Move(point, point, Point.P0);
 			case Tool.LINE:
-				return new Line(point, point, 0, this.color);
+				return new Line(point, point, undefined, this.color);
 			case Tool.STRAIGHT_LINE:
 				return new StraightLine(point, point, this.color);
 			case Tool.COLOR_DIFF:
 				return new ColorDiff(point, point, Point.P0);
 			case Tool.RECT:
-				return new Rect(point, point, 0, this.color);
+				return new Rect(point, point, undefined, this.color);
 			case Tool.FILL_RECT:
 				return new FillRect(point, point, this.color);
 			case Tool.CLEAR:
@@ -489,7 +489,7 @@ export default class Editor {
 			case Tool.PASTE:
 				throw new Error('createEdit() should not handle PASTE');
 			case Tool.PEN:
-				return new Pen(point, 0, this.color);
+				return new Pen(point, undefined, this.color);
 		}
 	}
 

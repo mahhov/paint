@@ -6,6 +6,8 @@ import Point from './util/Point.js';
 import {boundRect, boundTransferRect, clamp, getIndex, getIndexP, getPIndex, unique} from './util/util.js';
 
 export class Edit {
+	static lastThickness = 0;
+
 	get points(): Point[] {return [];};
 
 	setPoint(index: number, point: Point, shiftDown: boolean) {};
@@ -186,7 +188,7 @@ export class Line extends Edit {
 	private thickness: number;
 	private readonly color: Color;
 
-	constructor(start: Point, end: Point, thickness: number, color: Color) {
+	constructor(start: Point, end: Point, thickness = Edit.lastThickness, color: Color) {
 		super();
 		this.start = start;
 		this.end = end;
@@ -209,7 +211,7 @@ export class Line extends Edit {
 				this.start = point;
 				break;
 			case 2:
-				this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
+				Edit.lastThickness = this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
 				break;
 		}
 	}
@@ -269,7 +271,7 @@ export class Rect extends Edit {
 	private thickness: number;
 	private readonly color: Color;
 
-	constructor(start: Point, end: Point, thickness: number, color: Color) {
+	constructor(start: Point, end: Point, thickness = Edit.lastThickness, color: Color) {
 		super();
 		this.start = start;
 		this.end = end;
@@ -295,7 +297,7 @@ export class Rect extends Edit {
 				this.start = point;
 				break;
 			case 2:
-				this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
+				Edit.lastThickness = this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
 				break;
 		}
 	}
@@ -627,7 +629,7 @@ export class Pen extends Edit {
 	private thickness: number;
 	private readonly color: Color;
 
-	constructor(position: Point, thickness: number, color: Color) {
+	constructor(position: Point, thickness = Edit.lastThickness, color: Color) {
 		super();
 		this.position = position;
 		this.thickness = thickness;
@@ -653,7 +655,7 @@ export class Pen extends Edit {
 				this.position = point;
 				break;
 			case 2:
-				this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
+				Edit.lastThickness = this.thickness = clamp(point.subtract(this.end).x - 10, 0, 20);
 				break;
 		}
 	}
