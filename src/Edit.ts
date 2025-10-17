@@ -263,35 +263,6 @@ export class StraightLine extends Edit {
 	}
 }
 
-export class GridLine extends Move {
-	private readonly color: Color;
-
-	constructor(start: Point, end: Point, delta: Point, color: Color) {
-		super(start, end, delta);
-		this.color = color;
-	}
-
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
-		let deltaIndex = getPIndex(this.delta, pixels.width);
-		let diffLines: Uint8ClampedArray[] = [];
-		for (let y = min.y; y <= max.y; y++) {
-			diffLines[y] = new Uint8ClampedArray((max.x - min.x + 1) * 4);
-			let diffLineView = new Uint32Array(diffLines[y].buffer);
-			for (let x = min.x; x <= max.x; x++) {
-				let index = getIndex(x, y, pixels.width);
-				diffLineView[x - min.x] = Color.subtract(sourcePixels.get32(index), sourcePixels.get32(index + deltaIndex));
-			}
-		}
-		for (let y = min.y; y <= max.y; y++)
-			pixels.setLine(getIndex(min.x + this.delta.x, y + this.delta.y, pixels.width, true), diffLines[y], editId);
-		pixels.setDirty(min, max);
-		pixels.setDirty(min.add(this.delta), max.add(this.delta));
-		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
-		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
-	}
-}
-
 export class Rect extends Edit {
 	private start: Point;
 	private end: Point;
@@ -513,6 +484,32 @@ export class TextEdit extends BaseTextEdit {
 			lines.forEach(([start, end]) =>
 				new Line(this.position.add(start), this.position.add(end), 0, this.color).draw(pixels, sourcePixels, pending, editId));
 		}
+	}
+}
+
+export class ColorDiff extends Move {
+	constructor(start: Point, end: Point, delta: Point) {
+		super(start, end, delta);
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
+		let deltaIndex = getPIndex(this.delta, pixels.width);
+		let diffLines: Uint8ClampedArray[] = [];
+		for (let y = min.y; y <= max.y; y++) {
+			diffLines[y] = new Uint8ClampedArray((max.x - min.x + 1) * 4);
+			let diffLineView = new Uint32Array(diffLines[y].buffer);
+			for (let x = min.x; x <= max.x; x++) {
+				let index = getIndex(x, y, pixels.width);
+				diffLineView[x - min.x] = Color.subtract(sourcePixels.get32(index), sourcePixels.get32(index + deltaIndex));
+			}
+		}
+		for (let y = min.y; y <= max.y; y++)
+			pixels.setLine(getIndex(min.x + this.delta.x, y + this.delta.y, pixels.width, true), diffLines[y], editId);
+		pixels.setDirty(min, max);
+		pixels.setDirty(min.add(this.delta), max.add(this.delta));
+		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
+		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 

@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, Edit, FillRect, GridLine, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, Edit, FillRect, ColorDiff, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -216,12 +216,12 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding(' ', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.keySelectTool(Tool.LINE)));
 		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => this.keySelectTool(Tool.STRAIGHT_LINE)));
-		this.input.addBinding(new KeyBinding('g', [], [InputState.PRESSED], () => this.keySelectTool(Tool.GRID_LINE)));
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.keySelectTool(Tool.RECT)));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.keySelectTool(Tool.FILL_RECT)));
 		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.keySelectTool(Tool.CLEAR)));
 		this.input.addBinding(new KeyBinding('t', [], [InputState.PRESSED], () => this.keySelectTool(Tool.TEXT)));
 		this.input.addBinding(new KeyBinding('c', [], [InputState.PRESSED], () => this.keySelectTool(Tool.COLOR_PICKER)));
+		this.input.addBinding(new KeyBinding('d', [], [InputState.PRESSED], () => this.keySelectTool(Tool.COLOR_DIFF)));
 		this.input.addBinding(new KeyBinding('b', [], [InputState.PRESSED], () => this.keySelectTool(Tool.BUCKET_FILL)));
 		this.input.addBinding(new KeyBinding('p', [], [InputState.PRESSED], () => this.keySelectTool(Tool.PEN)));
 
@@ -422,7 +422,7 @@ export default class Editor {
 		this.panel.setTool(tool);
 		let edit = null;
 		if (this.editStack.pendingEdit && this.editStack.pendingEdit.points.length >= 2)
-			if ([Tool.MOVE, Tool.GRID_LINE, Tool.CLEAR].includes(tool)) {
+			if ([Tool.MOVE, Tool.COLOR_DIFF, Tool.CLEAR].includes(tool)) {
 				let start = this.editStack.pendingEdit instanceof Move ? this.editStack.pendingEdit.destStart : this.editStack.pendingEdit.points[0];
 				let end = this.editStack.pendingEdit instanceof Move ? this.editStack.pendingEdit.destEnd : this.editStack.pendingEdit.points[1];
 				edit = this.createEdit(start);
@@ -472,8 +472,8 @@ export default class Editor {
 				return new Line(point, point, 0, this.color);
 			case Tool.STRAIGHT_LINE:
 				return new StraightLine(point, point, this.color);
-			case Tool.GRID_LINE:
-				return new GridLine(point, point, Point.P0, this.color);
+			case Tool.COLOR_DIFF:
+				return new ColorDiff(point, point, Point.P0);
 			case Tool.RECT:
 				return new Rect(point, point, 0, this.color);
 			case Tool.FILL_RECT:

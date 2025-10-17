@@ -94,6 +94,21 @@ export let icons: Record<string, IconInstruction[]> = {
 		// magnifier loop (rect to simulate circular loop)
 		{type: IconInstructionType.RECT, coords: [11, 12, 19, 20], color: Color.DARK_GRAY},
 	],
+	COLOR_DIFF: [
+		// rectangle 1 (base/behind)
+		{type: IconInstructionType.FILL_RECT, coords: [5, 5, 23, 23], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.RECT, coords: [5, 5, 23, 23], color: Color.DARK_GRAY},
+		// rectangle 2 (front/offset)
+		{type: IconInstructionType.FILL_RECT, coords: [10, 10, 28, 28], color: Color.LIGHT_GRAY},
+		{type: IconInstructionType.RECT, coords: [10, 10, 28, 28], color: Color.DARK_GRAY},
+		// magnifier handle (thicker)
+		{type: IconInstructionType.LINE, coords: [27, 5, 20, 12], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [26, 4, 19, 11], color: Color.DARK_GRAY},
+		// magnifier fill (to imply clear center)
+		{type: IconInstructionType.FILL_RECT, coords: [11, 12, 19, 20], color: Color.WHITE},
+		// magnifier loop (rect to simulate circular loop)
+		{type: IconInstructionType.RECT, coords: [11, 12, 19, 20], color: Color.DARK_GRAY},
+	],
 	BUCKET_FILL: [
 		// bucket rim
 		{type: IconInstructionType.FILL_RECT, coords: [8, 5, 24, 7], color: Color.DARK_GRAY},
