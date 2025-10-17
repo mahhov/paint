@@ -86,11 +86,13 @@ export default class Color {
 	}
 
 	static subtract(color1: number, color2: number) {
-		let diffB = Math.abs((color1 & 0xFF) - (color2 & 0xFF));
-		let diffG = Math.abs(((color1 >> 8) & 0xFF) - ((color2 >> 8) & 0xFF));
-		let diffR = Math.abs(((color1 >> 16) & 0xFF) - ((color2 >> 16) & 0xFF));
-		let diffAlpha = 0xFF;
-		return ((diffAlpha << 24) | (diffR << 16) | (diffG << 8) | diffB) >>> 0;
+		if (color1 === color2) return color1;
+		let rgba1 = new Color(color1).toRgba();
+		let rgba2 = new Color(color2).toRgba();
+		let diff = rgba1[0] + rgba1[1] + rgba1[2] - (rgba2[0] + rgba2[1] + rgba2[2]);
+		return diff > 0 ?
+			Color.fromRgba(0, Math.min(100 + diff, 255), 0, 255).int32 :
+			Color.fromRgba(Math.min(100 - diff, 255), 0, 0, 255).int32;
 	}
 
 	toRgba(): [number, number, number, number] {

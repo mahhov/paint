@@ -274,25 +274,21 @@ export class GridLine extends Move {
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
 		let deltaIndex = getPIndex(this.delta, pixels.width);
-		for (let x = min.x; x <= max.x; x++)
-			for (let y = min.y; y <= max.y; y++) {
+		let diffLines: Uint8ClampedArray[] = [];
+		for (let y = min.y; y <= max.y; y++) {
+			diffLines[y] = new Uint8ClampedArray((max.x - min.x + 1) * 4);
+			let diffLineView = new Uint32Array(diffLines[y].buffer);
+			for (let x = min.x; x <= max.x; x++) {
 				let index = getIndex(x, y, pixels.width);
-				let diffColor = new Color(Color.subtract(sourcePixels.get32(index), sourcePixels.get32(index + deltaIndex)));
-				pixels.setIndex(index + deltaIndex, diffColor, editId);
+				diffLineView[x - min.x] = Color.subtract(sourcePixels.get32(index), sourcePixels.get32(index + deltaIndex));
 			}
-		if (!this.delta.y)
-			for (let x = 0; x <= pixels.width; x += 2) {
-				pixels.set(new Point(x, this.start.y), this.color, editId);
-				pixels.set(new Point(x, this.end.y), this.color, editId);
-			}
-		if (!this.delta.x)
-			for (let y = 0; y <= pixels.height; y += 2) {
-				pixels.set(new Point(this.start.x, y), this.color, editId);
-				pixels.set(new Point(this.end.x, y), this.color, editId);
-			}
-		new Rect(this.start, this.end, 0, this.color).draw(pixels, sourcePixels, pending, editId);
-		if (this.delta.x || this.delta.y)
-			new Rect(this.destStart, this.destEnd, 0, this.color).draw(pixels, sourcePixels, pending, editId);
+		}
+		for (let y = min.y; y <= max.y; y++)
+			pixels.setLine(getIndex(min.x + this.delta.x, y + this.delta.y, pixels.width, true), diffLines[y], editId);
+		pixels.setDirty(min, max);
+		pixels.setDirty(min.add(this.delta), max.add(this.delta));
+		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
+		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
 	}
 }
 
