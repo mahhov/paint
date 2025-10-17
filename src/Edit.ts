@@ -274,7 +274,41 @@ export class StraightLine extends Edit {
 	}
 }
 
-export class Measure extends Edit {
+export class Measure extends EditWith2Points {
+	private offset: Point;
+
+	constructor(start: Point, end: Point, offset: Point, color: Color) {
+		super(start, end, color);
+		this.offset = offset;
+	}
+
+	private get center() {
+		return this.start.add(this.end).scale(.5).round;
+	}
+
+	get points() {
+		return super.points.concat(this.center.add(this.offset));
+	}
+
+	setPoint(index: number, point: Point, shiftDown: boolean) {
+		if (index <= 1) {
+			if (shiftDown)
+				point = Edit.alignPoints(point, this.points[1 - index]);
+			super.setPoint(index, point, shiftDown);
+		} else
+			this.offset = point.subtract(this.center).subtract(new Point(0, 0));
+	}
+
+	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+		let delta = this.end.subtract(this.start);
+		if (delta.x && delta.y) {
+			new Rect(this.start, this.end, 0, this.color).draw(pixels, sourcePixels, pending, editId);
+			new FixedTextEdit(this.center.add(this.offset).add(new Point(2)), 12, this.color, `${Math.abs(delta.x)} x ${Math.abs(delta.y)}`).draw(pixels, sourcePixels, pending, editId);
+		} else if (delta.x || delta.y) {
+			new Line(this.start, this.end, 0, this.color).draw(pixels, sourcePixels, pending, editId);
+			new FixedTextEdit(this.center.add(this.offset).add(new Point(2)), 12, this.color, String(Math.abs(delta.x || delta.y))).draw(pixels, sourcePixels, pending, editId);
+		}
+	}
 }
 
 export class Rect extends EditWith2Points {

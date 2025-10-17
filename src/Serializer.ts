@@ -1,4 +1,4 @@
-import {BucketFill, Clear, ColorDiff, Edit, FillRect, Line, Move, Paste, Pen, Rect, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, ColorDiff, Edit, FillRect, Line, Measure, Move, Paste, Pen, Rect, StraightLine, TextEdit} from './Edit.js';
 import EditStack from './EditStack.js';
 import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
@@ -40,7 +40,7 @@ let typeMap: TypeMap = {
 	Move,
 	Line,
 	StraightLine,
-	ColorDiff,
+	Measure,
 	Rect,
 	FillRect,
 	Clear,
@@ -53,6 +53,7 @@ let typeMap: TypeMap = {
 			return textEditor;
 		},
 	} as CustomSerializerType<TextEditor, string>,
+	ColorDiff,
 	BucketFill,
 	Paste,
 	Pen,

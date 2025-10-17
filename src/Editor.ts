@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, ColorDiff, Edit, FillRect, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, ColorDiff, Edit, FillRect, Line, Measure, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -216,6 +216,7 @@ export default class Editor {
 		this.input.addBinding(new KeyBinding(' ', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MOVE)));
 		this.input.addBinding(new KeyBinding('l', [], [InputState.PRESSED], () => this.keySelectTool(Tool.LINE)));
 		this.input.addBinding(new KeyBinding('k', [], [InputState.PRESSED], () => this.keySelectTool(Tool.STRAIGHT_LINE)));
+		this.input.addBinding(new KeyBinding('j', [], [InputState.PRESSED], () => this.keySelectTool(Tool.MEASURE)));
 		this.input.addBinding(new KeyBinding('r', [], [InputState.PRESSED], () => this.keySelectTool(Tool.RECT)));
 		this.input.addBinding(new KeyBinding('f', [], [InputState.PRESSED], () => this.keySelectTool(Tool.FILL_RECT)));
 		this.input.addBinding(new KeyBinding('e', [], [InputState.PRESSED], () => this.keySelectTool(Tool.CLEAR)));
@@ -472,6 +473,8 @@ export default class Editor {
 				return new Line(point, point, undefined, this.color);
 			case Tool.STRAIGHT_LINE:
 				return new StraightLine(point, point, this.color);
+			case Tool.MEASURE:
+				return new Measure(point, point, Point.P0, this.color);
 			case Tool.COLOR_DIFF:
 				return new ColorDiff(point, point, Point.P0);
 			case Tool.RECT:

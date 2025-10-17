@@ -3,7 +3,6 @@ import Editor from './Editor.js';
 console.info('version', (await (await fetch('./version.txt')).text()).trim());
 (window as any).editor = Editor.load(document.querySelector('canvas')!);
 
-// todo diff tool
 // todo allow scaling move
 // todo layers
 // todo post edits drag/drop to reorder edits or move them between stacks (e.g. edits, post edits, redo edits)
@@ -12,6 +11,3 @@ console.info('version', (await (await fetch('./version.txt')).text()).trim());
 //   preview on hover
 //   rename saves
 //   don't permanently delete on ctrl+e
-
-// todo cache last thickness
-// todo add measure edit

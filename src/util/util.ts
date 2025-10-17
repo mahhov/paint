@@ -6,6 +6,7 @@ export enum Tool {
 	MOVE,
 	LINE,
 	STRAIGHT_LINE,
+	MEASURE,
 	RECT,
 	FILL_RECT,
 	CLEAR,

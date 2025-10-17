@@ -45,6 +45,20 @@ export let icons: Record<string, IconInstruction[]> = {
 		{type: IconInstructionType.LINE, coords: [2, 16, 30, 16], color: Color.DARK_GRAY},
 		{type: IconInstructionType.LINE, coords: [16, 2, 16, 30], color: Color.DARK_GRAY},
 	],
+	MEASURE: [
+		// x-axis
+		{type: IconInstructionType.LINE, coords: [4, 28, 28, 28], color: Color.DARK_GRAY},
+		// y-axis
+		{type: IconInstructionType.LINE, coords: [4, 4, 4, 28], color: Color.DARK_GRAY},
+		// x-axis ticks
+		{type: IconInstructionType.LINE, coords: [10, 27, 10, 25], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [16, 27, 16, 25], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [22, 27, 22, 25], color: Color.DARK_GRAY},
+		// y-axis ticks
+		{type: IconInstructionType.LINE, coords: [6, 10, 8, 10], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [6, 16, 8, 16], color: Color.DARK_GRAY},
+		{type: IconInstructionType.LINE, coords: [6, 22, 8, 22], color: Color.DARK_GRAY},
+	],
 	GRID_LINE: [
 		{type: IconInstructionType.LINE, coords: [2, 11, 30, 11], color: Color.LIGHT_GRAY},
 		{type: IconInstructionType.LINE, coords: [2, 21, 30, 21], color: Color.LIGHT_GRAY},
