@@ -432,15 +432,15 @@ export class FixedTextEdit extends BaseTextEdit {
 }
 
 export class TextEdit extends BaseTextEdit {
-	static lastSize: number = 12;
+	static lastSize = 12;
 	readonly textEditor = new TextEditor();
 	protected size: number;
 	protected readonly color: Color;
 
-	constructor(position: Point, color: Color, text: string) {
+	constructor(position: Point, text: string, size = TextEdit.lastSize, color: Color) {
 		super(position);
-		this.size = TextEdit.lastSize;
 		this.textEditor.type(text);
+		this.size = size;
 		this.color = color;
 	}
 

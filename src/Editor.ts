@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, Edit, FillRect, ColorDiff, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, ColorDiff, Edit, FillRect, Line, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -386,7 +386,7 @@ export default class Editor {
 		let str = Clipboard.clipboardToText(e);
 		if (str) {
 			if (!(this.editStack.pendingEdit instanceof TextEdit))
-				this.editStack.startNewEdit(new TextEdit(point, this.color, ''));
+				this.editStack.startNewEdit(new TextEdit(point, '', undefined, this.color));
 			(this.editStack.pendingEdit as TextEdit).textEditor.type(str);
 			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			return;
@@ -481,7 +481,7 @@ export default class Editor {
 			case Tool.CLEAR:
 				return new Clear(point, point);
 			case Tool.TEXT:
-				return new TextEdit(point, this.color, '');
+				return new TextEdit(point, '', undefined, this.color);
 			case Tool.COLOR_PICKER:
 				throw new Error('createEdit() should not handle COLOR_PICKER');
 			case Tool.BUCKET_FILL:
