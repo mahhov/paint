@@ -423,8 +423,10 @@ export default class Editor {
 		let edit = null;
 		if (this.editStack.pendingEdit && this.editStack.pendingEdit.points.length >= 2)
 			if ([Tool.MOVE, Tool.GRID_LINE, Tool.CLEAR].includes(tool)) {
-				edit = this.createEdit(this.editStack.pendingEdit.points[0]);
-				edit.setPoint(1, this.editStack.pendingEdit.points[1], false);
+				let start = this.editStack.pendingEdit instanceof Move ? this.editStack.pendingEdit.destStart : this.editStack.pendingEdit.points[0];
+				let end = this.editStack.pendingEdit instanceof Move ? this.editStack.pendingEdit.destEnd : this.editStack.pendingEdit.points[1];
+				edit = this.createEdit(start);
+				edit.setPoint(1, end, false);
 			}
 		this.editStack.startNewEdit(edit);
 	}
