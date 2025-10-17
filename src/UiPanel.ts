@@ -1,4 +1,4 @@
-import {Dot, Edit, FillRect, FixedTextEdit, Paste, Rect} from './Edit.js';
+import {Dot, DrawMode, Edit, FillRect, FixedTextEdit, Paste, Rect} from './Edit.js';
 import {colorIcon, IconInstruction, icons, iconToEdits} from './icons.js';
 import {Input, InputState, MouseBinding, MouseButton} from './Input.js';
 import Pixels from './Pixels.js';
@@ -28,7 +28,7 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 	}
 
 	draw(pixels: Pixels) {
-		this.edits(pixels.width).forEach(edit => edit.draw(pixels, pixels, false, 0));
+		this.edits(pixels.width).forEach(edit => edit.draw(pixels, pixels, DrawMode.NORMAL, 0));
 	}
 
 	protected bgRect(color: Color) {

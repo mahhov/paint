@@ -7,6 +7,8 @@ export default class Color {
 	static CLEAR = Color.fromRgba(0, 0, 0, 0);
 	static DARK_GRAY = Color.fromRgba(85, 85, 85, 255);
 	static LIGHT_GRAY = Color.fromRgba(170, 170, 170, 255);
+	static PREVIEW_FILL = Color.fromRgba(255, 0, 0, 255);
+	static PREVIEW_HIGHLIGHT = Color.fromRgba(255, 0, 0, 150);
 
 	readonly int32: number;
 

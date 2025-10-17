@@ -3,7 +3,13 @@ import Pixels from './Pixels.js';
 import TextEditor from './TextEditor.js';
 import Color from './util/Color.js';
 import Point from './util/Point.js';
-import {boundRect, boundTransferRect, clamp, getIndex, getIndexP, getPIndex, unique} from './util/util.js';
+import {boundRect, boundTransferRect, clamp, getIndex, getPIndex, unique} from './util/util.js';
+
+export enum DrawMode {
+	NORMAL,
+	PENDING,
+	PREVIEW,
+}
 
 export class Edit {
 	protected static lastThickness = 0;
@@ -34,7 +40,7 @@ export class Edit {
 		return true;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
 	}
 }
 
@@ -71,8 +77,8 @@ export class Select extends EditWith2Points {
 		super(start, end, Color.WHITE);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		if (!pending) return;
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		if (drawMode === DrawMode.NORMAL) return;
 		let min = this.start.min(this.end);
 		let max = this.start.max(this.end);
 		let colors = [Color.WHITE, Color.BLACK];
@@ -90,42 +96,20 @@ export class Select extends EditWith2Points {
 
 export class Preview extends Edit {
 	readonly edit: Edit;
-	readonly owner: number;
-	private ownerIndexes: number[] | null = null;
 
-	constructor(edit: Edit, owner = -1) {
+	constructor(edit: Edit) {
 		super();
 		this.edit = edit;
-		this.owner = owner;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
-		if (this.owner !== -1) {
-			this.ownerIndexes ||= sourcePixels.getOwnedBy(this.owner);
-
-			this.ownerIndexes.forEach(i => {
-				pixels.setIndex(i, Color.fromRgba(255, 0, 0, 255), 0);
-				let p = getIndexP(i, pixels.width);
-				pixels.setDirty(p);
-			});
-		}
-
-		if (!this.ownerIndexes?.length) {
-			let oldColor;
-			if ('color' in this.edit) {
-				oldColor = this.edit.color;
-				this.edit.color = Color.fromRgba(255, 0, 0, 255);
-			}
-			this.edit.draw(pixels, sourcePixels, pending, 0);
-			if ('color' in this.edit)
-				this.edit.color = oldColor;
-		}
-
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		console.assert(drawMode === DrawMode.PREVIEW);
+		this.edit.draw(pixels, sourcePixels, drawMode, 200);
 		let points = this.edit.points;
 		let min = points.length >= 2 ? points[0].min(points[1]) : points[0];
 		let max = points.length >= 2 ? points[0].max(points[1]) : points[0];
 		let padding = new Point(2);
-		new Select(min.subtract(padding), max.add(padding)).draw(pixels, sourcePixels, pending, editId);
+		new Select(min.subtract(padding), max.add(padding)).draw(pixels, sourcePixels, drawMode, editId);
 	}
 }
 
@@ -187,7 +171,13 @@ export class Move extends Edit {
 		return !this.delta.equals(Point.P0);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		if (drawMode === DrawMode.PREVIEW) {
+			new FillRect(this.start, this.end, Color.PREVIEW_HIGHLIGHT).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
+			new FillRect(this.destStart, this.destEnd, Color.PREVIEW_HIGHLIGHT).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
+			return;
+		}
+
 		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
 		let clearLine = new Uint8ClampedArray((max.subtract(min).x + 1) * 4).fill(255);
 		let copyLines = [];
@@ -199,8 +189,8 @@ export class Move extends Edit {
 			pixels.setLine(getIndex(min.x + this.delta.x, y + this.delta.y, pixels.width, true), copyLines[y], editId);
 		pixels.setDirty(min, max);
 		pixels.setDirty(min.add(this.delta), max.add(this.delta));
-		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
-		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
+		new Select(this.start, this.end).draw(pixels, sourcePixels, drawMode, editId);
+		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, drawMode, editId);
 	}
 }
 
@@ -225,13 +215,14 @@ export class Line extends EditWith2Points {
 			Edit.lastThickness = this.thickness = Edit.readThicknessPoint(point.subtract(this.end));
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_FILL : this.color;
 		let delta = this.end.subtract(this.start);
 		let steps = Math.max(Math.abs(delta.x), Math.abs(delta.y)) + 1;
 		let thickness = new Point(this.thickness / 2);
 		for (let step = 0; step <= steps; step++) {
 			let point = this.start.add(delta.scale(step / steps));
-			new FillRect(point.subtract(thickness).round, point.add(thickness).round, this.color).draw(pixels, sourcePixels, pending, editId);
+			new FillRect(point.subtract(thickness).round, point.add(thickness).round, color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
 		}
 	}
 }
@@ -264,13 +255,14 @@ export class StraightLine extends Edit {
 		}
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_FILL : this.color;
 		if (this.control.x !== this.position.x)
 			for (let x = 0; x < pixels.size.x; x++)
-				pixels.set(new Point(x, this.control.y), this.color, editId);
+				pixels.set(new Point(x, this.control.y), color, editId);
 		else
 			for (let y = 0; y < pixels.size.y; y++)
-				pixels.set(new Point(this.control.x, y), this.color, editId);
+				pixels.set(new Point(this.control.x, y), color, editId);
 	}
 }
 
@@ -299,14 +291,15 @@ export class Measure extends EditWith2Points {
 			this.offset = point.subtract(this.center).subtract(new Point(0, 0));
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_FILL : this.color;
 		let delta = this.end.subtract(this.start);
 		if (delta.x && delta.y) {
-			new Rect(this.start, this.end, 0, this.color).draw(pixels, sourcePixels, pending, editId);
-			new FixedTextEdit(this.center.add(this.offset).add(new Point(2)), 12, this.color, `${Math.abs(delta.x)} x ${Math.abs(delta.y)}`).draw(pixels, sourcePixels, pending, editId);
+			new Rect(this.start, this.end, 0, color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
+			new FixedTextEdit(this.center.add(this.offset).add(new Point(2)), 12, color, `${Math.abs(delta.x)} x ${Math.abs(delta.y)}`).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
 		} else if (delta.x || delta.y) {
-			new Line(this.start, this.end, 0, this.color).draw(pixels, sourcePixels, pending, editId);
-			new FixedTextEdit(this.center.add(this.offset).add(new Point(2)), 12, this.color, String(Math.abs(delta.x || delta.y))).draw(pixels, sourcePixels, pending, editId);
+			new Line(this.start, this.end, 0, color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
+			new FixedTextEdit(this.center.add(this.offset).add(new Point(2)), 12, color, String(Math.abs(delta.x || delta.y))).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
 		}
 	}
 }
@@ -332,16 +325,16 @@ export class Rect extends EditWith2Points {
 			Edit.lastThickness = this.thickness = Edit.readThicknessPoint(point.subtract(this.end));
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_FILL : this.color;
 		let min = this.start.min(this.end);
 		let max = this.start.max(this.end);
 		let cornerTopRight = new Point(max.x, min.y);
 		let cornerBottomLeft = new Point(min.x, max.y);
-
-		new FillRect(min, cornerTopRight.add(new Point(0, this.thickness)), this.color).draw(pixels, sourcePixels, pending, editId); // top
-		new FillRect(cornerBottomLeft, max.subtract(new Point(0, this.thickness)), this.color).draw(pixels, sourcePixels, pending, editId); // bottom
-		new FillRect(min, cornerBottomLeft.add(new Point(this.thickness, 0)), this.color).draw(pixels, sourcePixels, pending, editId); // left
-		new FillRect(cornerTopRight, max.subtract(new Point(this.thickness, 0)), this.color).draw(pixels, sourcePixels, pending, editId); // right
+		new FillRect(min, cornerTopRight.add(new Point(0, this.thickness)), color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId); // top
+		new FillRect(cornerBottomLeft, max.subtract(new Point(0, this.thickness)), color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId); // bottom
+		new FillRect(min, cornerBottomLeft.add(new Point(this.thickness, 0)), color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId); // left
+		new FillRect(cornerTopRight, max.subtract(new Point(this.thickness, 0)), color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId); // right
 	}
 }
 
@@ -352,10 +345,11 @@ export class FillRect extends EditWith2Points {
 		super.setPoint(index, point, shiftDown);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_HIGHLIGHT : this.color;
 		let [min, max] = boundRect(this.start, this.end, pixels.size);
 		let line = new Uint8ClampedArray((max.subtract(min).x + 1) * 4);
-		new Uint32Array(line.buffer).fill(this.color.int32);
+		new Uint32Array(line.buffer).fill(color.int32);
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(getIndex(min.x, y, pixels.width, true), line, editId);
 		pixels.setDirty(min, max);
@@ -384,7 +378,8 @@ abstract class BaseTextEdit extends Edit {
 
 	protected abstract get size(): number;
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_FILL : this.color;
 		let measureSize = this.measure(this.text);
 		if (!measureSize.x || !measureSize.y) return;
 		BaseTextEdit.canvas.width = measureSize.x;
@@ -397,7 +392,7 @@ abstract class BaseTextEdit extends Edit {
 				let index = (x + y * imageData.width) * 4;
 				let a = imageData.data[index + 3];
 				if (a > 150)
-					pixels.set(this.position.add(new Point(x, y)), this.color, editId);
+					pixels.set(this.position.add(new Point(x, y)), color, editId);
 			}
 		}
 	}
@@ -469,11 +464,11 @@ export class TextEdit extends BaseTextEdit {
 		return !!this.text;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
 		if (this.text)
-			super.draw(pixels, sourcePixels, pending, editId);
+			super.draw(pixels, sourcePixels, drawMode, editId);
 
-		if (pending) {
+		if (drawMode === DrawMode.PENDING) {
 			let measureSize = this.measure(this.text);
 			let cursorXs = [this.textEditor.state.cursor, this.textEditor.state.selectionStart]
 				.filter(unique)
@@ -484,7 +479,7 @@ export class TextEdit extends BaseTextEdit {
 				lines.push([new Point(cursorXs[0], measureSize.y), new Point(cursorXs[1], measureSize.y)]);
 			}
 			lines.forEach(([start, end]) =>
-				new Line(this.position.add(start), this.position.add(end), 0, this.color).draw(pixels, sourcePixels, pending, editId));
+				new Line(this.position.add(start), this.position.add(end), 0, this.color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId));
 		}
 	}
 }
@@ -494,7 +489,12 @@ export class ColorDiff extends Move {
 		super(start, end, delta);
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		if (drawMode === DrawMode.PREVIEW) {
+			super.draw(pixels, sourcePixels, drawMode, editId);
+			return;
+		}
+
 		let [min, max] = boundTransferRect(this.start, this.end, pixels.size, this.delta, pixels.size);
 		let deltaIndex = getPIndex(this.delta, pixels.width);
 		let diffLines: Uint8ClampedArray[] = [];
@@ -510,8 +510,8 @@ export class ColorDiff extends Move {
 			pixels.setLine(getIndex(min.x + this.delta.x, y + this.delta.y, pixels.width, true), diffLines[y], editId);
 		pixels.setDirty(min, max);
 		pixels.setDirty(min.add(this.delta), max.add(this.delta));
-		new Select(this.start, this.end).draw(pixels, sourcePixels, pending, editId);
-		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, pending, editId);
+		new Select(this.start, this.end).draw(pixels, sourcePixels, drawMode, editId);
+		new Select(this.destStart, this.destEnd).draw(pixels, sourcePixels, drawMode, editId);
 	}
 }
 
@@ -545,18 +545,19 @@ export class BucketFill extends Edit {
 		return [leftX, rightX];
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_HIGHLIGHT : this.color;
 		let index = getPIndex(this.position, pixels.width);
 		let targetColor = sourcePixels.get32(index);
-		if (targetColor === this.color.int32) return;
+		if (targetColor === color.int32) return;
 		let queue: [[number, number], number, boolean, boolean][] = [[this.scanHorizontal(this.position.x, this.position.y, sourcePixels, targetColor)!, this.position.y, true, true]];
 		let line = new Uint8ClampedArray(pixels.width * 4);
-		new Uint32Array(line.buffer).fill(this.color.int32);
+		new Uint32Array(line.buffer).fill(color.int32);
 
 		while (queue.length) {
 			let [[left, right], y, up, down] = queue.pop()!;
 			let index = getIndex(left, y, pixels.width);
-			if (pixels.get32(index) === this.color.int32) continue;
+			if (pixels.get32(index) === color.int32) continue;
 			pixels.setLine(index * 4, line.subarray(0, (right - left + 1) * 4), editId);
 			pixels.setDirty(new Point(left, y), new Point(right, y));
 			if (up && y > 0) {
@@ -612,8 +613,12 @@ export class Paste extends Edit {
 		}
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
 		let size = this.size;
+		if (drawMode === DrawMode.PREVIEW) {
+			new FillRect(this.position, this.position.add(size), Color.PREVIEW_HIGHLIGHT).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
+			return;
+		}
 		let [min, max] = boundTransferRect(Point.P0, size, size, this.position, pixels.size);
 		for (let y = min.y; y <= max.y; y++)
 			pixels.setLine(
@@ -660,14 +665,15 @@ export class Pen extends Edit {
 		}
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
+		let color = drawMode === DrawMode.PREVIEW ? Color.PREVIEW_FILL : this.color;
 		if (this.dots.length > 1)
 			this.dots.forEach((dot, i, dots) => {
 				if (i)
-					new Line(this.position.add(dot), this.position.add(dots[i - 1]), this.thickness, this.color).draw(pixels, sourcePixels, pending, editId);
+					new Line(this.position.add(dot), this.position.add(dots[i - 1]), this.thickness, color).draw(pixels, sourcePixels, DrawMode.NORMAL, editId);
 			});
 		else
-			pixels.set(this.position.add(this.dots[0]), this.color, editId);
+			pixels.set(this.position.add(this.dots[0]), color, editId);
 	}
 }
 
@@ -681,7 +687,7 @@ export class Dot extends Edit {
 		this.color = color;
 	}
 
-	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
+	draw(pixels: Pixels, sourcePixels: Pixels, drawMode: DrawMode, editId: number) {
 		pixels.set(this.position, this.color, editId);
 	}
 }

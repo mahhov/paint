@@ -1,6 +1,6 @@
 import Camera from './Camera.js';
 import Clipboard from './Clipboard.js';
-import {BucketFill, Clear, ColorDiff, Edit, FillRect, Line, Measure, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
+import {BucketFill, Clear, ColorDiff, DrawMode, Edit, FillRect, Line, Measure, Move, Paste, Pen, Preview, Rect, Select, StraightLine, TextEdit} from './Edit.js';
 import EditStack, {DirtyMode} from './EditStack.js';
 import {Input, InputState, KeyBinding, KeyModifier, MouseBinding, MouseButton, MouseWheelBinding} from './Input.js';
 import Pixels from './Pixels.js';
@@ -146,7 +146,7 @@ export default class Editor {
 			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 			let owner = this.pixels.getOwner(this.editSelecting, this.editSelecting);
 			if (owner !== -1)
-				this.preview = new Preview(this.editStack.edits[owner], owner);
+				this.preview = new Preview(this.editStack.edits[owner]);
 		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.DOWN], () => {
 			if (!this.input.mouseMoved) return;
@@ -159,8 +159,8 @@ export default class Editor {
 			let owner = this.pixels.getOwner(downPoint, point);
 			if (owner === -1)
 				this.preview = null;
-			else if (owner !== this.preview?.owner)
-				this.preview = new Preview(this.editStack.edits[owner], owner);
+			else if (this.editStack.edits[owner] !== this.preview?.edit)
+				this.preview = new Preview(this.editStack.edits[owner]);
 		}));
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.RELEASED], () => {
 			if (!this.editSelecting) return;
@@ -169,7 +169,7 @@ export default class Editor {
 			if (!point)
 				this.preview = null;
 			else if (this.preview) {
-				this.editStack.selectEdit(this.preview.owner);
+				this.editStack.selectEdit(this.editStack.edits.indexOf(this.preview.edit));
 				this.preview = null;
 			} else if (this.editStack.pendingEdit && !this.editStack.postEdits.length)
 				this.editStack.startNewEdit(null);
@@ -546,26 +546,26 @@ export default class Editor {
 
 		if (this.editStack.dirty === DirtyMode.ALL_EDITS) {
 			this.pixels.clear();
-			this.editStack.edits.forEach((edit, i) => edit.draw(this.pixels, this.pixels, false, i));
+			this.editStack.edits.forEach((edit, i) => edit.draw(this.pixels, this.pixels, DrawMode.NORMAL, i));
 		}
 
 		if (this.editStack.dirty === DirtyMode.LAST_EDIT)
-			this.editStack.edits.at(-1)!.draw(this.pixels, this.pixels, false, this.editStack.edits.length - 1);
+			this.editStack.edits.at(-1)!.draw(this.pixels, this.pixels, DrawMode.NORMAL, this.editStack.edits.length - 1);
 
 		this.pendingPixels.clear();
 		if (this.editStack.pendingEdit) {
-			this.editStack.pendingEdit.draw(this.pendingPixels, this.pixels, true, 0);
+			this.editStack.pendingEdit.draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
 			([
 				...this.editStack.pendingEdit.points.map(p => [p, this.editStackControlSize / 2]),
 				[this.editStack.pendingEdit.points[this.editStack.controlPoint], this.editStackControlSize / 4],
 			] as [Point, number][]).forEach(([p, r]) => {
 				let rp = new Point(r).round;
-				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, true, 0);
+				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
 			});
 		}
 		if (this.editSelecting)
-			new Select(this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!, this.editSelecting).draw(this.pendingPixels, this.pixels, true, 0);
-		this.preview?.draw(this.pendingPixels, this.pixels, true, 0);
+			new Select(this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!, this.editSelecting).draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
+		this.preview?.draw(this.pendingPixels, this.pixels, DrawMode.PREVIEW, 0);
 
 		this.editStack.dirty = DirtyMode.NONE;
 	}
