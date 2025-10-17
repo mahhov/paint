@@ -338,18 +338,17 @@ abstract class BaseTextEdit extends Edit {
 	static canvas = new OffscreenCanvas(0, 0);
 	static ctx = BaseTextEdit.canvas.getContext('2d', {willReadFrequently: true})!;
 	protected position: Point;
+	protected readonly color: Color;
 
-	protected constructor(position: Point) {
+	protected constructor(position: Point, color: Color) {
 		super();
 		this.position = position;
+		this.color = color;
 	}
-
 
 	protected abstract get text(): string;
 
 	protected abstract get size(): number;
-
-	protected abstract get color(): Color;
 
 	draw(pixels: Pixels, sourcePixels: Pixels, pending: boolean, editId: number) {
 		let measureSize = this.measure(this.text);
@@ -386,13 +385,11 @@ abstract class BaseTextEdit extends Edit {
 export class FixedTextEdit extends BaseTextEdit {
 	protected readonly text: string;
 	protected readonly size: number;
-	protected readonly color: Color;
 
 	constructor(position: Point, size: number, color: Color, text: string) {
-		super(position);
+		super(position, color);
 		this.size = size;
 		this.text = text;
-		this.color = color;
 	}
 
 	get points() {
@@ -405,16 +402,14 @@ export class FixedTextEdit extends BaseTextEdit {
 }
 
 export class TextEdit extends BaseTextEdit {
-	static lastSize = 12;
+	private static lastSize = 12;
 	readonly textEditor = new TextEditor();
 	protected size: number;
-	protected readonly color: Color;
 
 	constructor(position: Point, text: string, size = TextEdit.lastSize, color: Color) {
-		super(position);
+		super(position, color);
 		this.textEditor.type(text);
 		this.size = size;
-		this.color = color;
 	}
 
 	protected get text() {
