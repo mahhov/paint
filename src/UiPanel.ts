@@ -61,7 +61,7 @@ class UiElement<T extends EventMap = {}> extends Emitter<T> {
 
 class UiButton extends UiElement<{ click: void, 'right-click': void, 'hover': void, 'hover-end': void }> {
 	selected = false;
-	private hovered: boolean = false;
+	private hovered = false;
 
 	onMousePress(point: Point) {
 		if (this.containsPoint(point))
@@ -277,7 +277,7 @@ class UiTextLabel extends UiElement {
 }
 
 class UiTooltip extends UiElement {
-	text: string = '';
+	text = '';
 
 	protected edits(pixelsWidth: number): Edit[] {
 		if (!this.text) return [];

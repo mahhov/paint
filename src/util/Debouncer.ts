@@ -2,8 +2,8 @@ import {sleep} from './util.js';
 
 export default class Debouncer {
 	private readonly handler: () => Promise<void>;
-	private inProgress: boolean = false;
-	private hasQueuedCall: boolean = false;
+	private inProgress = false;
+	private hasQueuedCall = false;
 
 	constructor(handler: () => Promise<void>) {
 		this.handler = handler;

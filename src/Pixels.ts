@@ -70,7 +70,7 @@ export default class Pixels {
 		this.owners?.subarray(index4 / 4, (index4 + line.length) / 4).fill(owner);
 	}
 
-	setDirty(min: Point, max: Point = min) {
+	setDirty(min: Point, max = min) {
 		this.dirtyMin = this.dirtyMin.min(min);
 		this.dirtyMax = this.dirtyMax.max(max);
 	}

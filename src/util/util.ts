@@ -20,7 +20,7 @@ export enum Tool {
 
 export let clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 
-export let round = (v: number, precision: number = 0) => Math.round(v * 10 ** precision) / 10 ** precision;
+export let round = (v: number, precision = 0) => Math.round(v * 10 ** precision) / 10 ** precision;
 
 export let unique = <T>(value: T, index: number, array: T[]) => array.indexOf(value) === index;
 
@@ -43,9 +43,9 @@ export let boundTransferRect = (source1: Point, source2: Point, sourceSize: Poin
 	];
 };
 
-export let getIndex = (x: number, y: number, width: number, four: boolean = false): number => (x + y * width) * (four ? 4 : 1);
-export let getPIndex = (p: Point, width: number, four: boolean = false): number => getIndex(p.x, p.y, width, four);
-export let getIndexP = (index: number, width: number, four: boolean = false): Point => {
+export let getIndex = (x: number, y: number, width: number, four = false): number => (x + y * width) * (four ? 4 : 1);
+export let getPIndex = (p: Point, width: number, four = false): number => getIndex(p.x, p.y, width, four);
+export let getIndexP = (index: number, width: number, four = false): Point => {
 	index = index / (four ? 4 : 1);
 	let x = index % width;
 	let y = Math.floor(index / width);

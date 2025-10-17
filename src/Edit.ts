@@ -93,7 +93,7 @@ export class Preview extends Edit {
 	readonly owner: number;
 	private ownerIndexes: number[] | null = null;
 
-	constructor(edit: Edit, owner: number = -1) {
+	constructor(edit: Edit, owner = -1) {
 		super();
 		this.edit = edit;
 		this.owner = owner;
@@ -402,7 +402,7 @@ abstract class BaseTextEdit extends Edit {
 		}
 	}
 
-	measure(text: string = this.text) {
+	measure(text = this.text) {
 		this.updateContext();
 		let metrics = BaseTextEdit.ctx.measureText(text);
 		return new Point(Math.ceil(metrics.width), Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent));

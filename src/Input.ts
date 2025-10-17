@@ -6,7 +6,7 @@ export enum InputState {
 
 abstract class Binding {
 	private readonly listenerStates: InputState[] = [];
-	private state: InputState = InputState.UP;
+	private state = InputState.UP;
 	private readonly listener = () => { };
 
 	protected constructor(listenerStates: InputState[], listener: () => void) {

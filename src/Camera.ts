@@ -4,7 +4,7 @@ import {clamp} from './util/util.js';
 let zoomPercents = [25, 50, 100, 200, 400, 800];
 
 export default class Camera {
-	private leftTop: Point = Point.P0;
+	private leftTop = Point.P0;
 	private readonly initialWidth: number;
 	private zoomIndex = zoomPercents.indexOf(100);
 

@@ -40,7 +40,7 @@ export default class Clipboard {
 		let ctx = canvas.getContext('2d');
 		if (!ctx) throw new Error('no canvas context');
 		ctx.drawImage(source, min.x, min.y, delta.x, delta.y, 0, 0, delta.x, delta.y);
-		let blob: Blob = await canvas.convertToBlob({type: 'image/png'});
+		let blob = await canvas.convertToBlob({type: 'image/png'});
 		navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})])
 			.catch(e => console.warn('Copy failed to write to clipboard', e));
 	}
