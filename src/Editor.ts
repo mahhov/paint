@@ -34,6 +34,7 @@ export default class Editor {
 	private editorHeight!: number;
 	private editorSize!: number;
 	private readonly saveDebouncer: Debouncer;
+	private editControlActive = false;
 
 	constructor(canvas: HTMLCanvasElement, save: number, editStack: EditStack) {
 		this.save = save;
@@ -110,6 +111,7 @@ export default class Editor {
 		this.input.addBinding(new MouseWheelBinding(true, () => this.zoom(-1)));
 
 		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.PRESSED], () => {
+			this.editControlActive = true;
 			let point = this.mousePositionToPixelsPosition();
 			if (!point) return;
 			if (this.tool === Tool.COLOR_PICKER) {
@@ -138,6 +140,13 @@ export default class Editor {
 			}
 			this.editStack.moveControlPointTo(point, this.input.shiftDown);
 			this.editModified();
+		}));
+
+		this.input.addBinding(new MouseBinding(MouseButton.LEFT, [InputState.UP], () => {
+			if (this.editControlActive) {
+				this.editControlActive = false;
+				this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
+			}
 		}));
 
 		this.input.addBinding(new MouseBinding(MouseButton.RIGHT, [InputState.PRESSED], () => {
@@ -462,7 +471,7 @@ export default class Editor {
 	}
 
 	private get editStackControlSize() {
-		return 2000 / this.camera.zoomPercent;
+		return Math.ceil(2000 / this.camera.zoomPercent);
 	}
 
 	private createEdit(point: Point): Edit {
@@ -555,13 +564,14 @@ export default class Editor {
 		this.pendingPixels.clear();
 		if (this.editStack.pendingEdit) {
 			this.editStack.pendingEdit.draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
-			([
-				...this.editStack.pendingEdit.points.map(p => [p, this.editStackControlSize / 2]),
-				[this.editStack.pendingEdit.points[this.editStack.controlPoint], this.editStackControlSize / 4],
-			] as [Point, number][]).forEach(([p, r]) => {
-				let rp = new Point(r).round;
-				new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
-			});
+			if (!this.editControlActive) {
+				let pointSizeTuples: [Point, number][] = this.editStack.pendingEdit.points.map(p => [p, this.editStackControlSize - 1]);
+				pointSizeTuples.push([this.editStack.pendingEdit.points[this.editStack.controlPoint], this.editStackControlSize - 2]);
+				pointSizeTuples.forEach(([p, r]) => {
+					let rp = new Point(r).round;
+					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
+				});
+			}
 		}
 		if (this.editSelecting)
 			new Select(this.mousePositionToPixelsPosition(this.input.mouseDownPosition)!, this.editSelecting).draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
