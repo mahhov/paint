@@ -408,8 +408,8 @@ export default class Editor {
 	}
 
 	private resizeCanvas() {
-		this.editorWidth = Math.floor(window.innerWidth - PANEL_SIZE);
-		this.editorHeight = Math.floor(window.innerHeight);
+		this.editorWidth = window.innerWidth - PANEL_SIZE;
+		this.editorHeight = window.innerHeight;
 		this.editorSize = Math.min(this.editorWidth, this.editorHeight);
 		this.ctx.canvas.width = this.editorWidth + PANEL_SIZE;
 		this.ctx.canvas.height = this.editorHeight;
@@ -471,7 +471,7 @@ export default class Editor {
 	}
 
 	private get editStackControlSize() {
-		return Math.ceil(2000 / this.camera.zoomPercent);
+		return Math.ceil(1000 / this.camera.zoomPercent);
 	}
 
 	private createEdit(point: Point): Edit {
@@ -565,10 +565,10 @@ export default class Editor {
 		if (this.editStack.pendingEdit) {
 			this.editStack.pendingEdit.draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
 			if (!this.editControlActive) {
-				let pointSizeTuples: [Point, number][] = this.editStack.pendingEdit.points.map(p => [p, this.editStackControlSize - 1]);
-				pointSizeTuples.push([this.editStack.pendingEdit.points[this.editStack.controlPoint], this.editStackControlSize - 2]);
+				let pointSizeTuples: [Point, number][] = this.editStack.pendingEdit.points.map(p => [p, this.editStackControlSize]);
+				pointSizeTuples.push([this.editStack.pendingEdit.points[this.editStack.controlPoint], this.editStackControlSize - 1]);
 				pointSizeTuples.forEach(([p, r]) => {
-					let rp = new Point(r).round;
+					let rp = new Point(r);
 					new Select(p.subtract(rp), p.add(rp)).draw(this.pendingPixels, this.pixels, DrawMode.PENDING, 0);
 				});
 			}
