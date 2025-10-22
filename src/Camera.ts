@@ -36,12 +36,6 @@ export default class Camera {
 		this.leftTop = this.leftTop.clamp(new Point(-.2), new Point(1.2).subtract(new Point(this.width)));
 	}
 
-	worldToCanvas(world: Point) {
-		return world
-			.subtract(this.leftTop)
-			.scale(1 / this.width);
-	}
-
 	canvasToWorld(canvas: Point) {
 		return canvas
 			.scale(this.width)

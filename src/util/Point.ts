@@ -56,6 +56,10 @@ export default class Point {
 		return new Point(round(this.x), round(this.y));
 	}
 
+	get floor() {
+		return new Point(Math.floor(this.x), Math.floor(this.y));
+	}
+
 	get magnitude2() {
 		return this.x ** 2 + this.y ** 2;
 	}

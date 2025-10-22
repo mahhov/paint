@@ -534,7 +534,7 @@ export default class Editor {
 	private mousePositionToPixelsPosition(mousePosition = this.input.mousePosition) {
 		// return [0, PIXELS_SIZE) pixel position
 		let worldPosition = this.mousePositionToWorldPosition(mousePosition);
-		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(Point.P0, new Point(PIXELS_SIZE - 1)).round : null;
+		return worldPosition ? worldPosition.scale(PIXELS_SIZE).clamp(Point.P0, new Point(PIXELS_SIZE - 1)).floor : null;
 	}
 
 	private async loop() {
@@ -583,10 +583,10 @@ export default class Editor {
 	private async drawLoop() {
 		this.flushEditStackToPixels();
 
-		let srcStart = this.camera.canvasToWorld(Point.P0).scale(PIXELS_SIZE).round;
-		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE).round;
+		let srcStart = this.camera.canvasToWorld(Point.P0).scale(PIXELS_SIZE);
+		let srcEnd = this.camera.canvasToWorld(new Point(this.editorWidth, this.editorHeight).scale(1 / this.editorSize)).scale(PIXELS_SIZE);
 		let srcSize = srcEnd.subtract(srcStart);
-		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE, 0, this.editorWidth, this.editorHeight] as [number, number, number, number, number, number, number, number];
+		let srcDestCoordinates = [srcStart.x, srcStart.y, srcSize.x, srcSize.y, PANEL_SIZE + 1, 0, this.editorWidth, this.editorHeight] as [number, number, number, number, number, number, number, number];
 
 		this.ctx.imageSmoothingEnabled = srcSize.x > this.editorSize;
 		this.ctx.fillRect(0, 0, PANEL_SIZE + this.editorWidth, this.editorHeight);
