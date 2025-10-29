@@ -202,7 +202,12 @@ export default class Editor {
 			this.editStack.redoEdit();
 		}));
 
-		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => this.editStack.undoEdit()));
+		this.input.addBinding(new KeyBinding('escape', [], [InputState.PRESSED], () => {
+			if (this.editStack.pendingEdit && !this.editStack.postEdits.length)
+				this.editStack.startNewEdit(null);
+			else
+				this.editStack.selectLastEdit();
+		}));
 		this.input.addBinding(new KeyBinding('delete', [], [InputState.PRESSED], () => {
 			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			if (this.editStack.pendingEdit?.constructor === Move)
