@@ -241,7 +241,6 @@ export default class Editor {
 				if (this.editStack.pendingEdit instanceof TextEdit) return;
 				this.setColor(this.panel.presetColors[colorIndex]);
 			}));
-			this.input.addBinding(new KeyBinding(String(i), [KeyModifier.CONTROL], [InputState.PRESSED], () => this.setColor(this.panel.recentColors[colorIndex])));
 		}
 
 		this.input.addBinding(new KeyBinding('0', [KeyModifier.CONTROL], [InputState.PRESSED], () => this.cameraReset()));
