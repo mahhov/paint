@@ -187,8 +187,8 @@ export default class Editor {
 			this.editStack.maxDirty = DirtyMode.PENDING_EDIT;
 		}));
 
-		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editStack.undoEdit()));
-		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editStack.redoEdit()));
+		this.input.addBinding(new MouseBinding(MouseButton.BACK, [InputState.PRESSED], () => this.editStack.selectNextEdit(true)));
+		this.input.addBinding(new MouseBinding(MouseButton.FORWARD, [InputState.PRESSED], () => this.editStack.selectNextEdit(false)));
 		this.input.addBinding(new KeyBinding('z', [KeyModifier.CONTROL], [InputState.PRESSED], () => {
 			if (this.editStack.pendingEdit instanceof TextEdit) return;
 			this.editStack.undoEdit();

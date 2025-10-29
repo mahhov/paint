@@ -430,11 +430,11 @@ export default class UiPanel extends Emitter<{
 		this.grid.nextRow(margin);
 		this
 			.add(new UiIconButton(icons.UNDO), quarterRowSize)
-			.setTooltip('undo (ctrl+z or mb-4)')
+			.setTooltip('undo (ctrl+z)')
 			.addListener('click', () => this.emit('undo'));
 		this
 			.add(new UiIconButton(icons.REDO), quarterRowSize)
-			.setTooltip('redo (ctrl+shift+z or mb-5)')
+			.setTooltip('redo (ctrl+shift+z)')
 			.addListener('click', () => this.emit('redo'));
 		this
 			.add(new UiIconButton(icons.START_NEW), quarterRowSize)
