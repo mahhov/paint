@@ -147,9 +147,7 @@ export class Input {
 			if (e.repeat) return;
 			if (e.key === 'Shift')
 				this.shiftDown = true;
-			if (Object.values(this.bindings)
-				.map(binding => binding.keyDown(e))
-				.some(v => v))
+			if (Object.values(this.bindings).some(binding => binding.keyDown(e)))
 				e.preventDefault();
 		});
 		document.addEventListener('keyup', e => {
