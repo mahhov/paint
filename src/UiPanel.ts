@@ -74,6 +74,7 @@ class UiButton extends UiElement<{ click: void, 'right-click': void, 'hover': vo
 	}
 
 	onMouseUp(point: Point) {
+		// todo hover not working
 		if (this.containsPoint(point)) {
 			this.hovered = true;
 			this.emit('hover');
@@ -206,6 +207,10 @@ class UiColorCircle extends UiElement<{ click: void }> {
 		return edits;
 	}
 
+	onMousePress(point: Point) {
+		this.onMouseDown(point);
+	}
+
 	onMouseDown(point: Point) {
 		let float = this.pointToFloat(point);
 		if (float) {
@@ -239,6 +244,10 @@ class UiColorRange extends UiElement<{ click: void }> {
 			rect32.set(rect32.subarray(0, getIndex(this.size.x + 1, 0, this.size.x + 1, false)), getIndex(0, y, this.size.x + 1, false));
 		let paste = new Paste(this.position, {width: this.size.x + 1, height: this.size.y + 1, int8Array: rect});
 		return super.edits(pixelsWidth).concat(paste);
+	}
+
+	onMousePress(point: Point) {
+		this.onMouseDown(point);
 	}
 
 	onMouseDown(point: Point) {
